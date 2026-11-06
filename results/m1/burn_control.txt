@@ -1,0 +1,2 @@
+cpu_burn: hilo 0 prio=9 SCHED_FIFO cpu=96.9%
+cpu_burn: hilo 1 prio=9 SCHED_FIFO cpu=96.2%
