@@ -1,7 +1,20 @@
-# MedPower — Progreso
+# BreathGuard RT — Progreso
 
 Entorno de todas las mediciones: QNX SDP 8.0, QEMU x86_64 con KVM (2 vCPU, 1 GB) sobre
 WSL2/Windows, toolchain `qcc -Vgcc_ntox86_64`. Tick del sistema: 1 ms.
+
+Cambio de enfoque (2026-11-06): el proyecto pasó de MedPower (continuidad eléctrica) a BreathGuard RT
+(controlador de ventilador con paciente virtual). M1 se conserva porque no depende del producto.
+
+| Hito | Contenido | Estado |
+|---|---|---|
+| M1 | Prueba de latencia | Completado |
+| M2 | Pulse en el host, API y paso de tiempo, evaluación del port a QNX | En curso |
+| M3 | `pneumatic_sim` + `breath_ctrl` (PCV, VCV) | Pendiente |
+| M4 | `safety_mon` | Pendiente |
+| M5 | `power_mgr` | Pendiente |
+| M6 | HMI, dashboard, CLI de fallos, versión monolítica | Pendiente |
+| M7 | Entrega | Pendiente |
 
 ## M1 — Prueba de latencia (completado)
 
@@ -65,9 +78,7 @@ Piso de ruido de la VM (`vm_noise`, hilo a prio 200 sin bloquearse, 10 s; no sim
 Registrados en `CLAUDE.md` → "Errores conocidos y lecciones".
 
 ### Consecuencias para los siguientes hitos
-- M3 no debe asumir que cada ciclo dura 1 ms: integrar con el tiempo medido y detectar ciclos perdidos.
-- La latencia de conmutación en esta VM tendrá la misma cola (decenas de ms en el peor caso). No se
+- `breath_ctrl` no debe asumir que cada ciclo dura 1 ms: integrar con el tiempo medido y detectar
+  ciclos perdidos.
+- La latencia de las alarmas en esta VM tendrá la misma cola (decenas de ms en el peor caso). No se
   puede presentar como "garantizada" una cifra medida aquí sin esta aclaración.
-
-### Siguiente paso
-M2: `plant_sim` (pendiente de revisión de M1 por el usuario).

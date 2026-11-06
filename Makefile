@@ -1,4 +1,4 @@
-# MedPower - build para QNX SDP 8.0, target QEMU x86_64.
+# BreathGuard RT - build para QNX SDP 8.0, target QEMU x86_64.
 # Antes: source ~/qnx800/qnxsdp-env.sh
 
 CC      := qcc
