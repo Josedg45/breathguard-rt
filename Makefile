@@ -11,7 +11,15 @@ QNX_DIR      := /tmp/medpower
 BUILD := build
 BINS  := $(BUILD)/latency_test $(BUILD)/cpu_burn $(BUILD)/vm_noise
 
-.PHONY: all clean deploy check-env
+TAREA1 := tareas/01_watchdog
+
+.PHONY: all clean deploy check-env tarea1
+
+tarea1: check-env | $(BUILD)
+	$(CC) $(CFLAGS) -I$(TAREA1) $(TAREA1)/watchdog.c $(TAREA1)/test_watchdog.c -o $(BUILD)/test_watchdog
+	ssh -o LogLevel=ERROR $(QNX_HOST_SSH) "mkdir -p $(QNX_DIR)"
+	scp -o LogLevel=ERROR -q $(BUILD)/test_watchdog $(QNX_HOST_SSH):$(QNX_DIR)/
+	ssh -o LogLevel=ERROR $(QNX_HOST_SSH) "$(QNX_DIR)/test_watchdog"
 
 all: check-env $(BINS)
 
