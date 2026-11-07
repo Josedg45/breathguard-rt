@@ -38,7 +38,7 @@ typedef struct {
     uint32_t k;        /* ventana que hay que simular */
     uint32_t backlog;  /* ventanas ya cerradas después de k (cuánto va atrasado patient) */
     double t_end;      /* tiempo de planta al cerrar la ventana */
-    double paw_mean;   /* presión promedio en la Y durante la ventana (cmH2O) */
+    double paw_mean;   /* presión promedio en la boca del paciente durante la ventana (cmH2O) */
     double last_dv;    /* corrección de volumen aplicada con el resultado anterior (L) */
     uint32_t lost;     /* ventanas que patient no alcanzó a simular */
 } bg_window_t;

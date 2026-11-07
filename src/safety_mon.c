@@ -260,7 +260,8 @@ int main(int argc, char **argv)
         }
         /* Defensa en profundidad: si el controlador vive pero no ventila (p. ej. congelado y sin
          * watchdog), la apnea detectada por los sensores también activa el respaldo. */
-        if ((up & ALARM_APNEA) && !backup_mode) {
+        /* Con el tubo desconectado la apnea es del circuito, no del controlador: no se lo mata. */
+        if ((up & ALARM_APNEA) && !backup_mode && !(al.active & ALARM_DISCONNECT)) {
             backup_mode = 1;
             failovers++;
             kill(ctrl_pid, SIGKILL);

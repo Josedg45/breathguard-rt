@@ -1,0 +1,6 @@
+t_s,evento,detalle
+5904.490492,LANZA_CONTROL,pid 16830491
+5953.672252,APNEA,Paw 4.88 flujo -0.006 Vti 0 Vte 0
+5953.672252,APNEA_CON_CONTROL_VIVO,se mata y se relanza; respaldo activo
+5953.672252,RELANZA_CONTROL,pid 16842778
+5954.991290,DEVUELVE_MANDO,131 latidos del nuevo controlador

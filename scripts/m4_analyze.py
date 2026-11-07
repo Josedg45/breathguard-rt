@@ -56,9 +56,10 @@ def main():
             print(f"  respaldo activo: {float(hb[0]['t_s']) - tf:6.2f} s; mando devuelto al nuevo controlador")
 
     # Fallas inyectadas: líneas "falla t_abs=..." de pneumatic_sim.
-    faults = [(float(m.group(1)), m.group(0)) for m in re.finditer(r"falla t_abs=([\d.]+)[^\n]*", log)]
+    faults = sorted({(float(m.group(1)), m.group(0)) for m in re.finditer(r"falla t_abs=([\d.]+)[^\n]*", log)})
     for tfa, txt in faults:
-        alarms = [e for e in ev if float(e["t_s"]) >= tfa and e["evento"] not in ("RELANZA_CONTROL",)]
+        no_alarm = ("LANZA_CONTROL", "RELANZA_CONTROL", "CONTROL_TERMINA", "DEVUELVE_MANDO")
+        alarms = [e for e in ev if float(e["t_s"]) >= tfa and e["evento"] not in no_alarm]
         first = alarms[0] if alarms else None
         desc = txt.split(" ", 2)[-1]
         if first and float(first["t_s"]) - tfa < 20:

@@ -83,7 +83,7 @@ static void close_window(void)
     window_t *w = &ring[win_k % RING];
     w->k = win_k;
     w->t_end = pl.t;
-    w->paw_mean = (pl.paw_int - win_int0) / BG_WINDOW_S;
+    w->paw_mean = (pl.paw_int - win_int0) / BG_WINDOW_S; /* en la boca del paciente (plant.h) */
     w->v_end = pl.v;
     win_int0 = pl.paw_int;
     win_end += BG_WINDOW_S;

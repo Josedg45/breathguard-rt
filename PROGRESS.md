@@ -10,8 +10,8 @@ Cambio de enfoque (2026-11-06): el proyecto pasó de MedPower (continuidad eléc
 |---|---|---|
 | M1 | Prueba de latencia | Completado |
 | M2 | Pulse en el host, API y paso de tiempo, port a QNX | Completado |
-| M3 | `pneumatic_sim` + `breath_ctrl` (PCV, VCV) | En curso |
-| M4 | `safety_mon` | Pendiente |
+| M3 | `pneumatic_sim` + `breath_ctrl` (PCV, VCV) | Completado (falta la tarea 2 del usuario) |
+| M4 | `safety_mon` | En curso (escenas en la VM hechas; falta la tarea 1 del usuario) |
 | M5 | `power_mgr` | Pendiente |
 | M6 | HMI, dashboard, CLI de fallos, versión monolítica | Pendiente |
 | M7 | Entrega | Pendiente |
@@ -255,3 +255,47 @@ Cómputo por ciclo (READ + PI + WRITE, tiempo de pared): p50 9–54 µs, p99 95�
 - La planta comparte la VM con el controlador: si el host congela la VM, se congelan los dos, y la planta integra el
   hueco al reanudar. Es equivalente a un controlador que llega tarde, pero un hueco de la planta no es realista para
   hardware físico.
+
+### Paso 3: VCV (offline)
+`src/vent.c` reemplaza a `pcv.c`: PCV igual que antes, y VCV con flujo constante (PI de flujo, kq 20, ki 50, subida
+de 100 ms) durante el 80 % de Ti más una pausa inspiratoria, y límite de presión de 40 cmH2O que corta la inspiración.
+Offline: Vt dentro de ±3.2 % con pulmón normal, rígido (C 30) y obstruido (R 40); con C 15 y 500 mL, el límite corta
+y entran 392 mL. Pendiente: correr VCV en la VM con Pulse.
+
+## M4 — Monitor de seguridad (en curso)
+
+### Qué se hizo
+- `src/safety_mon.c` (prio 55): lanza `breath_ctrl` con `posix_spawn`; lo vigila por muerte
+  (`_PULSE_CODE_DISCONNECT` de su conexión), por cuelgue (watchdog de latidos de la tarea 1, plazo 200 ms) y por
+  apnea con el controlador vivo. Ante una falla: `BG_MSG_OVERRIDE` a la planta, ventilación de respaldo (mismo
+  `vent.c`, en fase gracias a `-T`), relanzamiento y devolución del mando al empezar una respiración tras 50 latidos.
+- `src/alarms.c`: presión alta (40 cmH2O, 3 ms; con alivio de presión), desconexión (20 ms), apnea (12 s). Vt bajo,
+  Vt alto y fuga con `vt_meter` (tarea 2). `tools/m4_offline.c`: sin falsas alarmas en 7 escenarios de 120 s.
+- `breath_ctrl`: latidos (`MsgSendPulse` cada 10 ciclos), despedida (`BG_PULSE_BYE`) y `SIGTERM` limpio.
+- `pneumatic_sim`: arbitraje de actuadores (override) y registro de quién manda; registra las fallas inyectadas.
+- `src/bg_fault.c`: inyección de fallas. `scripts/m4_run.sh` / `m4_target.sh` / `m4_analyze.py`: escenas.
+
+### Escenas en la VM (PCV 20/5, 12 rpm, con Pulse; falla a los 40 s)
+| Escena | Detección | Respaldo manda tras el último comando | Vt en las respiraciones afectadas | SpO2 mín |
+|---|---|---|---|---|
+| Normal (60 s) | sin eventos ni falsas alarmas | — | 568–569 | 97.94 % |
+| Matar `breath_ctrl` (`slay -s KILL`) | CONTROL_MUERTO, 1.6 ms | 2.4 ms; mando devuelto a los 5.5 s | 569, 568, 569 | 97.94 % (sin cambio) |
+| Matar con CPU saturada | CONTROL_MUERTO, 1.3 ms | 2.6 ms; devuelto a los 5.5 s | 569, 568, 568 | 97.94 % (sin cambio) |
+| Congelar (`SIGSTOP`), watchdog sin completar | APNEA, 9.2 s | 9.2 s | **0, 0**, luego 607 | **97.04 %** |
+| Desconectar el tubo 15 s | DESCONEXION, 20.6 ms; APNEA a los 7.5 s (solo alarma) | — (no es falla del control) | **0, 0, 0** | **95.6 %**, se recupera |
+
+Una sola corrida por escena: las latencias de la VM varían entre corridas (M1); falta repetirlas.
+
+### Errores encontrados por las escenas
+- **La apnea mataba a un controlador sano durante una desconexión** → ahora la apnea solo activa el respaldo si no
+  hay alarma de desconexión.
+- **Pulse no se enteraba de la desconexión:** recibía la presión del circuito y su pulmón seguía inflándose → ahora la
+  planta le manda la presión en la boca del paciente (0 si el tubo está suelto).
+
+### Interpretación
+- **La muerte del controlador no afecta al paciente**, ni con la CPU saturada: el kernel avisa en ~1.5 ms y el
+  respaldo manda en ~2.5 ms, frente a respiraciones de 5 s y un soplador de 40 ms.
+- **El cuelgue sin watchdog cuesta 2 respiraciones** y 1 punto de SpO2: es exactamente lo que cubre la tarea 1.
+- **Una desconexión sí afecta al paciente** (SpO2 98 → 95.6 % en 15 s): la arquitectura no puede reconectar un tubo;
+  su trabajo es avisar en ~20 ms.
+- Pendiente: escena de presión alta (requiere un controlador que no limite), repetir las escenas, VCV en la VM.

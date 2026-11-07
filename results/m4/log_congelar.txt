@@ -1,0 +1,15 @@
+patient: ./states/BreathGuard_StandardMale_PCV.json cargado en 0.2 s
+patient: 4601 ventanas, pasos > 20 ms 24, paso máx 118.7 ms, atraso máx 4 ventanas, perdidas 0; final: SpO2 97.7 %, EtCO2 35.0 mmHg, FC 72
+breath_ctrl: pid 16830491, PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 90 s
+breath_ctrl: pid 16842778, PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 41 s
+safety_mon: t=0.000 LANZA_CONTROL pid 16830491
+safety_mon: t=49.182 APNEA Paw 4.88 flujo -0.006 Vti 0 Vte 0
+safety_mon: t=49.182 APNEA_CON_CONTROL_VIVO se mata y se relanza; respaldo activo
+safety_mon: t=49.182 RELANZA_CONTROL pid 16842778
+safety_mon: t=50.501 DEVUELVE_MANDO 131 latidos del nuevo controlador
+safety_mon: 89023 ticks, 1 fallas del controlador, 5 eventos; vt_meter: 0 respiraciones, Vti 0, Vte 0 mL
+breath_ctrl: 40512 ciclos, 269 con periodo > 1.5 ms, periodo máx 16.51 ms; cómputo p50 13.0 us, p99 194.2 us, máx 6078.6 us
+pneumatic_sim: listo como 'breathguard_pneumatic', prio 60, 94 s
+pneumatic_sim: 93003 ticks, 263 > 1.5 ms, dt máx 8.91 ms, huecos recortados 0, lecturas 168807, comandos 79785
+pneumatic_sim: ventanas 4700, paciente conectado, ventanas perdidas 0, resultados descartados 0
+pneumatic_sim: mensajes de override 1315
