@@ -10,7 +10,7 @@ Cambio de enfoque (2026-11-06): el proyecto pasó de MedPower (continuidad eléc
 |---|---|---|
 | M1 | Prueba de latencia | Completado |
 | M2 | Pulse en el host, API y paso de tiempo, port a QNX | Completado |
-| M3 | `pneumatic_sim` + `breath_ctrl` (PCV, VCV) | Pendiente |
+| M3 | `pneumatic_sim` + `breath_ctrl` (PCV, VCV) | En curso |
 | M4 | `safety_mon` | Pendiente |
 | M5 | `power_mgr` | Pendiente |
 | M6 | HMI, dashboard, CLI de fallos, versión monolítica | Pendiente |
@@ -158,4 +158,22 @@ Acople con el modelo RC (error de volumen, % del Vt):
 Registrados en `CLAUDE.md` → "Errores conocidos y lecciones".
 
 ### Siguiente paso
-M3: `pneumatic_sim` + `breath_ctrl`, pendiente de revisión de M2 por el usuario.
+M3: `pneumatic_sim` + `breath_ctrl`.
+
+## M3 — Control de la respiración (en curso)
+
+### Paso 1: planta + PCV como procesos QNX (paciente RC fijo)
+- `src/plant.c`: soplador (1.er orden, 40 ms), rama inspiratoria con antirretorno, tubuladura (1.5 mL/cmH2O),
+  válvula espiratoria + PEEP, pulmón RC (R 22.4, C 58 mL/cmH2O), ruido de sensores y fallos inyectables.
+  Subpasos de 50 µs.
+- `src/pcv.c`: PCV con rampa de 100 ms, PI (kp 2, ki 15) con prealimentación y antisaturación; tiempo medido.
+- `src/pneumatic_sim.c` (prio 60): `name_attach`, timer de 1 ms, mensajes READ/WRITE/FAULT; integra hasta
+  "ahora" antes de cada mensaje.
+- `src/breath_ctrl.c` (prio 50): `name_open`, timer de 1 ms, READ → PI → WRITE con `MsgSend`.
+- `tools/m3_offline.c`: el mismo código en Ubuntu, sin QNX. `scripts/m3_run.sh` / `m3_analyze.py`.
+
+Offline (Ubuntu), 30 s: Vt 576 / 510 / 516 mL con 20/5/12, 30/10/20, 12/0/10; entre 2 y 6 % bajo la fórmula RC con
+presión cuadrada (rampa de 100 ms y resistencia espiratoria). Sobrepico de 0.46 cmH2O; PEEP ±0.25 cmH2O.
+
+Prueba de humo en QNX (6 s): los procesos se comunican (6000 READ, 6000 WRITE) y la forma de onda coincide con la
+offline. Cómputo por ciclo: p50 6.9 µs, p99 240 µs. Medición completa pendiente.
