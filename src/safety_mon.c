@@ -61,7 +61,7 @@ static void event(double t, const char *what, const char *detail)
         snprintf(e->what, sizeof e->what, "%s", what);
         snprintf(e->detail, sizeof e->detail, "%s", detail);
     }
-    printf("%s: t=%.3f %s %s\n", PROG, t - t_start, what, detail);
+    /* No se imprime aquí: printf es E/S y bloquearía el camino crítico. Se imprime todo al final. */
 }
 
 /* --- Lanzar breath_ctrl ------------------------------------------------------------------------ */
@@ -169,6 +169,7 @@ int main(int argc, char **argv)
     int relief = 0;          /* 1 = alivio de presión hasta el fin de esta respiración */
     uint32_t relief_breath = 0, beats_since_spawn = 0, failovers = 0;
     unsigned long ticks = 0;
+    int need_spawn = 0;
     double last_tick = t_start;
 
     bg_hdr_t rd = { .type = BG_MSG_READ };
@@ -221,12 +222,7 @@ int main(int argc, char **argv)
             backup_mode = 1;
             overriding = 1;
             event(now, why, "respaldo activo");
-            ctrl_pid = spawn_ctrl(t0_breath, secs - (now - t_start));
-            wd_arm(&wd, (uint64_t)(now * 1e9), (uint64_t)(WD_TIMEOUT_S * 1e9), (uint64_t)(WD_STARTUP_S * 1e9));
-            beats_since_spawn = 0;
-            watching = 1;
-            snprintf(buf, sizeof buf, "pid %d", ctrl_pid);
-            event(now, "RELANZA_CONTROL", buf);
+            need_spawn = 1; /* se relanza DESPUÉS de tomar el mando (abajo) */
         }
         if (m.pulse.code != PULSE_TICK && !ctrl_failed) continue;
 
@@ -267,12 +263,7 @@ int main(int argc, char **argv)
             kill(ctrl_pid, SIGKILL);
             ctrl_scoid = -1;
             event(now, "APNEA_CON_CONTROL_VIVO", "se mata y se relanza; respaldo activo");
-            ctrl_pid = spawn_ctrl(t0_breath, secs - (now - t_start));
-            wd_arm(&wd, (uint64_t)(now * 1e9), (uint64_t)(WD_TIMEOUT_S * 1e9), (uint64_t)(WD_STARTUP_S * 1e9));
-            beats_since_spawn = 0;
-            watching = 1;
-            snprintf(buf, sizeof buf, "pid %d", ctrl_pid);
-            event(now, "RELANZA_CONTROL", buf);
+            need_spawn = 1;
         }
         if (alarms_relief(&al) && !relief) {
             relief = 1;
@@ -304,12 +295,25 @@ int main(int argc, char **argv)
             if (MsgSend(plant, &ov, sizeof ov, NULL, 0) == -1) break;
             overriding = want;
         }
+        if (need_spawn) { /* el respaldo ya manda: ahora sí, lo lento (cargar el binario desde disco) */
+            need_spawn = 0;
+            double t_ov = rt_now_s();
+            ctrl_pid = spawn_ctrl(t0_breath, secs - (t_ov - t_start));
+            wd_arm(&wd, (uint64_t)(rt_now_s() * 1e9), (uint64_t)(WD_TIMEOUT_S * 1e9), (uint64_t)(WD_STARTUP_S * 1e9));
+            beats_since_spawn = 0;
+            watching = 1;
+            snprintf(buf, sizeof buf, "pid %d; override enviado %.2f ms tras detectar; spawn %.1f ms", ctrl_pid,
+                     (t_ov - now) * 1e3, (rt_now_s() - t_ov) * 1e3);
+            event(t_ov, "RELANZA_CONTROL", buf);
+        }
     }
 
     timer_delete(tm);
     if (ctrl_pid > 0) kill(ctrl_pid, SIGTERM);
     name_detach(att, 0);
     rt_relax();
+    for (size_t i = 0; i < n_events; i++)
+        printf("%s: t=%.3f %s %s\n", PROG, events[i].t - t_start, events[i].what, events[i].detail);
     printf("%s: %lu ticks, %u fallas del controlador, %zu eventos; vt_meter: %u respiraciones, Vti %.0f, "
            "Vte %.0f mL\n", PROG, ticks, failovers, n_events, vtm.breaths, vtm.vti * 1e3, vtm.vte * 1e3);
     if (out_path) {

@@ -287,7 +287,19 @@ y entran 392 mL. Pendiente: correr VCV en la VM con Pulse.
 | Obstrucción R x8 en VCV 500 mL (15 s) | PRESION_ALTA en cada respiración (38 cmH2O; 3 ms tras el cruce) | — (el controlador limita a 40) | **148–157** (504 normal) | **96.5 %**, se recupera |
 
 VCV en la VM con Pulse: Vt 503–504 mL para 500 pedidos.
-Una sola corrida por escena: las latencias de la VM varían entre corridas (M1); las repeticiones están abajo.
+
+### Repeticiones (tras corregir el orden en safety_mon; `results/m4/repeticiones.txt`)
+Marca de tiempo con `bg_fault -n` justo antes de `slay`.
+| Escena | Último comando → respaldo manda | `slay` → respaldo manda | Detección → override | SpO2 |
+|---|---|---|---|---|
+| Matar ×3 | 1.9 / 2.0 / 2.0 ms | 3.8 / 6.9 / 7.1 ms | 0.02–0.23 ms | sin cambio |
+| Matar con CPU saturada ×3 | **24.3** / 2.0 / 3.0 ms | **53.9** / 6.6 / 6.9 ms | 0.04–0.11 ms | sin cambio |
+| Desconectar ×3 | alarma a 20.6 / 20.7 / 20.4 ms | — | — | 95.6 % (×3) |
+
+- `slay` tarda 2–5 ms en matar al proceso (lo busca por nombre). Una corrida con carga tuvo una cola de 24 ms: la cola
+  de la VM de M1. Lanzar el nuevo controlador (`posix_spawn`) tarda 0.7–1.5 ms y ya ocurre después de tomar el mando.
+- **Error corregido:** la primera versión hacía `printf` y `posix_spawn` antes de mandar el override; en una corrida
+  eso sumó 30 ms. Ahora el override sale 0.02–0.23 ms tras la detección y los eventos se imprimen al final.
 
 ### Errores encontrados por las escenas
 - **Sin alarma de presión alta cuando el controlador limita:** el controlador corta en cuanto Paw > 40 y la alarma

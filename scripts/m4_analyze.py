@@ -48,6 +48,12 @@ def main():
         # Antes del cambio, cmd_age dice hace cuánto llegó el último comando de breath_ctrl.
         last_ctrl = t[i - 1] - age[i - 1] / 1e3
         print(f"\nFalla del controlador ({fail[0]['evento']}):")
+        mk = re.search(r"marca t_abs=([\d.]+)", log)
+        if mk:
+            tk = float(mk.group(1))
+            print(f"  slay -> último comando de breath_ctrl: {(last_ctrl - tk) * 1e3:7.1f} ms (lo que tarda slay en matarlo)")
+            print(f"  slay -> safety_mon detecta:            {(tf - tk) * 1e3:7.1f} ms")
+            print(f"  slay -> planta obedece al respaldo:    {(t[i] - tk) * 1e3:7.1f} ms")
         print(f"  último comando de breath_ctrl -> safety_mon detecta: {(tf - last_ctrl) * 1e3:7.1f} ms")
         print(f"  último comando de breath_ctrl -> planta obedece al respaldo: {(t[i] - last_ctrl) * 1e3:7.1f} ms "
               f"(resolución: tick de 1 ms de la planta)")

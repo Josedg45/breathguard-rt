@@ -1,5 +1,5 @@
 t_s,evento,detalle
-6244.000403,LANZA_CONTROL,pid 19435547
-6284.026766,CONTROL_MUERTO,respaldo activo
-6284.026766,RELANZA_CONTROL,pid 19460124
-6289.501120,DEVUELVE_MANDO,511 latidos del nuevo controlador
+7132.776594,LANZA_CONTROL,pid 26292251
+7172.873143,CONTROL_MUERTO,respaldo activo
+7172.873183,RELANZA_CONTROL,pid 26325019; override enviado 0.04 ms tras detectar; spawn 1.3
+7178.277267,DEVUELVE_MANDO,370 latidos del nuevo controlador

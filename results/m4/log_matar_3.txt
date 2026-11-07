@@ -1,0 +1,15 @@
+bg_fault: marca t_abs=7084.431972
+patient: ./states/BreathGuard_StandardMale_PCV.json cargado en 0.1 s
+patient: 3850 ventanas, pasos > 20 ms 18, paso máx 120.2 ms, atraso máx 5 ventanas, perdidas 0; final: SpO2 98.0 %, EtCO2 33.9 mmHg, FC 72
+breath_ctrl: pid 25427995, PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 75 s
+breath_ctrl: pid 25452570, PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 35 s
+safety_mon: t=0.000 LANZA_CONTROL pid 25427995
+safety_mon: t=40.015 CONTROL_MUERTO respaldo activo
+safety_mon: t=40.015 RELANZA_CONTROL pid 25452570; override enviado 0.23 ms tras detectar; spawn 0.7
+safety_mon: t=45.500 DEVUELVE_MANDO 540 latidos del nuevo controlador
+safety_mon: 74316 ticks, 1 fallas del controlador, 4 eventos; vt_meter: 0 respiraciones, Vti 0, Vte 0 mL
+breath_ctrl: 34565 ciclos, 378 con periodo > 1.5 ms, periodo máx 15.39 ms; cómputo p50 11.0 us, p99 195.0 us, máx 10093.1 us
+pneumatic_sim: listo como 'breathguard_pneumatic', prio 60, 79 s
+pneumatic_sim: 78267 ticks, 202 > 1.5 ms, dt máx 15.03 ms, huecos recortados 0, lecturas 148635, comandos 74319
+pneumatic_sim: ventanas 3950, paciente conectado, ventanas perdidas 0, resultados descartados 0
+pneumatic_sim: mensajes de override 5399

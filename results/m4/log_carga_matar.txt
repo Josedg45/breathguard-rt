@@ -1,16 +1,17 @@
-cpu_burn: hilo 0 prio=9 SCHED_FIFO cpu=70.4%
-cpu_burn: hilo 1 prio=9 SCHED_FIFO cpu=70.6%
-patient: ./states/BreathGuard_StandardMale_PCV.json cargado en 0.1 s
-patient: 4601 ventanas, pasos > 20 ms 266, paso máx 114.7 ms, atraso máx 7 ventanas, perdidas 0; final: SpO2 98.0 %, EtCO2 33.8 mmHg, FC 72
-breath_ctrl: pid 19435547, PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 90 s
-breath_ctrl: pid 19460124, PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 50 s
-breath_ctrl: MsgReceivePulse: Interrupted function call
-safety_mon: t=0.000 LANZA_CONTROL pid 19435547
-safety_mon: t=40.026 CONTROL_MUERTO respaldo activo
-safety_mon: t=40.026 RELANZA_CONTROL pid 19460124
-safety_mon: t=45.501 DEVUELVE_MANDO 511 latidos del nuevo controlador
-safety_mon: 80304 ticks, 1 fallas del controlador, 4 eventos; vt_meter: 0 respiraciones, Vti 0, Vte 0 mL
-pneumatic_sim: listo como 'breathguard_pneumatic', prio 60, 94 s
-pneumatic_sim: 83968 ticks, 1715 > 1.5 ms, dt máx 15.19 ms, huecos recortados 0, lecturas 160545, comandos 80241
-pneumatic_sim: ventanas 4700, paciente conectado, ventanas perdidas 0, resultados descartados 0
-pneumatic_sim: mensajes de override 5133
+cpu_burn: hilo 0 prio=9 SCHED_FIFO cpu=75.4%
+cpu_burn: hilo 1 prio=9 SCHED_FIFO cpu=70.5%
+bg_fault: marca t_abs=7172.820322
+patient: ./states/BreathGuard_StandardMale_PCV.json cargado en 0.2 s
+patient: 3851 ventanas, pasos > 20 ms 176, paso máx 278.4 ms, atraso máx 28 ventanas, perdidas 0; final: SpO2 98.0 %, EtCO2 33.8 mmHg, FC 72
+breath_ctrl: pid 26292251, PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 75 s
+breath_ctrl: pid 26325019, PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 35 s
+safety_mon: t=0.000 LANZA_CONTROL pid 26292251
+safety_mon: t=40.097 CONTROL_MUERTO respaldo activo
+safety_mon: t=40.097 RELANZA_CONTROL pid 26325019; override enviado 0.04 ms tras detectar; spawn 1.3
+safety_mon: t=45.501 DEVUELVE_MANDO 370 latidos del nuevo controlador
+safety_mon: 69194 ticks, 1 fallas del controlador, 4 eventos; vt_meter: 0 respiraciones, Vti 0, Vte 0 mL
+breath_ctrl: 32707 ciclos, 1141 con periodo > 1.5 ms, periodo máx 52.65 ms; cómputo p50 5.0 us, p99 33.9 us, máx 11143.3 us
+pneumatic_sim: listo como 'breathguard_pneumatic', prio 60, 79 s
+pneumatic_sim: 73194 ticks, 1681 > 1.5 ms, dt máx 52.52 ms, huecos recortados 0, lecturas 138218, comandos 69024
+pneumatic_sim: ventanas 3950, paciente conectado, ventanas perdidas 0, resultados descartados 0
+pneumatic_sim: mensajes de override 3705

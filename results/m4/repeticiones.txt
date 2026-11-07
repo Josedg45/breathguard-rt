@@ -1,0 +1,55 @@
+##### matar
+    40.010 s  RELANZA_CONTROL          pid 23724058; override enviado 0.02 ms tras detectar; spawn 0.7
+  slay -> último comando de breath_ctrl:     1.8 ms (negativo: el último fue antes)
+  slay -> safety_mon detecta:                3.4 ms
+  slay -> planta obedece al respaldo:        3.8 ms
+  último comando de breath_ctrl -> safety_mon detecta:     1.6 ms
+  último comando de breath_ctrl -> planta obedece al respaldo:     1.9 ms (resolución: tick de 1 ms de la planta)
+SpO2 mín/máx: 97.94 / 98.04 %   EtCO2 mín/máx: 33.0 / 34.5
+##### matar_2
+    40.011 s  RELANZA_CONTROL          pid 24588314; override enviado 0.02 ms tras detectar; spawn 0.9
+  slay -> último comando de breath_ctrl:     4.9 ms (negativo: el último fue antes)
+  slay -> safety_mon detecta:                6.1 ms
+  slay -> planta obedece al respaldo:        6.9 ms
+  último comando de breath_ctrl -> safety_mon detecta:     1.2 ms
+  último comando de breath_ctrl -> planta obedece al respaldo:     2.0 ms (resolución: tick de 1 ms de la planta)
+SpO2 mín/máx: 97.94 / 98.04 %   EtCO2 mín/máx: 33.0 / 34.5
+##### matar_3
+    40.015 s  RELANZA_CONTROL          pid 25452570; override enviado 0.23 ms tras detectar; spawn 0.7
+  slay -> último comando de breath_ctrl:     5.2 ms (negativo: el último fue antes)
+  slay -> safety_mon detecta:                5.9 ms
+  slay -> planta obedece al respaldo:        7.1 ms
+  último comando de breath_ctrl -> safety_mon detecta:     0.8 ms
+  último comando de breath_ctrl -> planta obedece al respaldo:     2.0 ms (resolución: tick de 1 ms de la planta)
+SpO2 mín/máx: 97.94 / 98.04 %   EtCO2 mín/máx: 33.0 / 34.5
+##### carga_matar
+    40.097 s  RELANZA_CONTROL          pid 26325019; override enviado 0.04 ms tras detectar; spawn 1.3
+  slay -> último comando de breath_ctrl:    29.6 ms (negativo: el último fue antes)
+  slay -> safety_mon detecta:               52.8 ms
+  slay -> planta obedece al respaldo:       53.9 ms
+  último comando de breath_ctrl -> safety_mon detecta:    23.3 ms
+  último comando de breath_ctrl -> planta obedece al respaldo:    24.3 ms (resolución: tick de 1 ms de la planta)
+SpO2 mín/máx: 97.94 / 98.04 %   EtCO2 mín/máx: 33.0 / 34.5
+##### carga_matar_2
+    40.027 s  RELANZA_CONTROL          pid 27209755; override enviado 0.08 ms tras detectar; spawn 1.4
+  slay -> último comando de breath_ctrl:     4.6 ms (negativo: el último fue antes)
+  slay -> safety_mon detecta:                5.8 ms
+  slay -> planta obedece al respaldo:        6.6 ms
+  último comando de breath_ctrl -> safety_mon detecta:     1.2 ms
+  último comando de breath_ctrl -> planta obedece al respaldo:     2.0 ms (resolución: tick de 1 ms de la planta)
+SpO2 mín/máx: 97.94 / 98.04 %   EtCO2 mín/máx: 33.0 / 34.5
+##### carga_matar_3
+    40.028 s  RELANZA_CONTROL          pid 28082205; override enviado 0.11 ms tras detectar; spawn 1.5
+  slay -> último comando de breath_ctrl:     3.9 ms (negativo: el último fue antes)
+  slay -> safety_mon detecta:                5.8 ms
+  slay -> planta obedece al respaldo:        6.9 ms
+  último comando de breath_ctrl -> safety_mon detecta:     1.9 ms
+  último comando de breath_ctrl -> planta obedece al respaldo:     3.0 ms (resolución: tick de 1 ms de la planta)
+SpO2 mín/máx: 97.94 / 98.04 %   EtCO2 mín/máx: 33.0 / 34.5
+##### desconectar_2
+  primera alarma DESCONEXION a 20.7 ms
+SpO2 mín/máx: 95.59 / 98.04 %   EtCO2 mín/máx: 0.0 / 36.9
+##### desconectar_3
+  primera alarma DESCONEXION a 20.4 ms
+SpO2 mín/máx: 95.59 / 98.04 %   EtCO2 mín/máx: 0.0 / 36.9
+FIN

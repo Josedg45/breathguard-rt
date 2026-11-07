@@ -1,0 +1,17 @@
+bg_fault: t_abs=7523.276860 desconectado=1 obstruccion=1.0 fuga=0.000 sensor_congelado=0
+bg_fault: t_abs=7538.291498 desconectado=0 obstruccion=1.0 fuga=0.000 sensor_congelado=0
+patient: ./states/BreathGuard_StandardMale_PCV.json cargado en 0.1 s
+patient: 3850 ventanas, pasos > 20 ms 17, paso máx 113.1 ms, atraso máx 4 ventanas, perdidas 0; final: SpO2 96.8 %, EtCO2 35.4 mmHg, FC 73
+breath_ctrl: pid 29802523, PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 75 s
+breath_ctrl: 73870 ciclos, 534 con periodo > 1.5 ms, periodo máx 24.72 ms; cómputo p50 12.6 us, p99 190.2 us, máx 15743.1 us
+safety_mon: t=0.000 LANZA_CONTROL pid 29802523
+safety_mon: t=40.027 DESCONEXION Paw 0.37 flujo 1.435 Vti 0 Vte 0
+safety_mon: t=47.550 APNEA Paw 0.75 flujo 1.443 Vti 0 Vte 0
+safety_mon: t=74.504 CONTROL_TERMINA despedida
+safety_mon: 74333 ticks, 0 fallas del controlador, 4 eventos; vt_meter: 0 respiraciones, Vti 0, Vte 0 mL
+pneumatic_sim: listo como 'breathguard_pneumatic', prio 60, 79 s
+pneumatic_sim: falla t_abs=7523.276862 desconectado=1 obstruccion=1.0 fuga=0.000 sensor=0
+pneumatic_sim: falla t_abs=7538.291499 desconectado=0 obstruccion=1.0 fuga=0.000 sensor=0
+pneumatic_sim: 78325 ticks, 180 > 1.5 ms, dt máx 10.52 ms, huecos recortados 0, lecturas 148202, comandos 73870
+pneumatic_sim: ventanas 3950, paciente conectado, ventanas perdidas 0, resultados descartados 0
+pneumatic_sim: mensajes de override 0

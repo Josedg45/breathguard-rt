@@ -1,14 +1,15 @@
+bg_fault: marca t_abs=6909.345349
 patient: ./states/BreathGuard_StandardMale_PCV.json cargado en 0.2 s
-patient: 4601 ventanas, pasos > 20 ms 6, paso máx 101.6 ms, atraso máx 4 ventanas, perdidas 0; final: SpO2 98.0 %, EtCO2 33.8 mmHg, FC 72
-breath_ctrl: pid 15974427, PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 90 s
-breath_ctrl: pid 15990810, PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 50 s
-safety_mon: t=0.000 LANZA_CONTROL pid 15974427
-safety_mon: t=40.017 CONTROL_MUERTO respaldo activo
-safety_mon: t=40.017 RELANZA_CONTROL pid 15990810
-safety_mon: t=45.500 DEVUELVE_MANDO 547 latidos del nuevo controlador
-safety_mon: 89697 ticks, 1 fallas del controlador, 4 eventos; vt_meter: 0 respiraciones, Vti 0, Vte 0 mL
-breath_ctrl: 49880 ciclos, 208 con periodo > 1.5 ms, periodo máx 5.98 ms; cómputo p50 4.0 us, p99 99.0 us, máx 1277.4 us
-pneumatic_sim: listo como 'breathguard_pneumatic', prio 60, 94 s
-pneumatic_sim: 93694 ticks, 315 > 1.5 ms, dt máx 10.65 ms, huecos recortados 0, lecturas 179362, comandos 89665
-pneumatic_sim: ventanas 4700, paciente conectado, ventanas perdidas 0, resultados descartados 0
-pneumatic_sim: mensajes de override 5484
+patient: 3850 ventanas, pasos > 20 ms 19, paso máx 507.2 ms, atraso máx 24 ventanas, perdidas 0; final: SpO2 98.0 %, EtCO2 33.8 mmHg, FC 72
+breath_ctrl: pid 23699483, PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 75 s
+breath_ctrl: pid 23724058, PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 35 s
+safety_mon: t=0.000 LANZA_CONTROL pid 23699483
+safety_mon: t=40.010 CONTROL_MUERTO respaldo activo
+safety_mon: t=40.010 RELANZA_CONTROL pid 23724058; override enviado 0.02 ms tras detectar; spawn 0.7
+safety_mon: t=45.501 DEVUELVE_MANDO 547 latidos del nuevo controlador
+safety_mon: 74308 ticks, 1 fallas del controlador, 4 eventos; vt_meter: 0 respiraciones, Vti 0, Vte 0 mL
+breath_ctrl: 34703 ciclos, 384 con periodo > 1.5 ms, periodo máx 26.43 ms; cómputo p50 4.1 us, p99 109.0 us, máx 26432.6 us
+pneumatic_sim: listo como 'breathguard_pneumatic', prio 60, 79 s
+pneumatic_sim: 78296 ticks, 399 > 1.5 ms, dt máx 12.42 ms, huecos recortados 0, lecturas 148592, comandos 74284
+pneumatic_sim: ventanas 3950, paciente conectado, ventanas perdidas 0, resultados descartados 0
+pneumatic_sim: mensajes de override 5481

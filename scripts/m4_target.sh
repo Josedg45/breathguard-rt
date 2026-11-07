@@ -27,8 +27,8 @@ else
     sleep $T_FALLA
 fi
 case "$ESC" in
-    matar|carga_matar) slay -s KILL breath_ctrl ;;
-    congelar) slay -s STOP breath_ctrl ;;
+    matar|carga_matar) ./bg_fault -n; slay -s KILL breath_ctrl ;;
+    congelar) ./bg_fault -n; slay -s STOP breath_ctrl ;;
     desconectar) ./bg_fault -d 1; sleep 15; ./bg_fault ;;
     obstruir) ./bg_fault -o 8; sleep 15; ./bg_fault ;;
 esac > "log_escena_$L.txt" 2>&1
