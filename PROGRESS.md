@@ -136,7 +136,7 @@ Acople con el modelo RC (error de volumen, % del Vt):
 | 12/0/10 | RMS 4.3 %, máx 7.4 % | RMS 0.01 %, máx 0.05 % |
 
 ### Interpretación
-- **Hay margen de CPU, pero hay picos.** En promedio Pulse usa ~11–15 % del presupuesto en la VM. Aun así, ~0.02–0.04 % de los pasos pasan de 20 ms, con picos de hasta 66 ms.
+- **Hay margen de CPU, pero hay picos.** En promedio Pulse usa ~11–15 % del presupuesto en la VM. Aun así, ~0.01–0.04 % de los pasos pasan de 20 ms, con picos de hasta 66 ms.
 - **`breath_ctrl` no puede depender de Pulse en sus 1 ms.** Debe correr por separado y tolerar que Pulse se retrase.
 - **La simulación es reproducible:** el tiempo real no entra en las ecuaciones. En estas corridas sin lazo de control, un retraso no cambia la fisiología.
 - **El error de acople solo se mide en los puntos de 20 ms.** Pulse no da datos entre medias, y la presión se mantuvo constante en cada paso.
