@@ -162,6 +162,9 @@ M3: `pneumatic_sim` + `breath_ctrl`.
 
 ## M3 — Control de la respiración (en curso)
 
+### Problemas
+- Ver `CLAUDE.md`: `msg_t` ya existe en QNX; terminar los lazos por tiempo y no por número de ciclos.
+
 ### Paso 1: planta + PCV como procesos QNX (paciente RC fijo)
 - `src/plant.c`: soplador (1.er orden, 40 ms), rama inspiratoria con antirretorno, tubuladura (1.5 mL/cmH2O),
   válvula espiratoria + PEEP, pulmón RC (R 22.4, C 58 mL/cmH2O), ruido de sensores y fallos inyectables.
@@ -176,4 +179,36 @@ Offline (Ubuntu), 30 s: Vt 576 / 510 / 516 mL con 20/5/12, 30/10/20, 12/0/10; en
 presión cuadrada (rampa de 100 ms y resistencia espiratoria). Sobrepico de 0.46 cmH2O; PEEP ±0.25 cmH2O.
 
 Prueba de humo en QNX (6 s): los procesos se comunican (6000 READ, 6000 WRITE) y la forma de onda coincide con la
-offline. Cómputo por ciclo: p50 6.9 µs, p99 240 µs. Medición completa pendiente.
+offline.
+
+### Medición en QNX: PCV 20/5 cmH2O, 12 rpm, I:E 1:2, 30 s por corrida, 3 en reposo y 3 con carga
+Carga: `cpu_burn`, 2 hilos FIFO a prio 9 (86–100 % de CPU cada uno), lanzada 1 s después del lazo.
+`breath_ctrl` termina por tiempo de reloj (ver "Problemas"). Datos en `results/m3/` (CSV comprimidos),
+`late_summary.txt` con `scripts/m3_late.py`.
+
+| Corrida | Ciclos en 30 s | Periodo > 1.5 ms | Periodo máx | Ticks de la planta > 1.5 ms | Vt resp. 1–5 (mL) | PIP máx |
+|---|---|---|---|---|---|---|
+| Reposo 1 | 29 933 | 95 | 6.2 ms | 21 | 577, 576, 576, 576, 576 | 20.5 |
+| Reposo 2 | 29 743 | 85 | 26.0 ms | 36 | 577, 576 ×4 | 20.5 |
+| Reposo 3 | 29 946 | 56 | 12.6 ms | 20 | 577, 576 ×4 | 20.5 |
+| Carga 1 | 24 632 | 2 464 | 22.0 ms | 2 355 | 577, 576 ×4 | 20.5 |
+| Carga 2 | 26 728 | 1 911 | 14.6 ms | 1 811 | 578, 576 ×4 | 20.5 |
+| Carga 3 | 26 788 | 1 928 | 27.5 ms | 617 | 577, 577, 576 ×3 | 20.5 |
+
+Desvío de Paw real contra el objetivo en la meseta: p99 normal 0.25–0.27 cmH2O; peor dentro de un hueco del
+controlador 0.15–0.33 cmH2O (hueco de hasta 11.2 ms). Ubuntu (offline): Vt 576 mL, PIP 20.5.
+Cómputo por ciclo (READ + PI + WRITE, tiempo de pared): p50 9–54 µs, p99 95–227 µs; máx hasta 11 ms con carga
+(el hilo fue interrumpido dentro del ciclo).
+
+### Interpretación
+- **La ventilación no cambió con la carga ni con los ciclos tardíos:** Vt idéntico a Ubuntu (±2 mL) en las 6 corridas.
+  Razones: la planta integra el tiempo real; un ciclo tardío deja el último comando, y el soplador (40 ms) y el
+  pulmón (τ 1.3 s) son lentos frente a huecos de ≤ 27 ms; el PI usa el dt medido.
+- **Con carga se pierde el 7–18 % de los ticks, también en la planta (prio 60)**, que está muy por encima de la carga
+  (prio 9). Lo más probable es que sea el host retirando las vCPU cuando el invitado las satura (M1, `vm_noise`: hasta
+  49 % de tiempo perdido con un burner). No se midió `vm_noise` en simultáneo: es la explicación más probable, no una prueba.
+- **No es tiempo real estricto en esta VM:** 0.2–0.3 % de ciclos tardíos en reposo y 7–10 % con carga. Que la
+  respiración no cambie demuestra tolerancia del diseño, no cumplimiento del 1 kHz.
+- La planta comparte la VM con el controlador: si el host congela la VM, se congelan los dos, y la planta integra el
+  hueco al reanudar. Es equivalente a un controlador que llega tarde, pero un hueco de la planta no es realista para
+  hardware físico.

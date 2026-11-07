@@ -6,11 +6,15 @@ Uso: m3_analyze.py archivo.csv p_insp peep rr [--plot salida.png]
 """
 import argparse
 import csv
+import gzip
+import os
 import math
 
 
 def load(path):
-    with open(path) as f:
+    if not os.path.exists(path) and os.path.exists(path + ".gz"):
+        path += ".gz"
+    with (gzip.open(path, "rt") if path.endswith(".gz") else open(path)) as f:
         rows = list(csv.DictReader(f))
     return {k: [float(r[k]) for r in rows] for k in rows[0]}
 

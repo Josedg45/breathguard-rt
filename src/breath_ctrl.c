@@ -52,9 +52,11 @@ int main(int argc, char **argv)
         }
     }
 
-    size_t n = (size_t)(secs * 1000);
-    logrec_t *log = calloc(n, sizeof *log);
-    float *tmp = calloc(n, sizeof *tmp);
+    /* Termina por tiempo de reloj, no por número de ciclos: en la VM se pierden pulsos del timer
+     * (M1), y contar ciclos alargaba la corrida más allá de lo pedido. */
+    size_t cap = (size_t)(secs * 1000) + 1000, n = 0;
+    logrec_t *log = calloc(cap, sizeof *log);
+    float *tmp = calloc(cap, sizeof *tmp);
     if (!log || !tmp) rt_die(PROG, "calloc");
 
     /* name_open: busca el nombre publicado por pneumatic_sim y nos conecta a su canal.
@@ -83,7 +85,7 @@ int main(int argc, char **argv)
     bg_write_msg_t wr = { .hdr = { .type = BG_MSG_WRITE } };
     struct _pulse pulse;
 
-    for (size_t i = 0; i < n; i++) {
+    for (size_t i = 0; i < cap; i++) {
         if (MsgReceivePulse(chid, &pulse, sizeof pulse, NULL) == -1) rt_die(PROG, "MsgReceivePulse");
         double now = rt_now_s();
         double dt = now - last;
@@ -105,6 +107,8 @@ int main(int argc, char **argv)
         r->blower = (float)wr.act.blower;
         r->exh = (float)wr.act.exh_open;
         r->phase = (uint8_t)pcv.phase;
+        n = i + 1;
+        if (now - t_start >= secs) break;
     }
 
     timer_delete(tm);

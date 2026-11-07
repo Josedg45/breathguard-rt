@@ -1,0 +1,7 @@
+corrida     ciclos  tarde>1.5ms  hueco_máx  tardíos_en_subida  peor_desvío_en_hueco  desvío_p99_normal
+reposo_1     29933      95         6.20 ms       0            0.27 cmH2O en hueco de 1.5 ms  0.26 cmH2O
+reposo_2     29743      85        26.02 ms       6            0.15 cmH2O en hueco de 1.6 ms  0.27 cmH2O
+reposo_3     29946      56        12.59 ms       2            0.15 cmH2O en hueco de 2.1 ms  0.26 cmH2O
+carga_1      24632    2464        21.95 ms      91            0.30 cmH2O en hueco de 7.5 ms  0.25 cmH2O
+carga_2      26728    1911        14.64 ms      69            0.30 cmH2O en hueco de 1.6 ms  0.27 cmH2O
+carga_3      26788    1928        27.45 ms      40            0.33 cmH2O en hueco de 11.2 ms  0.25 cmH2O

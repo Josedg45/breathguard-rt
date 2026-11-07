@@ -1,0 +1,4 @@
+pneumatic_sim: listo como 'breathguard_pneumatic', prio 60, 33 s
+pneumatic_sim: 32891 ticks, 21 > 1.5 ms, dt máx 5.66 ms, huecos recortados 0, lecturas 29933, comandos 29933
+breath_ctrl: PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 30 s
+breath_ctrl: 29933 ciclos, 95 con periodo > 1.5 ms, periodo máx 6.20 ms; cómputo p50 53.5 us, p99 219.4 us, máx 1251.7 us
