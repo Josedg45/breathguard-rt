@@ -58,7 +58,7 @@ $(BUILD)/m5_offline: tools/m5_offline.c src/battery.c src/plant.c src/vent.c | $
 
 # safety_mon enlaza el watchdog (tarea 1) y el medidor de Vt (tarea 2) del usuario.
 SAFETY_SRC := src/safety_mon.c src/alarms.c src/vent.c src/plant.c $(TAREA1)/watchdog.c $(TAREA2)/vt_meter.c
-$(BUILD)/safety_mon: $(SAFETY_SRC) src/alarms.h src/vent.h $(TAREA1)/watchdog.h $(TAREA2)/vt_meter.h $(COMMON_H) | $(BUILD)
+$(BUILD)/safety_mon: $(SAFETY_SRC) src/bg_power.h src/alarms.h src/vent.h $(TAREA1)/watchdog.h $(TAREA2)/vt_meter.h $(COMMON_H) | $(BUILD)
 	$(CC) $(CFLAGS) -Isrc -I$(TAREA1) -I$(TAREA2) $(SAFETY_SRC) -lm -o $@
 
 $(BUILD)/bg_fault: src/bg_fault.c src/bg_power.h $(COMMON_H) | $(BUILD)

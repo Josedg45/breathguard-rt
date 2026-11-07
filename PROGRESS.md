@@ -12,7 +12,7 @@ Cambio de enfoque (2026-11-06): el proyecto pasó de MedPower (continuidad eléc
 | M2 | Pulse en el host, API y paso de tiempo, port a QNX | Completado |
 | M3 | `pneumatic_sim` + `breath_ctrl` (PCV, VCV) | Completado (falta la tarea 2 del usuario) |
 | M4 | `safety_mon` | En curso (escenas en la VM hechas; falta la tarea 1 del usuario) |
-| M5 | `power_mgr` | Pendiente |
+| M5 | `power_mgr` | Completado |
 | M6 | HMI, dashboard, CLI de fallos, versión monolítica | Pendiente |
 | M7 | Entrega | Pendiente |
 
@@ -317,3 +317,34 @@ Marca de tiempo con `bg_fault -n` justo antes de `slay`.
 - **Una desconexión sí afecta al paciente** (SpO2 98 → 95.6 % en 15 s): la arquitectura no puede reconectar un tubo;
   su trabajo es avisar en ~20 ms.
 - Pendiente: repetir las escenas; escena del alivio de presión con un controlador que no limita.
+
+## M5 — Gestión de energía (completado)
+
+### Qué se hizo
+- `src/battery.c`: batería de ion-litio 7S2P (6 Ah, 24 V) con circuito de Thevenin de primer orden (R0 0.12 Ω,
+  R1 0.08 Ω, C1 600 F) y curva Voc(SoC); carga a 1.5 A con red. Consumos: base 6 W, soplador 8 W en vacío + potencia
+  neumática / 0.25, pantalla 7 W (2 W atenuada), humidificador 35 W, telemetría 2 W.
+- `src/power_mgr.c` (prio 30): muestrea la red cada 1 ms (corte = < 18 V durante 2 muestras), lee la planta cada
+  10 ms para la potencia del soplador, avanza la batería (con escala de tiempo `-x` para la demo), recorta lo no
+  esencial (humidificador apagado, pantalla atenuada; la telemetría sigue), estima la autonomía (energía restante /
+  potencia media) y avisa a `safety_mon` con un pulso (`BG_PULSE_POWER`).
+- `bg_fault -m 0|1`: corta o restablece la red. `scripts/m5_run.sh`, `m5_target.sh`. `tools/m5_offline.c`.
+
+### Resultados
+Offline (PCV 20/5): 58.9 W con todo, 18.9 W recortando. Autonomía desde el 100 %: 2.59 h y 8.24 h; el estimador
+acierta dentro de +3 % y +1 %.
+
+En la VM, con el sistema completo y Pulse:
+| Escena | Resultado |
+|---|---|
+| Corte de red a los 30 s, vuelve a los 75 s (×60) | corte detectado a 1.8–2.0 ms; autonomía 160 → 524 min al recortar; SoC 100 → 92 % en 45 min de batería; recarga a 1.5 A; Vt 567–569 mL y SpO2 98.0 % sin cambio |
+| Batería al 25 %, corte a los 5 s (×120) | BATERÍA BAJA al 20 % (44 min de batería), BATERÍA CRÍTICA al 5 % (112 min); estimado al cortar: 141 min, real hasta el 5 % + 21 min estimados = 133 min (−6 %) |
+
+### Errores corregidos
+- Tras el corte, la autonomía usaba ~10 s el consumo de antes → el promedio se reinicia al cambiar de modo.
+- Con el promedio reiniciado la autonomía valía 0 y disparaba BATERÍA BAJA falsa → se usa la potencia instantánea.
+
+### Límites
+- Los parámetros de batería y consumos son típicos, no medidos en un equipo real.
+- El ventilador simulado no se apaga al agotarse la batería: `power_mgr` no corta la planta.
+- La escala de tiempo acelera solo la batería; la ventilación y las alarmas siguen en tiempo real.

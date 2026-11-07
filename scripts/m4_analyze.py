@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""m4_analyze.py - analiza una escena de seguridad de M4 (results/m4/{sim,pat,ev,log}_<etiqueta>).
+"""m4_analyze.py - analiza una escena de seguridad de M4 (results/m4 o --dir: {sim,pat,ev,log}_<etiqueta>).
 
 - Eventos de safety_mon con su tiempo relativo.
 - Falla del controlador: hueco sin mando (último comando de breath_ctrl -> primer comando de safety_mon),
@@ -25,11 +25,13 @@ def load(path):
 
 def main():
     lab = sys.argv[1]
+    global D
+    D = sys.argv[sys.argv.index("--dir") + 1] if "--dir" in sys.argv else "results/m4"
     plot = "--plot" in sys.argv
-    sim = load(f"results/m4/sim_{lab}.csv")
-    ev = load(f"results/m4/ev_{lab}.csv")
-    pat = load(f"results/m4/pat_{lab}.csv")
-    log = open(f"results/m4/log_{lab}.txt").read()
+    sim = load(f"{D}/sim_{lab}.csv")
+    ev = load(f"{D}/ev_{lab}.csv")
+    pat = load(f"{D}/pat_{lab}.csv")
+    log = open(f"{D}/log_{lab}.txt").read()
 
     t = [float(r["t_s"]) for r in sim]
     src = [int(r["src"]) for r in sim]
@@ -130,8 +132,8 @@ def main():
                 a.axvspan(min(ys), max(ys), color="orange", alpha=0.15)
         ax[0].set_title(f"{lab}: líneas rojas = eventos de safety_mon; naranja = manda safety_mon")
         fig.tight_layout()
-        fig.savefig(f"results/m4/{lab}.png", dpi=110)
-        print(f"Gráfica: results/m4/{lab}.png")
+        fig.savefig(f"{D}/{lab}.png", dpi=110)
+        print(f"Gráfica: {D}/{lab}.png")
 
 
 if __name__ == "__main__":

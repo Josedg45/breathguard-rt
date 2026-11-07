@@ -1,0 +1,6 @@
+t_s,evento,detalle
+8010.989460,LANZA_CONTROL,pid 33415195
+8016.008310,ENERGIA_CORTE,en batería; consumos no esenciales recortados
+8037.819242,BATERIA_BAJA,SoC < 20 % o < 30 min
+8072.320464,BATERIA_CRITICA,SoC < 5 %
+8110.529957,CONTROL_TERMINA,despedida

@@ -1,0 +1,6 @@
+t_s,evento,detalle
+7747.301399,LANZA_CONTROL,pid 31588379
+7777.310167,ENERGIA_CORTE,en batería; consumos no esenciales recortados
+7777.310167,BATERIA_BAJA,SoC < 20 % o < 30 min
+7822.328217,ENERGIA_RED,red restablecida
+7846.814327,CONTROL_TERMINA,despedida

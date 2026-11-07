@@ -99,8 +99,8 @@ int main(int argc, char **argv)
                 fflush(stdout);
                 MsgReply(rcvid, EOK, NULL, 0);
             } else if (m.hdr.type == BG_MSG_POWER_STATUS) {
-                bg_power_status_t st = { bits, bat.soc, bat.v, bat.i, p_avg,
-                                         p_avg > 0 ? battery_energy_wh(&bat, 0.0) * 3600 / p_avg : 0 };
+                double pa = p_avg > 0 ? p_avg : loads.base + loads.blower_idle;
+                bg_power_status_t st = { bits, bat.soc, bat.v, bat.i, p_avg, battery_energy_wh(&bat, 0.0) * 3600 / pa };
                 MsgReply(rcvid, EOK, &st, sizeof st);
             } else {
                 MsgError(rcvid, ENOSYS);
@@ -123,10 +123,14 @@ int main(int argc, char **argv)
             printf("%s: CORTE detectado a %.1f ms de la orden; recorte de consumos\n", PROG,
                    (now - t_mains_cmd) * 1e3);
             fflush(stdout);
+            p_avg = 0; /* los consumos cambian: el promedio viejo ya no sirve para estimar la autonomía */
+            e_acc = t_acc = 0;
         } else if (mains_ok && on_battery && mains_v > 0.95 * MAINS_OK_V) {
             on_battery = 0;
             printf("%s: red restablecida; consumos normales y carga\n", PROG);
             fflush(stdout);
+            p_avg = 0;
+            e_acc = t_acc = 0;
         }
 
         if (ticks % 10 == 0) { /* cada 10 ms: potencia y batería */
@@ -138,11 +142,12 @@ int main(int argc, char **argv)
             battery_step(&bat, p, !on_battery, dt * scale);
             e_acc += p * dt;
             t_acc += dt;
-            if (t_acc >= 10.0 || p_avg == 0) { /* potencia media en ventanas de 10 s (dos respiraciones) */
+            if (t_acc >= 10.0 || (p_avg == 0 && t_acc >= 0.05)) { /* media en ventanas de 10 s (dos respiraciones) */
                 p_avg = e_acc / t_acc;
                 e_acc = t_acc = 0;
             }
-            double autonomy = p_avg > 0 ? battery_energy_wh(&bat, 0.0) * 3600 / p_avg : 0; /* s de batería */
+            /* s de batería; sin promedio todavía (recién cambió el modo), con la potencia instantánea */
+            double autonomy = battery_energy_wh(&bat, 0.0) * 3600 / (p_avg > 0 ? p_avg : p);
             bits = (on_battery ? PWR_ON_BATTERY | PWR_SHEDDING : 0);
             if (on_battery && (bat.soc < 0.20 || autonomy < 1800)) bits |= PWR_BATTERY_LOW;
             if (on_battery && (bat.soc < 0.05 || bat.v < V_CUTOFF + 0.5)) bits |= PWR_BATTERY_CRIT;

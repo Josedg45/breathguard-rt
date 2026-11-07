@@ -1,0 +1,19 @@
+bg_fault: red t_abs=8016.002284 on=0
+patient: ./states/BreathGuard_StandardMale_PCV.json cargado en 0.3 s
+patient: 5100 ventanas, pasos > 20 ms 50, paso máx 376.5 ms, atraso máx 17 ventanas, perdidas 0; final: SpO2 98.0 %, EtCO2 33.7 mmHg, FC 72
+power_mgr: batería 25 %, escala de tiempo x120, prio 30
+power_mgr: red CORTADA t_abs=8016.002286
+power_mgr: CORTE detectado a 2.0 ms de la orden; recorte de consumos
+power_mgr: final SoC 0.0 %, 20.83 V, potencia media 18.9 W
+breath_ctrl: pid 33415195, PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 100 s
+breath_ctrl: 97121 ciclos, 1768 con periodo > 1.5 ms, periodo máx 29.15 ms; cómputo p50 7.6 us, p99 209.1 us, máx 21980.8 us
+safety_mon: t=0.000 LANZA_CONTROL pid 33415195
+safety_mon: t=5.019 ENERGIA_CORTE en batería; consumos no esenciales recortados
+safety_mon: t=26.830 BATERIA_BAJA SoC < 20 % o < 30 min
+safety_mon: t=61.331 BATERIA_CRITICA SoC < 5 %
+safety_mon: t=99.540 CONTROL_TERMINA despedida
+safety_mon: 97617 ticks, 0 fallas del controlador, 5 eventos; vt_meter: 0 respiraciones, Vti 0, Vte 0 mL
+pneumatic_sim: listo como 'breathguard_pneumatic', prio 60, 104 s
+pneumatic_sim: 101518 ticks, 540 > 1.5 ms, dt máx 22.79 ms, huecos recortados 0, lecturas 204498, comandos 97121
+pneumatic_sim: ventanas 5200, paciente conectado, ventanas perdidas 0, resultados descartados 0
+pneumatic_sim: mensajes de override 0

@@ -25,6 +25,7 @@
 #include <unistd.h>
 
 #include "alarms.h"
+#include "bg_power.h"
 #include "bg_proto.h"
 #include "plant.h"
 #include "rt_util.h"
@@ -170,6 +171,7 @@ int main(int argc, char **argv)
     uint32_t relief_breath = 0, beats_since_spawn = 0, failovers = 0;
     unsigned long ticks = 0;
     int need_spawn = 0;
+    uint32_t power_bits = 0;
     double last_tick = t_start;
 
     bg_hdr_t rd = { .type = BG_MSG_READ };
@@ -194,6 +196,18 @@ int main(int argc, char **argv)
             ctrl_scoid = m.pulse.scoid; /* así reconocemos su desconexión */
             wd_beat(&wd, (uint64_t)(now * 1e9), (uint32_t)m.pulse.value.sival_int);
             beats_since_spawn++;
+            continue;
+        }
+        if (m.pulse.code == BG_PULSE_POWER) { /* avisos de power_mgr: alarmas de energía */
+            uint32_t pb = (uint32_t)m.pulse.value.sival_int, chg = pb ^ power_bits;
+            if (chg & PWR_ON_BATTERY)
+                event(now, pb & PWR_ON_BATTERY ? "ENERGIA_CORTE" : "ENERGIA_RED",
+                      pb & PWR_ON_BATTERY ? "en batería; consumos no esenciales recortados" : "red restablecida");
+            if ((chg & PWR_BATTERY_LOW) && (pb & PWR_BATTERY_LOW)) event(now, "BATERIA_BAJA", "SoC < 20 % o < 30 min");
+            if ((chg & PWR_BATTERY_CRIT) && (pb & PWR_BATTERY_CRIT)) event(now, "BATERIA_CRITICA", "SoC < 5 %");
+            power_bits = pb;
+            if (pb & (PWR_ON_BATTERY | PWR_BATTERY_LOW | PWR_BATTERY_CRIT)) al.active |= ALARM_POWER;
+            else al.active &= ~ALARM_POWER;
             continue;
         }
         if (m.pulse.code == BG_PULSE_BYE) {
