@@ -1,0 +1,40 @@
+qnx_external_pcv20_5_12_1.csv  (9000 pasos)
+  columna             host final   qnx final    dif. max    dif. RMS  iguales
+  lung_volume_mL       2233.8200   2233.8200      0.0000      0.0000   100.0%
+  insp_flow_mL_s        -36.9200    -36.9200      0.0000      0.0000   100.0%
+  tidal_volume_mL       588.1000    588.1000      0.0000      0.0000   100.0%
+  spo2                    0.9808      0.9808      0.0000      0.0000   100.0%
+  etco2_mmHg             32.4700     32.4700      0.0000      0.0000   100.0%
+  hr_per_min             71.9000     71.9000      0.0000      0.0000   100.0%
+qnx_external_pcv20_5_12_2.csv  (9000 pasos)
+  columna             host final   qnx final    dif. max    dif. RMS  iguales
+  lung_volume_mL       2233.8200   2233.8200      0.0000      0.0000   100.0%
+  insp_flow_mL_s        -36.9200    -36.9200      0.0000      0.0000   100.0%
+  tidal_volume_mL       588.1000    588.1000      0.0000      0.0000   100.0%
+  spo2                    0.9808      0.9808      0.0000      0.0000   100.0%
+  etco2_mmHg             32.4700     32.4700      0.0000      0.0000   100.0%
+  hr_per_min             71.9000     71.9000      0.0000      0.0000   100.0%
+qnx_internal_pcv20_5_12.csv  (9000 pasos)
+  columna             host final   qnx final    dif. max    dif. RMS  iguales
+  lung_volume_mL       2495.9300   2495.9300      0.0000      0.0000   100.0%
+  insp_flow_mL_s       -241.6700   -241.6700      0.0000      0.0000   100.0%
+  tidal_volume_mL       579.4000    579.4000      0.0000      0.0000   100.0%
+  spo2                    0.9722      0.9722      0.0000      0.0000   100.0%
+  etco2_mmHg             39.8500     39.8500      0.0000      0.0000   100.0%
+  hr_per_min             72.0000     72.0000      0.0000      0.0000   100.0%
+qnx_external_pcv30_10_20.csv  (6000 pasos)
+  columna             host final   qnx final    dif. max    dif. RMS  iguales
+  lung_volume_mL       2804.0500   2804.0500      0.0000      0.0000   100.0%
+  insp_flow_mL_s       -240.8400   -240.8400      0.0000      0.0000   100.0%
+  tidal_volume_mL       606.7000    606.7000      0.0000      0.0000   100.0%
+  spo2                    0.9885      0.9885      0.0000      0.0000   100.0%
+  etco2_mmHg             23.1200     23.1200      0.0000      0.0000   100.0%
+  hr_per_min             70.8000     70.8000      0.0000      0.0000   100.0%
+qnx_external_pcv12_0_10.csv  (6000 pasos)
+  columna             host final   qnx final    dif. max    dif. RMS  iguales
+  lung_volume_mL       1960.0400   1960.0400      0.0000      0.0000   100.0%
+  insp_flow_mL_s         -5.4900     -5.4900      0.0000      0.0000   100.0%
+  tidal_volume_mL       428.0000    428.0000      0.0000      0.0000   100.0%
+  spo2                    0.9383      0.9383      0.0000      0.0000   100.0%
+  etco2_mmHg             41.8600     41.8600      0.0000      0.0000   100.0%
+  hr_per_min             80.3000     80.3000      0.0000      0.0000   100.0%

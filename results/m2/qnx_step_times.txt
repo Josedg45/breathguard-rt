@@ -1,0 +1,42 @@
+=== external_reposo_1
+modo=external dt=20.0 ms pasos=9000
+paso (us): prom=2233 p50=2081 p99=3924 max=26384
+factor de tiempo real: 9.0x; pasos que superan dt: 2
+=== external_reposo_2
+modo=external dt=20.0 ms pasos=9000
+paso (us): prom=2195 p50=2046 p99=3840 max=26375
+factor de tiempo real: 9.1x; pasos que superan dt: 2
+=== external_reposo_3
+modo=external dt=20.0 ms pasos=9000
+paso (us): prom=2204 p50=2059 p99=3724 max=47218
+factor de tiempo real: 9.1x; pasos que superan dt: 1
+=== internal
+modo=internal dt=20.0 ms pasos=9000
+paso (us): prom=1703 p50=1585 p99=3028 max=7987
+factor de tiempo real: 11.7x; pasos que superan dt: 0
+=== external_30_10_20
+modo=external dt=20.0 ms pasos=6000
+paso (us): prom=2320 p50=2158 p99=4036 max=49413
+factor de tiempo real: 8.6x; pasos que superan dt: 2
+=== external_12_0_10
+modo=external dt=20.0 ms pasos=6000
+paso (us): prom=2221 p50=2070 p99=3777 max=45771
+factor de tiempo real: 9.0x; pasos que superan dt: 1
+=== external_carga_1
+modo=external dt=20.0 ms pasos=9000
+paso (us): prom=2957 p50=2504 p99=6399 max=62533
+factor de tiempo real: 6.8x; pasos que superan dt: 4
+cpu_burn: hilo 0 prio=9 SCHED_FIFO cpu=93.5%
+cpu_burn: hilo 1 prio=9 SCHED_FIFO cpu=70.1%
+=== external_carga_2
+modo=external dt=20.0 ms pasos=9000
+paso (us): prom=3006 p50=2530 p99=6591 max=65742
+factor de tiempo real: 6.7x; pasos que superan dt: 1
+cpu_burn: hilo 0 prio=9 SCHED_FIFO cpu=68.4%
+cpu_burn: hilo 1 prio=9 SCHED_FIFO cpu=94.4%
+=== external_carga_3
+modo=external dt=20.0 ms pasos=9000
+paso (us): prom=2982 p50=2512 p99=6556 max=47468
+factor de tiempo real: 6.7x; pasos que superan dt: 2
+cpu_burn: hilo 0 prio=9 SCHED_FIFO cpu=70.9%
+cpu_burn: hilo 1 prio=9 SCHED_FIFO cpu=92.3%

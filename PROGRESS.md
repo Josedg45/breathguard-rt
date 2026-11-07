@@ -9,7 +9,7 @@ Cambio de enfoque (2026-11-06): el proyecto pasó de MedPower (continuidad eléc
 | Hito | Contenido | Estado |
 |---|---|---|
 | M1 | Prueba de latencia | Completado |
-| M2 | Pulse en el host, API y paso de tiempo, evaluación del port a QNX | En curso |
+| M2 | Pulse en el host, API y paso de tiempo, port a QNX | Completado |
 | M3 | `pneumatic_sim` + `breath_ctrl` (PCV, VCV) | Pendiente |
 | M4 | `safety_mon` | Pendiente |
 | M5 | `power_mgr` | Pendiente |
@@ -82,3 +82,80 @@ Registrados en `CLAUDE.md` → "Errores conocidos y lecciones".
   ciclos perdidos.
 - La latencia de las alarmas en esta VM tendrá la misma cola (decenas de ms en el peor caso). No se
   puede presentar como "garantizada" una cifra medida aquí sin esta aclaración.
+
+## M2 — Pulse como paciente virtual (completado)
+
+**Resultado: Pulse 4.4.0 corre dentro de QNX 8.0, sin cambios en su código. No hace falta el plan B por red.**
+
+### Qué se hizo
+- Pulse 4.4.0 compilado en Ubuntu, con datos generados por `DataSetReader` (Java). Python no fue necesario.
+- `tools/pulse_probe/`: paciente sedado con el ventilador interno de Pulse o con presión externa por paso.
+- `port/`: toolchain y receta para QNX (`build_pulse_qnx.sh`, `deploy_pulse_qnx.sh`).
+- `scripts/m2_rc_check.py`: prueba el acople con el modelo RC. `scripts/m2_compare.py`: compara host contra QNX.
+- `tareas/01_watchdog/`: primera tarea del modo tutor.
+- Datos en `results/m2/`.
+
+### API de Pulse que usaremos
+- `CreatePulseEngine()` y `SerializeFromFile(estado)`: crea el motor y carga un paciente ya estabilizado.
+- `SEDyspnea` (severidad 1.0): elimina la respiración propia, para simular a un paciente sedado.
+- `SEMechanicalVentilation` + `ProcessAction`: aplica presión en la vía aérea (relativa a la atmósfera) y la mezcla de gases.
+- `AdvanceModelTime()`: avanza un paso de 20 ms.
+- `GetRespiratorySystem()`, `GetBloodChemistrySystem()`, `GetCardiovascularSystem()`: volumen, flujo, R, C, EtCO2, SpO2, FC.
+
+### Resultados
+
+Paso de tiempo de Pulse: **20 ms (50 Hz)**. Límite de tiempo real: 20 ms por paso.
+
+| Entorno | Prom (ms) | p99 (ms) | Máx (ms) | Tiempo real | Pasos > 20 ms |
+|---|---|---|---|---|---|
+| Host, modo externo 20/5/12 | 1.40 | 2.64 | 5.1 | 14.2x | 0 de 9000 |
+| QNX VM, reposo, 3 corridas | 2.20–2.23 | 3.7–3.9 | 26.4–47.2 | 9.0–9.1x | 2, 2, 1 de 9000 |
+| QNX VM, CPU saturada, 3 corridas | 2.96–3.01 | 6.4–6.6 | 47.5–65.7 | 6.7–6.8x | 4, 1, 2 de 9000 |
+
+Otros ajustes en host (30/10/20 y 12/0/10): máx 15–17 ms, 0 pasos > 20 ms. En la VM: máx 46–49 ms, 1–2 pasos > 20 ms.
+Una corrida de 20 s justo después de recompilar fue peor (prom 3.8 ms, máx 75.8 ms, 10 de 1000): sin causa confirmada.
+
+Fisiología del paciente (último tramo de cada corrida):
+
+| Ajustes (Pinsp/PEEP/rpm, modo) | Vt (mL) | C (mL/cmH2O) | SpO2 | EtCO2 (mmHg) | FC |
+|---|---|---|---|---|---|
+| 20/5/12, ventilador interno | 579 | 58.0 | 97.2 % | 39.9 | 72 |
+| 20/5/12, presión externa | 588 | 58.0 | 98.1 % | 32.5 | 72 |
+| 30/10/20, presión externa | 607 | 68.4 | 98.9 % | 23.1 | 71 |
+| 12/0/10, presión externa | 428 | 47.4 | 93.8 % | 41.9 | 80 |
+
+Host contra QNX: **todas las columnas fisiológicas coinciden en todos los pasos**, y también reposo contra CPU saturada.
+Es a la precisión del CSV (0.01 mL, 0.0001 de SpO2), no una comparación bit a bit.
+
+Acople con el modelo RC (error de volumen, % del Vt):
+
+| Ajustes | R y C fijos (libre) | Resincronizando cada 20 ms |
+|---|---|---|
+| 20/5/12, tiempo no visto | RMS 1.0 %, máx 2.0 % | RMS 0.01 %, máx 0.02 % |
+| 30/10/20 | RMS 13.4 %, máx 16.2 % | RMS 0.01 %, máx 0.02 % |
+| 12/0/10 | RMS 4.3 %, máx 7.4 % | RMS 0.01 %, máx 0.05 % |
+
+### Interpretación
+- **Hay margen de CPU, pero hay picos.** En promedio Pulse usa ~11–15 % del presupuesto en la VM. Aun así, ~0.02–0.04 % de los pasos pasan de 20 ms, con picos de hasta 66 ms.
+- **`breath_ctrl` no puede depender de Pulse en sus 1 ms.** Debe correr por separado y tolerar que Pulse se retrase.
+- **La simulación es reproducible:** el tiempo real no entra en las ecuaciones. En estas corridas sin lazo de control, un retraso no cambia la fisiología.
+- **El error de acople solo se mide en los puntos de 20 ms.** Pulse no da datos entre medias, y la presión se mantuvo constante en cada paso.
+- **EtCO2 aún no se estabiliza a los 180 s** y baja con presión externa. Hay diferencia con el ventilador interno (32.5 vs 39.9 mmHg, a Vt parecido); la causa probable es el espacio muerto del circuito, sin confirmar.
+- **Estos pasos no se ejecutaron con ritmo de tiempo real ni con prioridad alta** (Pulse a prio 10, con escritura de CSV entre pasos). Falta medirlo en M3.
+
+### Decisiones de diseño
+- Pulse corre en QNX como proceso `patient` a 50 Hz, con prioridad por debajo de `breath_ctrl` y `safety_mon`.
+- Acople: `pneumatic_sim` integra un RC a 1 kHz, envía a Pulse la presión promedio de cada 20 ms y se resincroniza con su volumen, flujo, R y C.
+- Protobuf 21.12 para QNX: sin dependencia de absl. El host conserva protobuf 35; cada build genera sus propios bindings.
+- Pulse se compila fuera del repo (`~/pulse`); en el repo solo va la receta. Se usa `libc++` por ser la biblioteca de C++ de QNX.
+- La VM aguanta: binario de 13 MB, datos ~3 MB, libres 24.9 MB en `/data` tras la campaña. Lectura de memoria: unos 21 MB usados a los 8 s de arranque; no se midió el pico.
+
+### Pendientes y límites
+- `build_pulse_qnx.sh` se ejecutó completa sobre un build existente, no desde cero en una máquina limpia.
+- Los valores de R y C son los que reporta Pulse; no se contrastaron con datos clínicos.
+
+### Problemas
+Registrados en `CLAUDE.md` → "Errores conocidos y lecciones".
+
+### Siguiente paso
+M3: `pneumatic_sim` + `breath_ctrl`, pendiente de revisión de M2 por el usuario.
