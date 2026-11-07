@@ -31,7 +31,9 @@ static inline double rt_now_s(void)
 static inline void rt_setup(const char *prog, int prio)
 {
     if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) rt_die(prog, "mlockall");
-    struct sched_param sp = { .sched_priority = prio };
+    struct sched_param sp;
+    memset(&sp, 0, sizeof sp);
+    sp.sched_priority = prio;
     int rc = pthread_setschedparam(pthread_self(), SCHED_FIFO, &sp);
     if (rc != 0) { errno = rc; rt_die(prog, "pthread_setschedparam"); }
 }
@@ -53,7 +55,9 @@ static inline timer_t rt_periodic_pulse(const char *prog, int chid, int prio, in
 /* Vuelve a una prioridad normal para escribir resultados sin estorbar. */
 static inline void rt_relax(void)
 {
-    struct sched_param sp = { .sched_priority = 10 };
+    struct sched_param sp;
+    memset(&sp, 0, sizeof sp);
+    sp.sched_priority = 10;
     pthread_setschedparam(pthread_self(), SCHED_RR, &sp);
 }
 

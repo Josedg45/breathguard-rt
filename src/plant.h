@@ -32,6 +32,7 @@ typedef struct {
     double paw;     /* presión en la Y */
     double v;       /* volumen absoluto del pulmón (L) */
     double q_in, q_ex, q_y, q_lung; /* flujos del último subpaso (L/s) */
+    double paw_int; /* integral de Paw en el tiempo (cmH2O·s), para promedios por ventana */
     double paw_last_read;
     uint32_t seq;
     uint64_t rng;

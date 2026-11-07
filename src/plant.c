@@ -76,6 +76,7 @@ static void substep(plant_t *pl, const actuators_t *a, double h)
         q_lung = q_y;
     }
 
+    pl->paw_int += pl->paw * h;
     pl->paw += (q_in - q_ex - q_leak - q_y) * h / p->c_tube;
     pl->v += q_lung * h;
     pl->t += h;

@@ -162,6 +162,21 @@ M3: `pneumatic_sim` + `breath_ctrl`.
 
 ## M3 — Control de la respiración (en curso)
 
+### Paso 2: Pulse como proceso `patient` (prio 20), acoplado a la planta
+- `src/patient.cpp`: carga el estado, aplica `SEDyspnea` y `SEMechanicalVentilation`, y pide ventanas con `MsgSend`.
+- `pneumatic_sim`: corta su tiempo en ventanas de 20 ms (Paw promedio por integral exacta, volumen al cierre). Si la
+  ventana pedida aún no se cerró, retiene la respuesta (respuesta diferida) hasta cerrarla. Con cada resultado:
+  `dV = V_Pulse(k) − V_planta(k)` se suma al volumen actual; R, C y V0 = V − C·(Paw_k − Q·R) se actualizan.
+  Anillo de 256 ventanas (5.12 s) para tolerar atrasos.
+- **R y C de Pulse son promedios por respiración que tardan varias en converger** (R 1.5 → 22). Arrancando con el
+  paciente nunca ventilado, las correcciones llegaron a 39 mL/ventana. Solución: `patient -W 120` guarda una vez
+  `BreathGuard_StandardMale_PCV.json` (120 s de PCV 20/5/12, 15.6 s en la VM; R 22.9, C 56.9).
+- **Error corregido:** con `patient` atrasado, las ventanas ya cerradas guardaban el volumen sin la corrección
+  anterior y se contaba dos veces (|dV| hasta 1.7 mL). Ahora se desplazan también.
+- Prueba de humo, 20 s: 1050 ventanas, 0 perdidas, paso máx de Pulse 95.8 ms (atraso 3 ventanas);
+  |dV| p50 0.028, p99 0.097, máx 0.103 mL (≤ 0.02 % del Vt). Vt 569 mL; SpO2 98.0 %, EtCO2 34.1, FC 72.
+- `/tmp` de la VM está en `/data` (62 MB); `m3_run.sh` borra los CSV tras traerlos.
+
 ### Problemas
 - Ver `CLAUDE.md`: `msg_t` ya existe en QNX; terminar los lazos por tiempo y no por número de ciclos.
 

@@ -17,7 +17,9 @@ TAREA1 := tareas/01_watchdog
 M3_BINS := $(BUILD)/pneumatic_sim $(BUILD)/breath_ctrl
 COMMON_H := src/bg_types.h src/bg_proto.h src/rt_util.h
 
-.PHONY: all clean deploy check-env tarea1 m3
+.PHONY: all clean deploy check-env tarea1 m3 patient
+
+patient: check-env $(BUILD)/patient
 
 tarea1: check-env | $(BUILD)
 	$(CC) $(CFLAGS) -I$(TAREA1) $(TAREA1)/watchdog.c $(TAREA1)/test_watchdog.c -o $(BUILD)/test_watchdog
@@ -34,6 +36,16 @@ $(BUILD)/pneumatic_sim: src/pneumatic_sim.c src/plant.c src/plant.h $(COMMON_H) 
 
 $(BUILD)/breath_ctrl: src/breath_ctrl.c src/pcv.c src/pcv.h src/plant.c $(COMMON_H) | $(BUILD)
 	$(CC) $(CFLAGS) -Isrc src/breath_ctrl.c src/pcv.c src/plant.c -lm -o $@
+
+# patient: Pulse para QNX, compilado aparte con port/build_pulse_qnx.sh (en ~/pulse/qnx).
+PULSE_QNX := $(HOME)/pulse/qnx
+PULSE_LIBS := $(PULSE_QNX)/qnx-pulse/src/cpp/libPulse.a $(PULSE_QNX)/staging/lib/libprotobuf.a
+
+$(BUILD)/patient: src/patient.cpp $(COMMON_H) | $(BUILD)
+	q++ -Vgcc_ntox86_64_cxx -std=c++20 -O2 -Wall -Wextra -Wno-deprecated-copy -D_QNX_SOURCE -Isrc \
+	    -I$(HOME)/pulse/engine/src/cpp -I$(PULSE_QNX)/qnx-pulse/src/cpp -I$(PULSE_QNX)/staging/include \
+	    src/patient.cpp $(PULSE_LIBS) -o $@
+	ntox86_64-strip $@
 
 # Versión de Ubuntu (sin QNX) de la planta + PCV, para ajustar y como referencia.
 $(BUILD)/m3_offline: tools/m3_offline.c src/plant.c src/pcv.c | $(BUILD)
