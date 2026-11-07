@@ -47,7 +47,7 @@ static uint32_t run(const scenario_t *s, double t_end, double t_fault, int fault
             if (fault == 1) { pl.f.disconnected = 1; t_ref = t; }
             if (fault == 2) pl.f.obstruction = 8.0;
         }
-        if (fault == 2 && injected && t_ref < 0 && pl.paw > cfg.p_high) t_ref = t;
+        if (fault == 2 && injected && t_ref < 0 && pl.paw > cfg.p_alarm) t_ref = t;
         sensors_t sn;
         plant_sense(&pl, &sn);
         vent_step(&v, t, dt, &sn, &a);
@@ -107,13 +107,23 @@ int main(void)
     }
 
     puts("\n3. Obstrucción súbita (R x8) en VCV con un controlador que NO limita la presión");
-    puts("   (latencia desde que la Paw real cruza 40 cmH2O)");
+    puts("   (latencia desde que la Paw real cruza el umbral de alarma, 38 cmH2O)");
     for (int i = 4; i < n; i++) {
         double period = 60.0 / sc[i].rr;
         uint32_t m = run(&sc[i], 3 * period + 6, 3 * period, 2, 1e9, ALARM_HIGH_PRESSURE, &lat);
         printf("   %-26s alarmas: ", sc[i].name);
         print_alarms(m);
         printf(" latencia %s%.0f ms\n", lat < 0 ? "(no) " : "", lat * 1e3);
+    }
+
+    puts("\n4. Obstrucción súbita (R x8) en VCV con el controlador limitando a 40 cmH2O");
+    for (int i = 4; i < n; i++) {
+        double period = 60.0 / sc[i].rr;
+        uint32_t m = run(&sc[i], 3 * period + 6, 3 * period, 2, 40.0, ALARM_HIGH_PRESSURE, &lat);
+        printf("   %-26s alarmas: ", sc[i].name);
+        print_alarms(m);
+        printf(" latencia %s%.0f ms\n", lat < 0 ? "(no) " : "", lat * 1e3);
+        if (!(m & ALARM_HIGH_PRESSURE) && i != n - 1) bad++;
     }
 
     printf("\nRESULTADO: %s\n", bad ? "HAY PROBLEMAS" : "sin falsas alarmas y todas las desconexiones detectadas");

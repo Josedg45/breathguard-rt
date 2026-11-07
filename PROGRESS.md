@@ -284,9 +284,15 @@ y entran 392 mL. Pendiente: correr VCV en la VM con Pulse.
 | Congelar (`SIGSTOP`), watchdog sin completar | APNEA, 9.2 s | 9.2 s | **0, 0**, luego 607 | **97.04 %** |
 | Desconectar el tubo 15 s | DESCONEXION, 20.6 ms; APNEA a los 7.5 s (solo alarma) | — (no es falla del control) | **0, 0, 0** | **95.6 %**, se recupera |
 
-Una sola corrida por escena: las latencias de la VM varían entre corridas (M1); falta repetirlas.
+| Obstrucción R x8 en VCV 500 mL (15 s) | PRESION_ALTA en cada respiración (38 cmH2O; 3 ms tras el cruce) | — (el controlador limita a 40) | **148–157** (504 normal) | **96.5 %**, se recupera |
+
+VCV en la VM con Pulse: Vt 503–504 mL para 500 pedidos.
+Una sola corrida por escena: las latencias de la VM varían entre corridas (M1); las repeticiones están abajo.
 
 ### Errores encontrados por las escenas
+- **Sin alarma de presión alta cuando el controlador limita:** el controlador corta en cuanto Paw > 40 y la alarma
+  pedía 40 sostenidos 3 ms → ahora la alarma es a 38 cmH2O y el alivio de `safety_mon` (por si el controlador no
+  limita) a 40.
 - **La apnea mataba a un controlador sano durante una desconexión** → ahora la apnea solo activa el respaldo si no
   hay alarma de desconexión.
 - **Pulse no se enteraba de la desconexión:** recibía la presión del circuito y su pulmón seguía inflándose → ahora la
@@ -298,4 +304,4 @@ Una sola corrida por escena: las latencias de la VM varían entre corridas (M1);
 - **El cuelgue sin watchdog cuesta 2 respiraciones** y 1 punto de SpO2: es exactamente lo que cubre la tarea 1.
 - **Una desconexión sí afecta al paciente** (SpO2 98 → 95.6 % en 15 s): la arquitectura no puede reconectar un tubo;
   su trabajo es avisar en ~20 ms.
-- Pendiente: escena de presión alta (requiere un controlador que no limite), repetir las escenas, VCV en la VM.
+- Pendiente: repetir las escenas; escena del alivio de presión con un controlador que no limita.

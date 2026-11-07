@@ -6,7 +6,7 @@
 alarm_cfg_t alarms_default_cfg(double peep)
 {
     alarm_cfg_t c = {
-        .p_high = 40.0, .t_high = 0.003,
+        .p_alarm = 38.0, .p_high = 40.0, .t_high = 0.003,
         .p_low = peep > 4.0 ? peep - 3.0 : 1.5,
         .q_disc_low = 0.3, .q_disc_high = 2.0, .t_disc = 0.020,
         .p_breath = peep + 5.0, .apnea_s = 12.0,
@@ -18,7 +18,7 @@ void alarms_init(alarms_t *a, const alarm_cfg_t *cfg, double now_s)
 {
     memset(a, 0, sizeof *a);
     a->cfg = *cfg;
-    a->high_since = a->disc_since = -1.0;
+    a->alarm_since = a->high_since = a->disc_since = -1.0;
     a->last_breath = now_s;
 }
 
@@ -35,7 +35,8 @@ uint32_t alarms_update(alarms_t *a, double t, double paw, double flow)
     const alarm_cfg_t *c = &a->cfg;
     uint32_t now = a->active & ~(ALARM_HIGH_PRESSURE | ALARM_DISCONNECT | ALARM_APNEA);
 
-    if (sustained(&a->high_since, paw > c->p_high, t, c->t_high)) now |= ALARM_HIGH_PRESSURE;
+    if (sustained(&a->alarm_since, paw > c->p_alarm, t, c->t_high)) now |= ALARM_HIGH_PRESSURE;
+    a->relief = sustained(&a->high_since, paw > c->p_high, t, c->t_high);
 
     int disc = (paw < c->p_low && flow > c->q_disc_low) || flow > c->q_disc_high;
     if (sustained(&a->disc_since, disc, t, c->t_disc)) now |= ALARM_DISCONNECT;
@@ -49,6 +50,8 @@ uint32_t alarms_update(alarms_t *a, double t, double paw, double flow)
     a->active = now;
     return raised;
 }
+
+int alarms_relief(const alarms_t *a) { return a->relief; }
 
 const char *alarm_name(uint32_t bit)
 {

@@ -274,7 +274,7 @@ int main(int argc, char **argv)
             snprintf(buf, sizeof buf, "pid %d", ctrl_pid);
             event(now, "RELANZA_CONTROL", buf);
         }
-        if ((up & ALARM_HIGH_PRESSURE) && !relief) {
+        if (alarms_relief(&al) && !relief) {
             relief = 1;
             relief_breath = breath;
             overriding = 1;

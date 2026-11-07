@@ -1,7 +1,10 @@
 /* alarms.h - detección de alarmas a partir de los sensores (safety_mon). C puro, sin QNX.
  *
  * safety_mon lee los sensores por su cuenta (no confía en lo que diga breath_ctrl) y evalúa:
- *   ALARM_HIGH_PRESSURE  Paw > p_high durante t_high: riesgo de barotrauma -> alivio de presión
+ *   ALARM_HIGH_PRESSURE  Paw > p_alarm durante t_high (un poco por debajo del límite del controlador, para
+ *                        que avise aunque el controlador corte la inspiración al llegar al límite)
+ *   alivio de presión    Paw > p_high durante t_high: el controlador no limitó -> safety_mon abre la
+ *                        válvula espiratoria (alarms_relief())
  *   ALARM_DISCONNECT     flujo saliente por la Y con Paw baja, o flujo enorme, durante t_disc
  *   ALARM_APNEA          ninguna respiración detectada (Paw no sube) en apnea_s
  * Las alarmas de proceso (controlador muerto o colgado) las pone safety_mon directamente. */
@@ -24,7 +27,8 @@ enum {
 #define ALARM_COUNT 9
 
 typedef struct {
-    double p_high;      /* cmH2O */
+    double p_alarm;     /* cmH2O: alarma de presión alta */
+    double p_high;      /* cmH2O: alivio de presión */
     double t_high;      /* s que debe durar para confirmarse */
     double p_low;       /* cmH2O: por debajo, la Paw se considera "baja" */
     double q_disc_low;  /* L/s: flujo saliente por la Y que, con Paw baja, indica desconexión */
@@ -36,7 +40,8 @@ typedef struct {
 
 typedef struct {
     alarm_cfg_t cfg;
-    double high_since, disc_since; /* desde cuándo se cumple la condición; < 0 = no se cumple */
+    double alarm_since, high_since, disc_since; /* desde cuándo se cumple; < 0 = no se cumple */
+    int relief;                    /* 1 si hace falta alivio de presión ahora */
     double last_breath;            /* última vez que Paw cruzó p_breath hacia arriba */
     int above_breath;
     uint32_t active;               /* alarmas activas ahora */
@@ -49,6 +54,9 @@ void alarms_init(alarms_t *a, const alarm_cfg_t *cfg, double now_s);
 
 /* Evalúa una muestra. Devuelve las alarmas que se ACTIVARON en esta muestra (flancos). */
 uint32_t alarms_update(alarms_t *a, double t_s, double paw, double flow);
+
+/* 1 si la presión supera p_high de forma sostenida: hay que aliviarla (el controlador no lo hizo). */
+int alarms_relief(const alarms_t *a);
 
 const char *alarm_name(uint32_t bit);
 
