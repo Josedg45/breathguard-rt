@@ -1,0 +1,12 @@
+modo=internal dt=20.0 ms pasos=9000
+paso (us): prom=1406 p50=1262 p99=2830 max=9082
+factor de tiempo real: 14.2x; pasos que superan dt: 0
+modo=external dt=20.0 ms pasos=9000
+paso (us): prom=1404 p50=1278 p99=2638 max=5101
+factor de tiempo real: 14.2x; pasos que superan dt: 0
+modo=external dt=20.0 ms pasos=6000
+paso (us): prom=1652 p50=1345 p99=5488 max=16693
+factor de tiempo real: 12.1x; pasos que superan dt: 0
+modo=external dt=20.0 ms pasos=6000
+paso (us): prom=1661 p50=1367 p99=5570 max=15366
+factor de tiempo real: 12.0x; pasos que superan dt: 0

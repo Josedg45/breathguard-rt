@@ -1,0 +1,12 @@
+dt de Pulse = 20.0 ms; ajuste con results/m2/external_pcv20_5_12.csv, 30-105 s
+R=23.32 cmH2O·s/L  C=55.6 mL/cmH2O  V0=1915 mL  tau=1.295 s
+
+Misma respiración, tiempo no visto: Vt=588 mL, Paw 5-20 cmH2O, 12 rpm; Pulse reporta R=22.9 C=58.0
+  libre     RMS=   6.02 mL ( 1.02 % del Vt)   max=  11.96 mL ( 2.03 %)
+  acople    RMS=   0.04 mL ( 0.01 % del Vt)   max=   0.10 mL ( 0.02 %)
+external_pcv30_10_20.csv: Vt=607 mL, Paw 10-30 cmH2O, 20 rpm; Pulse reporta R=22.9 C=68.4
+  libre     RMS=  81.09 mL (13.37 % del Vt)   max=  98.38 mL (16.21 %)
+  acople    RMS=   0.06 mL ( 0.01 % del Vt)   max=   0.10 mL ( 0.02 %)
+external_pcv12_0_10.csv: Vt=428 mL, Paw 0-12 cmH2O, 10 rpm; Pulse reporta R=22.9 C=47.4
+  libre     RMS=  18.18 mL ( 4.25 % del Vt)   max=  31.59 mL ( 7.38 %)
+  acople    RMS=   0.03 mL ( 0.01 % del Vt)   max=   0.23 mL ( 0.05 %)
