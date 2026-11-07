@@ -13,7 +13,7 @@ Cambio de enfoque (2026-11-06): el proyecto pasó de MedPower (continuidad eléc
 | M3 | `pneumatic_sim` + `breath_ctrl` (PCV, VCV) | Completado (falta la tarea 2 del usuario) |
 | M4 | `safety_mon` | En curso (escenas en la VM hechas; falta la tarea 1 del usuario) |
 | M5 | `power_mgr` | Completado |
-| M6 | HMI, dashboard, CLI de fallos, versión monolítica | Pendiente |
+| M6 | HMI, dashboard, CLI de fallos, versión monolítica | En curso (HMI y escenas hechas; faltan dashboard gráfico y versión monolítica) |
 | M7 | Entrega | Pendiente |
 
 ## M1 — Prueba de latencia (completado)
@@ -348,3 +348,30 @@ En la VM, con el sistema completo y Pulse:
 - Los parámetros de batería y consumos son típicos, no medidos en un equipo real.
 - El ventilador simulado no se apaga al agotarse la batería: `power_mgr` no corta la planta.
 - La escala de tiempo acelera solo la batería; la ventilación y las alarmas siguen en tiempo real.
+
+## M6 — HMI y telemetría (en curso)
+
+### Qué se hizo
+- `src/hmi.c` (prio 10): cada 10 ms lee la planta y cada 100 ms los signos vitales (`BG_MSG_VITALS`), el estado de
+  `safety_mon` (`BG_MSG_SAFETY_STATUS`) y el de `power_mgr`; manda una línea CSV por UDP al host (172.31.1.1:5005).
+  Bugs de demo: SIGUSR1 (puntero nulo), SIGUSR2 (bucle infinito).
+- `safety_mon -H ip`: lanza la HMI, la relanza si muere (`_PULSE_CODE_DISCONNECT`) y la mata si deja de consultar
+  2 s (cuelgue). `scripts/hmi_recv.py` (receptor a CSV), `m6_run.sh`, `m6_target.sh`.
+
+### Escenas en la VM (con Pulse; señal a los 30 s; 60 s)
+| Escena | Qué hace safety_mon | Hueco en la telemetría | Ventilación |
+|---|---|---|---|
+| Matar la HMI (KILL) | relanza a los ~0.1 s | < 0.1 s | Vt 568–569, SpO2 98 % sin cambio |
+| Bug: puntero nulo (SIGUSR1) | relanza a los 0.1 s | 99 ms | sin cambio |
+| Bug: bucle infinito (SIGUSR2) | HMI_COLGADA a los 2.0 s, la mata y relanza | 1996 ms | sin cambio |
+
+Telemetría UDP sin pérdidas (1945/1945 en la prueba de humo).
+
+### Error corregido
+- Una señal con manejador interrumpe `MsgReceivePulse` con `EINTR`; se trataba como fatal y la HMI salía limpia en vez
+  de ejecutar el bug. Corregido en `hmi` y `breath_ctrl`.
+
+### Pendiente en M6
+- Dashboard gráfico en vivo (Python) sobre `hmi_recv.py`.
+- Versión monolítica (control + HMI en un proceso) para el contraste.
+- Comandos del operador desde la HMI.

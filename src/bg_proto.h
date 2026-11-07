@@ -27,6 +27,8 @@ enum {
     BG_MSG_FAULT,         /* carga: plant_faults_t; respuesta vacía */
     BG_MSG_PATIENT,       /* carga: bg_patient_msg_t; respuesta: bg_window_t (diferida) */
     BG_MSG_OVERRIDE,      /* carga: bg_override_msg_t; respuesta vacía (solo safety_mon) */
+    BG_MSG_VITALS,        /* respuesta: bg_vitals_t (a pneumatic_sim) */
+    BG_MSG_SAFETY_STATUS, /* respuesta: bg_safety_status_t (a safety_mon) */
 };
 
 /* Acople con Pulse (proceso patient). La planta corta su tiempo en ventanas de BG_WINDOW_S.
@@ -62,6 +64,25 @@ typedef struct {
     bg_hdr_t hdr;
     plant_faults_t faults;
 } bg_fault_msg_t;
+
+/* Signos vitales del paciente virtual, tal como los conoce la planta (último resultado de Pulse). */
+typedef struct {
+    int32_t have;        /* 0 si Pulse no está conectado */
+    double spo2, etco2, hr;
+    double age_s;        /* antigüedad del último resultado de Pulse */
+    double r, c;         /* R (cmH2O/(L/s)) y C (L/cmH2O) actuales del pulmón */
+    int32_t src;         /* quién manda los actuadores: 0 breath_ctrl, 1 safety_mon */
+} bg_vitals_t;
+
+/* Estado de safety_mon para la HMI. */
+typedef struct {
+    uint32_t alarms;       /* bits ALARM_* activos */
+    int32_t backup;        /* 1 = ventilación de respaldo */
+    uint32_t failovers;    /* fallas del controlador */
+    uint32_t hmi_restarts; /* veces que se relanzó la HMI */
+    uint32_t n_events;
+    char last_event[48];
+} bg_safety_status_t;
 
 /* safety_mon toma (on = 1) o devuelve (on = 0) el mando de los actuadores. Mientras lo tiene, la
  * planta ignora los WRITE de breath_ctrl. */

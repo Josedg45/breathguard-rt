@@ -15,8 +15,11 @@
  * Alarmas por sensores (alarms.c): presión alta (con alivio de presión: válvula espiratoria abierta el
  * resto de la respiración), desconexión, apnea; y de volumen (tarea 2, vt_meter) si está completa.
  *
+ * HMI: con -H <ip_host>, lanza también el proceso hmi (prio 10) y lo relanza si muere. Una HMI caída no
+ * cambia nada de la ventilación: solo se la vuelve a lanzar.
+ *
  * Uso: safety_mon [-s seg] [-p prio] [-m pcv|vcv] [-P p_insp] [-V vt_ml] [-e peep] [-r rr]
- *                 [-c ruta_breath_ctrl] [-o eventos.csv]
+ *                 [-c ruta_breath_ctrl] [-H ip_host] [-o eventos.csv]
  */
 #include <getopt.h>
 #include <signal.h>
@@ -67,6 +70,19 @@ static void event(double t, const char *what, const char *detail)
 
 /* --- Lanzar breath_ctrl ------------------------------------------------------------------------ */
 static const char *ctrl_path = "./breath_ctrl";
+static const char *hmi_host = NULL; /* con -H: lanzar ./hmi apuntando a este host */
+
+static pid_t spawn_hmi(double secs_left)
+{
+    char ss[32];
+    snprintf(ss, sizeof ss, "%.3f", secs_left);
+    char *argv[] = { "./hmi", "-h", (char *)hmi_host, "-s", ss, NULL };
+    pid_t pid;
+    extern char **environ;
+    int rc = posix_spawn(&pid, "./hmi", NULL, NULL, argv, environ);
+    if (rc != 0) { errno = rc; return -1; }
+    return pid;
+}
 static char ctrl_args[8][32];
 static int n_ctrl_args;
 
@@ -96,7 +112,7 @@ int main(int argc, char **argv)
     int prio = 55, opt, vcv = 0;
     const char *out_path = NULL;
     vent_settings_t set = { .rr = 12, .ie = 2.0, .p_insp = 20, .peep = 5, .rise_s = 0.1 };
-    while ((opt = getopt(argc, argv, "s:p:m:P:V:e:r:c:o:")) != -1) {
+    while ((opt = getopt(argc, argv, "s:p:m:P:V:e:r:c:H:o:")) != -1) {
         switch (opt) {
         case 's': secs = atof(optarg); break;
         case 'p': prio = atoi(optarg); break;
@@ -106,6 +122,7 @@ int main(int argc, char **argv)
         case 'e': set.peep = atof(optarg); break;
         case 'r': set.rr = atof(optarg); break;
         case 'c': ctrl_path = optarg; break;
+        case 'H': hmi_host = optarg; break;
         case 'o': out_path = optarg; break;
         default:
             fprintf(stderr, "uso: %s [-s seg] [-p prio] [-m pcv|vcv] [-P p_insp] [-V vt_ml] [-e peep] [-r rr] "
@@ -159,9 +176,17 @@ int main(int argc, char **argv)
     watchdog_t wd;
     pid_t ctrl_pid = spawn_ctrl(t0_breath, secs - 0.5);
     wd_arm(&wd, (uint64_t)(rt_now_s() * 1e9), (uint64_t)(WD_TIMEOUT_S * 1e9), (uint64_t)(WD_STARTUP_S * 1e9));
-    int ctrl_scoid = -1;
-    int watching = 1; /* 0 tras la despedida del controlador */
     char buf[64];
+    int ctrl_scoid = -1;
+    int hmi_scoid = -1;
+    pid_t hmi_pid = hmi_host ? spawn_hmi(secs - 0.5) : -1;
+    uint32_t hmi_restarts = 0;
+    double last_hmi_query = t_start;
+    if (hmi_host) {
+        snprintf(buf, sizeof buf, "pid %d", hmi_pid);
+        event(t_start, "LANZA_HMI", buf);
+    }
+    int watching = 1; /* 0 tras la despedida del controlador */
     snprintf(buf, sizeof buf, "pid %d", ctrl_pid);
     event(t_start, "LANZA_CONTROL", buf);
 
@@ -184,8 +209,17 @@ int main(int argc, char **argv)
         if (rcvid == -1) rt_die(PROG, "MsgReceive");
         double now = rt_now_s();
 
-        if (rcvid > 0) { /* mensajes: solo aceptamos conexiones (name_open de breath_ctrl) */
+        if (rcvid > 0) { /* mensajes: conexiones y consultas de estado de la HMI */
             if (m.hdr.type == _IO_CONNECT) MsgReply(rcvid, EOK, NULL, 0);
+            else if (m.hdr.type == BG_MSG_SAFETY_STATUS) {
+                hmi_scoid = info.scoid; /* así reconocemos la desconexión de la HMI */
+                last_hmi_query = now;
+                bg_safety_status_t st = { .alarms = al.active, .backup = backup_mode, .failovers = failovers,
+                                          .hmi_restarts = hmi_restarts, .n_events = (uint32_t)n_events };
+                if (n_events)
+                    snprintf(st.last_event, sizeof st.last_event, "%s", events[n_events - 1].what);
+                MsgReply(rcvid, EOK, &st, sizeof st);
+            }
             else MsgError(rcvid, ENOSYS);
             continue;
         }
@@ -218,11 +252,26 @@ int main(int argc, char **argv)
         }
         if (m.pulse.code == _PULSE_CODE_DISCONNECT) {
             if (m.pulse.scoid == ctrl_scoid) { ctrl_failed = 1; why = "CONTROL_MUERTO"; ctrl_scoid = -1; }
+            if (m.pulse.scoid == hmi_scoid && hmi_host && now - t_start < secs - 1.0) {
+                /* La HMI murió: no afecta a la ventilación; solo se relanza. */
+                hmi_scoid = -1;
+                hmi_restarts++;
+                hmi_pid = spawn_hmi(secs - (now - t_start));
+                snprintf(buf, sizeof buf, "pid %d", hmi_pid);
+                event(now, "HMI_MUERTA_RELANZADA", buf);
+            }
             ConnectDetach(m.pulse.scoid);
         }
         if (m.pulse.code == PULSE_TICK) {
             ticks++;
             if (now - t_start >= secs) break;
+            /* HMI colgada: deja de preguntar. Se la mata; su desconexión la relanza (abajo). */
+            if (hmi_scoid != -1 && hmi_pid > 0 && now - last_hmi_query > 2.0) {
+                snprintf(buf, sizeof buf, "pid %d sin consultas en %.1f s", hmi_pid, now - last_hmi_query);
+                event(now, "HMI_COLGADA", buf);
+                kill(hmi_pid, SIGKILL);
+                last_hmi_query = now;
+            }
             if (watching && wd_check(&wd, (uint64_t)(now * 1e9)) == WD_TIMEOUT) {
                 ctrl_failed = 1;
                 why = "CONTROL_COLGADO";
@@ -324,6 +373,7 @@ int main(int argc, char **argv)
 
     timer_delete(tm);
     if (ctrl_pid > 0) kill(ctrl_pid, SIGTERM);
+    if (hmi_pid > 0) kill(hmi_pid, SIGTERM);
     name_detach(att, 0);
     rt_relax();
     for (size_t i = 0; i < n_events; i++)

@@ -118,7 +118,13 @@ int main(int argc, char **argv)
     struct _pulse pulse;
 
     for (size_t i = 0; i < cap; i++) {
-        if (MsgReceivePulse(chid, &pulse, sizeof pulse, NULL) == -1) rt_die(PROG, "MsgReceivePulse");
+        if (MsgReceivePulse(chid, &pulse, sizeof pulse, NULL) == -1) {
+            if (errno == EINTR) { /* SIGTERM interrumpió la espera: salir limpio */
+                if (stop) break;
+                continue;
+            }
+            rt_die(PROG, "MsgReceivePulse");
+        }
         double now = rt_now_s();
         double dt = now - last;
         last = now;

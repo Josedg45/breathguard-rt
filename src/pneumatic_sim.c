@@ -65,6 +65,7 @@ static double last_dv;
 static uint32_t lost, stale;
 static bg_patient_state_t vitals;
 static int have_patient;
+static double last_patient_t; /* tiempo de planta del último resultado de Pulse */
 
 static void reply_window(int rcvid, uint32_t k)
 {
@@ -134,6 +135,7 @@ static void apply_patient(const bg_patient_msg_t *m)
     pl.p.r_pat = st->r;
     vitals = *st;
     have_patient = 1;
+    last_patient_t = pl.t;
 }
 
 int main(int argc, char **argv)
@@ -254,6 +256,13 @@ int main(int argc, char **argv)
             overrides++;
             MsgReply(rcvid, EOK, NULL, 0);
             break;
+        case BG_MSG_VITALS: {
+            bg_vitals_t vt = { .have = have_patient, .spo2 = vitals.spo2, .etco2 = vitals.etco2, .hr = vitals.hr,
+                               .age_s = have_patient ? pl.t - last_patient_t : -1, .r = pl.p.r_pat,
+                               .c = pl.p.c_pat, .src = override_on };
+            MsgReply(rcvid, EOK, &vt, sizeof vt);
+            break;
+        }
         case BG_MSG_FAULT:
             sync_to_now();
             printf("%s: falla t_abs=%.6f desconectado=%d obstruccion=%.1f fuga=%.3f sensor=%d\n", PROG,

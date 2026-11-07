@@ -1,0 +1,17 @@
+bg_fault: marca t_abs=8688.576688
+patient: ./states/BreathGuard_StandardMale_PCV.json cargado en 0.2 s
+patient: 3100 ventanas, pasos > 20 ms 34, paso máx 80.5 ms, atraso máx 4 ventanas, perdidas 0; final: SpO2 98.0 %, EtCO2 33.9 mmHg, FC 72
+power_mgr: batería 100 %, escala de tiempo x60, prio 30
+power_mgr: final SoC 100.0 %, 29.40 V, potencia media 58.9 W
+breath_ctrl: pid 38772764, PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 60 s
+breath_ctrl: 58539 ciclos, 674 con periodo > 1.5 ms, periodo máx 14.42 ms; cómputo p50 10.9 us, p99 190.2 us, máx 14333.9 us
+hmi: 2989 muestras, 2989 enviadas a 172.31.1.1:5005
+safety_mon: t=0.000 LANZA_HMI pid 38776861
+safety_mon: t=0.000 LANZA_CONTROL pid 38772764
+safety_mon: t=30.103 HMI_MUERTA_RELANZADA pid 38797339
+safety_mon: t=59.524 CONTROL_TERMINA despedida
+safety_mon: 59041 ticks, 0 fallas del controlador, 4 eventos; vt_meter: 0 respiraciones, Vti 0, Vte 0 mL
+pneumatic_sim: listo como 'breathguard_pneumatic', prio 60, 64 s
+pneumatic_sim: 62899 ticks, 252 > 1.5 ms, dt máx 10.32 ms, huecos recortados 0, lecturas 129470, comandos 58539
+pneumatic_sim: ventanas 3200, paciente conectado, ventanas perdidas 0, resultados descartados 0
+pneumatic_sim: mensajes de override 0

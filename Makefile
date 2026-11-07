@@ -18,9 +18,10 @@ TAREA2 := tareas/02_vt_meter
 M3_BINS := $(BUILD)/pneumatic_sim $(BUILD)/breath_ctrl
 M4_BINS := $(BUILD)/safety_mon $(BUILD)/bg_fault
 M5_BINS := $(BUILD)/power_mgr
+M6_BINS := $(BUILD)/hmi
 COMMON_H := src/bg_types.h src/bg_proto.h src/rt_util.h
 
-.PHONY: all clean deploy check-env tarea1 tarea2 m3 m4 m5 patient
+.PHONY: all clean deploy check-env tarea1 tarea2 m3 m4 m5 m6 patient
 
 patient: check-env $(BUILD)/patient
 
@@ -36,7 +37,7 @@ tarea2: check-env | $(BUILD)
 	scp -o LogLevel=ERROR -q $(BUILD)/test_vt_meter $(QNX_HOST_SSH):$(QNX_DIR)/
 	ssh -o LogLevel=ERROR $(QNX_HOST_SSH) "$(QNX_DIR)/test_vt_meter"
 
-all: check-env $(BINS) $(M3_BINS) $(M4_BINS) $(M5_BINS)
+all: check-env $(BINS) $(M3_BINS) $(M4_BINS) $(M5_BINS) $(M6_BINS)
 
 m3: check-env $(M3_BINS)
 
@@ -49,6 +50,12 @@ $(BUILD)/breath_ctrl: src/breath_ctrl.c src/vent.c src/vent.h src/plant.c $(COMM
 m4: check-env $(M3_BINS) $(M4_BINS)
 
 m5: check-env $(M3_BINS) $(M4_BINS) $(M5_BINS)
+
+m6: check-env $(M3_BINS) $(M4_BINS) $(M5_BINS) $(M6_BINS)
+
+# En QNX los sockets están en libsocket.
+$(BUILD)/hmi: src/hmi.c src/bg_power.h $(COMMON_H) | $(BUILD)
+	$(CC) $(CFLAGS) -Isrc src/hmi.c -lsocket -o $@
 
 $(BUILD)/power_mgr: src/power_mgr.c src/battery.c src/battery.h src/bg_power.h $(COMMON_H) | $(BUILD)
 	$(CC) $(CFLAGS) -Isrc src/power_mgr.c src/battery.c -lm -o $@
@@ -92,7 +99,7 @@ $(BUILD):
 
 deploy: all
 	ssh $(QNX_HOST_SSH) "mkdir -p $(QNX_DIR)"
-	scp -q $(BINS) $(M3_BINS) $(M4_BINS) $(M5_BINS) $(QNX_HOST_SSH):$(QNX_DIR)/
+	scp -q $(BINS) $(M3_BINS) $(M4_BINS) $(M5_BINS) $(M6_BINS) $(QNX_HOST_SSH):$(QNX_DIR)/
 
 clean:
 	rm -rf $(BUILD)
