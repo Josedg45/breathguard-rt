@@ -1,0 +1,9 @@
+cpu_burn: hilo 0 prio=9 SCHED_FIFO cpu=77.1%
+cpu_burn: hilo 1 prio=9 SCHED_FIFO cpu=77.9%
+breath_ctrl: PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 120 s
+breath_ctrl: 115036 ciclos, 2926 con periodo > 1.5 ms, periodo máx 25.25 ms; cómputo p50 13.9 us, p99 112.9 us, máx 25252.9 us
+patient: ./states/BreathGuard_StandardMale_PCV.json cargado en 0.2 s
+patient: 6050 ventanas, pasos > 20 ms 95, paso máx 136.9 ms, atraso máx 18 ventanas, perdidas 0; final: SpO2 98.0 %, EtCO2 33.6 mmHg, FC 72
+pneumatic_sim: listo como 'breathguard_pneumatic', prio 60, 123 s
+pneumatic_sim: 118087 ticks, 911 > 1.5 ms, dt máx 25.87 ms, huecos recortados 0, lecturas 115036, comandos 115036
+pneumatic_sim: ventanas 6150, paciente conectado, ventanas perdidas 0, resultados descartados 0

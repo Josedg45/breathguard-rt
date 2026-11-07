@@ -177,6 +177,34 @@ M3: `pneumatic_sim` + `breath_ctrl`.
   |dV| p50 0.028, p99 0.097, máx 0.103 mL (≤ 0.02 % del Vt). Vt 569 mL; SpO2 98.0 %, EtCO2 34.1, FC 72.
 - `/tmp` de la VM está en `/data` (62 MB); `m3_run.sh` borra los CSV tras traerlos.
 
+### Medición con Pulse: PCV 20/5, 12 rpm, FiO2 21 %, 120 s por corrida
+Planta prio 60, control 50, Pulse 20. Carga: 2 hilos a prio 9. Control: Pulse a prio 5, por debajo de la carga.
+`scripts/m3_pulse_summary.py` → `results/m3/pulse_summary.txt`. En el repo van los CSV de Pulse de todas las corridas y
+los de planta y control de reposo 1, carga 1 y control; el resto se guardó fuera del repo (`~/medpower_data/m3`).
+
+| Corrida | Ciclos | Tardíos | Pasos Pulse > 20 ms | Paso máx | Atraso máx (ventanas) | Perdidas | \|dV\| p99 / máx (mL) | Vt | SpO2 | EtCO2 | FC |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Reposo 1 | 117 494 | 1 799 | 63 | 134 ms | 12 | 0 | 0.098 / 0.107 | 569 | 98.0 | 33.6 | 72 |
+| Reposo 2 | 118 901 | 1 021 | 29 | 74 ms | 3 | 0 | 0.096 / 0.104 | 569 | 98.0 | 33.6 | 72 |
+| Reposo 3 | 118 119 | 1 477 | 51 | 114 ms | 12 | 0 | 0.098 / 0.111 | 569 | 98.0 | 33.6 | 72 |
+| Carga 1 | 115 652 | 3 163 | 59 | **1 350 ms** | 66 | 0 | 0.102 / 0.292 | 569 | 98.0 | 33.6 | 72 |
+| Carga 2 | 103 263 | 8 338 | 382 | 553 ms | 40 | 0 | 0.128 / 0.206 | 568 | 98.0 | 33.7 | 72 |
+| Carga 3 | 115 036 | 2 924 | 95 | 137 ms | 18 | 0 | 0.097 / 0.112 | 569 | 98.0 | 33.6 | 72 |
+| Control (Pulse prio 5) | 116 880 | 2 504 | — | — | — | — | 0.103 (antes de la carga) | 562 | congelado | congelado | — |
+
+### Interpretación
+- **El acople aguanta atrasos de Pulse de hasta 1.35 s sin perder ventanas** (anillo de 5.12 s) y con correcciones
+  ≤ 0.3 mL (0.05 % del Vt). La fisiología final es la misma en reposo y con carga, porque Pulse es determinista y la
+  presión que recibe apenas cambia.
+- **Control:** con Pulse por debajo de la carga, `patient` solo simuló las 101 ventanas previas a la carga y luego no
+  recibió CPU en todo el minuto y medio siguiente. **La ventilación siguió** (Vt 562 mL, con el último R y C), pero los
+  signos vitales quedaron congelados. Las prioridades protegen lo crítico; lo no crítico se degrada. Lección para la
+  HMI: mostrar la antigüedad de los signos vitales.
+- Los pasos lentos de Pulse empeoran con carga (máx 0.55–1.35 s), aunque Pulse está por encima de ella: el host
+  retira vCPU (ver M1, M3 paso 1). Carga 2 tuvo además 66 % de CPU en los burners y 8 338 ciclos tardíos: corrida ruidosa.
+- Vt 569 mL frente a 588 de M2 (presión cuadrada ideal): rampa de 100 ms y resistencia de la rama espiratoria.
+- EtCO2 33.6 mmHg (rango normal 35–45): el paciente está algo hiperventilado con 20/5 y 12 rpm. SpO2 98 % con aire ambiente.
+
 ### Problemas
 - Ver `CLAUDE.md`: `msg_t` ya existe en QNX; terminar los lazos por tiempo y no por número de ciclos.
 

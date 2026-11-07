@@ -1,0 +1,65 @@
+##### p_reposo_1
+breath_ctrl: PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 120 s
+breath_ctrl: 117494 ciclos, 1799 con periodo > 1.5 ms, periodo máx 42.33 ms; cómputo p50 23.8 us, p99 237.5 us, máx 42328.6 us
+patient: ./states/BreathGuard_StandardMale_PCV.json cargado en 0.2 s
+patient: 6051 ventanas, pasos > 20 ms 63, paso máx 134.3 ms, atraso máx 12 ventanas, perdidas 0; final: SpO2 98.0 %, EtCO2 33.6 mmHg, FC 72
+pneumatic_sim: 120460 ticks, 550 > 1.5 ms, dt máx 44.52 ms, huecos recortados 0, lecturas 117494, comandos 117494
+pneumatic_sim: ventanas 6150, paciente conectado, ventanas perdidas 0, resultados descartados 0
+Régimen (resp. 2 en adelante): Vt 569 mL (-4.0 % contra la fórmula), PIP máx 20.5, PEEP 5.09
+##### p_reposo_2
+breath_ctrl: PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 120 s
+breath_ctrl: 118901 ciclos, 1022 con periodo > 1.5 ms, periodo máx 17.00 ms; cómputo p50 22.0 us, p99 218.3 us, máx 7520.7 us
+patient: ./states/BreathGuard_StandardMale_PCV.json cargado en 0.2 s
+patient: 6051 ventanas, pasos > 20 ms 29, paso máx 74.0 ms, atraso máx 3 ventanas, perdidas 0; final: SpO2 98.0 %, EtCO2 33.6 mmHg, FC 72
+pneumatic_sim: 121764 ticks, 275 > 1.5 ms, dt máx 13.40 ms, huecos recortados 0, lecturas 118901, comandos 118901
+pneumatic_sim: ventanas 6150, paciente conectado, ventanas perdidas 0, resultados descartados 0
+Régimen (resp. 2 en adelante): Vt 569 mL (-4.1 % contra la fórmula), PIP máx 20.5, PEEP 5.09
+##### p_reposo_3
+breath_ctrl: PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 120 s
+breath_ctrl: 118119 ciclos, 1478 con periodo > 1.5 ms, periodo máx 41.94 ms; cómputo p50 18.6 us, p99 247.9 us, máx 13841.9 us
+patient: ./states/BreathGuard_StandardMale_PCV.json cargado en 0.2 s
+patient: 6051 ventanas, pasos > 20 ms 51, paso máx 114.2 ms, atraso máx 12 ventanas, perdidas 0; final: SpO2 98.0 %, EtCO2 33.6 mmHg, FC 72
+pneumatic_sim: 121012 ticks, 506 > 1.5 ms, dt máx 12.66 ms, huecos recortados 0, lecturas 118119, comandos 118119
+pneumatic_sim: ventanas 6150, paciente conectado, ventanas perdidas 0, resultados descartados 0
+Régimen (resp. 2 en adelante): Vt 569 mL (-4.0 % contra la fórmula), PIP máx 20.5, PEEP 5.09
+##### p_carga_1
+cpu_burn: hilo 0 prio=9 SCHED_FIFO cpu=75.2%
+cpu_burn: hilo 1 prio=9 SCHED_FIFO cpu=75.4%
+breath_ctrl: PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 120 s
+breath_ctrl: 115652 ciclos, 3168 con periodo > 1.5 ms, periodo máx 26.83 ms; cómputo p50 15.5 us, p99 108.8 us, máx 7537.8 us
+patient: ./states/BreathGuard_StandardMale_PCV.json cargado en 0.1 s
+patient: 6051 ventanas, pasos > 20 ms 59, paso máx 1350.1 ms, atraso máx 66 ventanas, perdidas 0; final: SpO2 98.0 %, EtCO2 33.6 mmHg, FC 72
+pneumatic_sim: 118701 ticks, 860 > 1.5 ms, dt máx 10.93 ms, huecos recortados 0, lecturas 115652, comandos 115652
+pneumatic_sim: ventanas 6150, paciente conectado, ventanas perdidas 0, resultados descartados 0
+Régimen (resp. 2 en adelante): Vt 569 mL (-4.1 % contra la fórmula), PIP máx 20.5, PEEP 5.09
+##### p_carga_2
+cpu_burn: hilo 0 prio=9 SCHED_FIFO cpu=66.0%
+cpu_burn: hilo 1 prio=9 SCHED_FIFO cpu=67.6%
+breath_ctrl: PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 120 s
+breath_ctrl: 103263 ciclos, 8341 con periodo > 1.5 ms, periodo máx 173.20 ms; cómputo p50 17.4 us, p99 274.3 us, máx 17626.1 us
+patient: ./states/BreathGuard_StandardMale_PCV.json cargado en 0.2 s
+patient: 6047 ventanas, pasos > 20 ms 382, paso máx 553.1 ms, atraso máx 40 ventanas, perdidas 0; final: SpO2 98.0 %, EtCO2 33.7 mmHg, FC 72
+pneumatic_sim: 106643 ticks, 2651 > 1.5 ms, dt máx 173.15 ms, huecos recortados 1, lecturas 103263, comandos 103263
+pneumatic_sim: ventanas 6146, paciente conectado, ventanas perdidas 0, resultados descartados 0
+Régimen (resp. 2 en adelante): Vt 568 mL (-4.2 % contra la fórmula), PIP máx 20.5, PEEP 5.09
+##### p_carga_3
+cpu_burn: hilo 0 prio=9 SCHED_FIFO cpu=77.1%
+cpu_burn: hilo 1 prio=9 SCHED_FIFO cpu=77.9%
+breath_ctrl: PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 120 s
+breath_ctrl: 115036 ciclos, 2926 con periodo > 1.5 ms, periodo máx 25.25 ms; cómputo p50 13.9 us, p99 112.9 us, máx 25252.9 us
+patient: ./states/BreathGuard_StandardMale_PCV.json cargado en 0.2 s
+patient: 6050 ventanas, pasos > 20 ms 95, paso máx 136.9 ms, atraso máx 18 ventanas, perdidas 0; final: SpO2 98.0 %, EtCO2 33.6 mmHg, FC 72
+pneumatic_sim: 118087 ticks, 911 > 1.5 ms, dt máx 25.87 ms, huecos recortados 0, lecturas 115036, comandos 115036
+pneumatic_sim: ventanas 6150, paciente conectado, ventanas perdidas 0, resultados descartados 0
+Régimen (resp. 2 en adelante): Vt 569 mL (-4.1 % contra la fórmula), PIP máx 20.5, PEEP 5.09
+##### p_control
+cpu_burn: hilo 0 prio=9 SCHED_FIFO cpu=92.4%
+cpu_burn: hilo 1 prio=9 SCHED_FIFO cpu=92.5%
+breath_ctrl: PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 120 s
+breath_ctrl: 116880 ciclos, 2507 con periodo > 1.5 ms, periodo máx 23.17 ms; cómputo p50 14.5 us, p99 97.8 us, máx 11354.6 us
+patient: ./states/BreathGuard_StandardMale_PCV.json cargado en 0.2 s
+patient: 101 ventanas, pasos > 20 ms 1, paso máx 37.4 ms, atraso máx 0 ventanas, perdidas 0; final: SpO2 98.0 %, EtCO2 33.9 mmHg, FC 72
+pneumatic_sim: 119842 ticks, 659 > 1.5 ms, dt máx 23.20 ms, huecos recortados 0, lecturas 116880, comandos 116880
+pneumatic_sim: ventanas 6150, paciente conectado, ventanas perdidas 0, resultados descartados 0
+Régimen (resp. 2 en adelante): Vt 562 mL (-5.3 % contra la fórmula), PIP máx 20.5, PEEP 5.09
+FIN

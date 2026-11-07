@@ -1,0 +1,7 @@
+breath_ctrl: PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 120 s
+breath_ctrl: 117494 ciclos, 1799 con periodo > 1.5 ms, periodo máx 42.33 ms; cómputo p50 23.8 us, p99 237.5 us, máx 42328.6 us
+patient: ./states/BreathGuard_StandardMale_PCV.json cargado en 0.2 s
+patient: 6051 ventanas, pasos > 20 ms 63, paso máx 134.3 ms, atraso máx 12 ventanas, perdidas 0; final: SpO2 98.0 %, EtCO2 33.6 mmHg, FC 72
+pneumatic_sim: listo como 'breathguard_pneumatic', prio 60, 123 s
+pneumatic_sim: 120460 ticks, 550 > 1.5 ms, dt máx 44.52 ms, huecos recortados 0, lecturas 117494, comandos 117494
+pneumatic_sim: ventanas 6150, paciente conectado, ventanas perdidas 0, resultados descartados 0
