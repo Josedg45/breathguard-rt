@@ -3,18 +3,20 @@
 # uso: m3_target.sh etiqueta p_insp peep rr segundos [carga] [pulse]
 #   carga: 2 hilos basura (uno por vCPU) a prio 9, lanzados DESPUÉS del lazo (lección de M1).
 #   pulse: el pulmón lo da Pulse (proceso patient, prio 20) en vez del RC fijo.
+#   pulse_bajo: igual, pero patient a prio 5, POR DEBAJO de la carga (experimento de control).
 cd "$(dirname "$0")" || exit 1
 D=$(pwd)
 L=$1; P=$2; E=$3; R=$4; S=$5; shift 5
-LOAD=; PULSE=
+LOAD=; PULSE=; PPRIO=20
 for a in "$@"; do
     [ "$a" = "carga" ] && LOAD=1
     [ "$a" = "pulse" ] && PULSE=1
+    [ "$a" = "pulse_bajo" ] && { PULSE=1; PPRIO=5; }
 done
 rm -f log_*_$L.txt
 if [ -n "$PULSE" ]; then
     # patient carga Pulse (unos segundos) y luego espera a que exista la planta.
-    (cd /data/pulse && "$D/patient" -s $((S + 1)) -o "$D/pat_$L.csv" > "$D/log_pat_$L.txt" 2>&1) &
+    (cd /data/pulse && "$D/patient" -p $PPRIO -s $((S + 1)) -o "$D/pat_$L.csv" > "$D/log_pat_$L.txt" 2>&1) &
     sleep 2
 fi
 ./pneumatic_sim -s $((S + 3)) -e "$E" -o "sim_$L.csv" > "log_sim_$L.txt" &
