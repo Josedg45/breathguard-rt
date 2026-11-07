@@ -11,6 +11,8 @@
  *    patient pide la siguiente ventana con BG_MSG_PATIENT; si aún no se cerró, NO se le responde
  *    hasta cerrarla (respuesta diferida: patient queda bloqueado sin gastar CPU). Con cada
  *    resultado de Pulse se corrige el volumen y se actualizan R, C y V0 del pulmón.
+ *  - Arbitraje: safety_mon puede tomar el mando (BG_MSG_OVERRIDE). Mientras lo tiene, los WRITE de
+ *    breath_ctrl se guardan pero no se aplican, como un relé de seguridad entre controlador y válvulas.
  *
  * Uso: pneumatic_sim [-s segundos] [-p prio] [-e peep_inicial] [-o salida.csv]
  */
@@ -32,15 +34,19 @@ typedef union {
     bg_write_msg_t write;
     bg_fault_msg_t fault;
     bg_patient_msg_t pat;
+    bg_override_msg_t ov;
 } sim_msg_t;
 
 typedef struct {
     double t;
     float dt_ms, paw, q_y, v, pbl, blower, exh, cmd_age_ms, r_pat, c_pat, spo2;
+    uint8_t src;  /* quién manda: 0 breath_ctrl, 1 safety_mon */
 } logrec_t;
 
 static plant_t pl;
-static actuators_t act;
+static actuators_t act;       /* lo que se aplica */
+static actuators_t act_ctrl;  /* último comando de breath_ctrl */
+static int override_on;       /* 1 = manda safety_mon */
 static double last_sync;
 static unsigned long gaps_clamped;
 
@@ -170,7 +176,7 @@ int main(int argc, char **argv)
     double t_start = rt_now_s(), last_write = t_start;
     last_sync = t_start;
     win_end = BG_WINDOW_S;
-    unsigned long reads = 0, writes = 0;
+    unsigned long reads = 0, writes = 0, overrides = 0;
     printf("%s: listo como '%s', prio %d, %.0f s\n", PROG, BG_PNEUMATIC_NAME, prio, secs);
     fflush(stdout);
 
@@ -197,6 +203,7 @@ int main(int argc, char **argv)
                     r->r_pat = (float)pl.p.r_pat;
                     r->c_pat = (float)(pl.p.c_pat * 1e3);
                     r->spo2 = have_patient ? (float)vitals.spo2 : -1.0f;
+                    r->src = (uint8_t)override_on;
                 }
                 if (now - t_start >= secs) break;
             } else if (m.pulse.code == _PULSE_CODE_DISCONNECT) {
@@ -222,7 +229,8 @@ int main(int argc, char **argv)
         }
         case BG_MSG_WRITE:
             last_write = sync_to_now(); /* lo anterior se integra con el comando viejo */
-            act = m.write.act;
+            act_ctrl = m.write.act;
+            if (!override_on) act = act_ctrl;
             writes++;
             MsgReply(rcvid, EOK, NULL, 0);
             break;
@@ -239,8 +247,19 @@ int main(int argc, char **argv)
             }
             break;
         }
+        case BG_MSG_OVERRIDE:
+            sync_to_now();
+            override_on = m.ov.on;
+            act = override_on ? m.ov.act : act_ctrl;
+            overrides++;
+            MsgReply(rcvid, EOK, NULL, 0);
+            break;
         case BG_MSG_FAULT:
             sync_to_now();
+            printf("%s: falla t_abs=%.6f desconectado=%d obstruccion=%.1f fuga=%.3f sensor=%d\n", PROG,
+                   rt_now_s(), m.fault.faults.disconnected, m.fault.faults.obstruction, m.fault.faults.g_leak,
+                   m.fault.faults.paw_stuck);
+            fflush(stdout);
             pl.f = m.fault.faults;
             MsgReply(rcvid, EOK, NULL, 0);
             break;
@@ -263,16 +282,17 @@ int main(int argc, char **argv)
            PROG, n, late, dt_max, gaps_clamped, reads, writes);
     printf("%s: ventanas %u, paciente %s, ventanas perdidas %u, resultados descartados %u\n", PROG, win_k,
            have_patient ? "conectado" : "sin Pulse (RC fijo)", lost, stale);
+    printf("%s: mensajes de override %lu\n", PROG, overrides);
 
     if (out_path) {
         FILE *f = fopen(out_path, "w");
         if (!f) rt_die(PROG, out_path);
-        fprintf(f, "t_s,dt_ms,paw,q_y,v_l,pbl,blower,exh_open,cmd_age_ms,r_pat,c_pat_ml,spo2\n");
+        fprintf(f, "t_s,dt_ms,paw,q_y,v_l,pbl,blower,exh_open,cmd_age_ms,r_pat,c_pat_ml,spo2,src\n");
         for (size_t i = 0; i < n; i++) {
             logrec_t *r = &log[i];
-            fprintf(f, "%.6f,%.3f,%.3f,%.4f,%.5f,%.3f,%.4f,%.2f,%.2f,%.2f,%.2f,%.4f\n", r->t, r->dt_ms,
+            fprintf(f, "%.6f,%.3f,%.3f,%.4f,%.5f,%.3f,%.4f,%.2f,%.2f,%.2f,%.2f,%.4f,%u\n", r->t, r->dt_ms,
                     r->paw, r->q_y, r->v, r->pbl, r->blower, r->exh, r->cmd_age_ms, r->r_pat,
-                    r->c_pat, r->spo2);
+                    r->c_pat, r->spo2, r->src);
         }
         fclose(f);
     }

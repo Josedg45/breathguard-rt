@@ -12,12 +12,14 @@ BUILD := build
 BINS  := $(BUILD)/latency_test $(BUILD)/cpu_burn $(BUILD)/vm_noise
 
 TAREA1 := tareas/01_watchdog
+TAREA2 := tareas/02_vt_meter
 
 # M3: procesos del ventilador (varios fuentes cada uno)
 M3_BINS := $(BUILD)/pneumatic_sim $(BUILD)/breath_ctrl
+M4_BINS := $(BUILD)/safety_mon $(BUILD)/bg_fault
 COMMON_H := src/bg_types.h src/bg_proto.h src/rt_util.h
 
-.PHONY: all clean deploy check-env tarea1 m3 patient
+.PHONY: all clean deploy check-env tarea1 tarea2 m3 m4 patient
 
 patient: check-env $(BUILD)/patient
 
@@ -27,15 +29,31 @@ tarea1: check-env | $(BUILD)
 	scp -o LogLevel=ERROR -q $(BUILD)/test_watchdog $(QNX_HOST_SSH):$(QNX_DIR)/
 	ssh -o LogLevel=ERROR $(QNX_HOST_SSH) "$(QNX_DIR)/test_watchdog"
 
-all: check-env $(BINS) $(M3_BINS)
+tarea2: check-env | $(BUILD)
+	$(CC) $(CFLAGS) -I$(TAREA2) $(TAREA2)/vt_meter.c $(TAREA2)/test_vt_meter.c -lm -o $(BUILD)/test_vt_meter
+	ssh -o LogLevel=ERROR $(QNX_HOST_SSH) "mkdir -p $(QNX_DIR)"
+	scp -o LogLevel=ERROR -q $(BUILD)/test_vt_meter $(QNX_HOST_SSH):$(QNX_DIR)/
+	ssh -o LogLevel=ERROR $(QNX_HOST_SSH) "$(QNX_DIR)/test_vt_meter"
+
+all: check-env $(BINS) $(M3_BINS) $(M4_BINS)
 
 m3: check-env $(M3_BINS)
 
 $(BUILD)/pneumatic_sim: src/pneumatic_sim.c src/plant.c src/plant.h $(COMMON_H) | $(BUILD)
 	$(CC) $(CFLAGS) -Isrc src/pneumatic_sim.c src/plant.c -lm -o $@
 
-$(BUILD)/breath_ctrl: src/breath_ctrl.c src/pcv.c src/pcv.h src/plant.c $(COMMON_H) | $(BUILD)
-	$(CC) $(CFLAGS) -Isrc src/breath_ctrl.c src/pcv.c src/plant.c -lm -o $@
+$(BUILD)/breath_ctrl: src/breath_ctrl.c src/vent.c src/vent.h src/plant.c $(COMMON_H) | $(BUILD)
+	$(CC) $(CFLAGS) -Isrc src/breath_ctrl.c src/vent.c src/plant.c -lm -o $@
+
+m4: check-env $(M3_BINS) $(M4_BINS)
+
+# safety_mon enlaza el watchdog (tarea 1) y el medidor de Vt (tarea 2) del usuario.
+SAFETY_SRC := src/safety_mon.c src/alarms.c src/vent.c src/plant.c $(TAREA1)/watchdog.c $(TAREA2)/vt_meter.c
+$(BUILD)/safety_mon: $(SAFETY_SRC) src/alarms.h src/vent.h $(TAREA1)/watchdog.h $(TAREA2)/vt_meter.h $(COMMON_H) | $(BUILD)
+	$(CC) $(CFLAGS) -Isrc -I$(TAREA1) -I$(TAREA2) $(SAFETY_SRC) -lm -o $@
+
+$(BUILD)/bg_fault: src/bg_fault.c $(COMMON_H) | $(BUILD)
+	$(CC) $(CFLAGS) -Isrc src/bg_fault.c -o $@
 
 # patient: Pulse para QNX, compilado aparte con port/build_pulse_qnx.sh (en ~/pulse/qnx).
 PULSE_QNX := $(HOME)/pulse/qnx
@@ -48,7 +66,10 @@ $(BUILD)/patient: src/patient.cpp $(COMMON_H) | $(BUILD)
 	ntox86_64-strip $@
 
 # Versión de Ubuntu (sin QNX) de la planta + PCV, para ajustar y como referencia.
-$(BUILD)/m3_offline: tools/m3_offline.c src/plant.c src/pcv.c | $(BUILD)
+$(BUILD)/m3_offline: tools/m3_offline.c src/plant.c src/vent.c | $(BUILD)
+	gcc -O2 -Wall -Wextra -Isrc $^ -lm -o $@
+
+$(BUILD)/m4_offline: tools/m4_offline.c src/plant.c src/vent.c src/alarms.c | $(BUILD)
 	gcc -O2 -Wall -Wextra -Isrc $^ -lm -o $@
 
 check-env:
@@ -62,7 +83,7 @@ $(BUILD):
 
 deploy: all
 	ssh $(QNX_HOST_SSH) "mkdir -p $(QNX_DIR)"
-	scp -q $(BINS) $(M3_BINS) $(QNX_HOST_SSH):$(QNX_DIR)/
+	scp -q $(BINS) $(M3_BINS) $(M4_BINS) $(QNX_HOST_SSH):$(QNX_DIR)/
 
 clean:
 	rm -rf $(BUILD)

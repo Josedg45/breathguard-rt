@@ -1,0 +1,11 @@
+patient: ./states/BreathGuard_StandardMale_PCV.json cargado en 0.2 s
+patient: 3101 ventanas, pasos > 20 ms 3, paso máx 49.4 ms, atraso máx 1 ventanas, perdidas 0; final: SpO2 98.0 %, EtCO2 33.9 mmHg, FC 72
+breath_ctrl: pid 15122459, PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 60 s
+breath_ctrl: 59318 ciclos, 210 con periodo > 1.5 ms, periodo máx 14.79 ms; cómputo p50 55.7 us, p99 205.6 us, máx 1883.2 us
+safety_mon: t=0.000 LANZA_CONTROL pid 15122459
+safety_mon: t=59.512 CONTROL_TERMINA despedida
+safety_mon: 59838 ticks, 0 fallas del controlador, 2 eventos; vt_meter: 0 respiraciones, Vti 0, Vte 0 mL
+pneumatic_sim: listo como 'breathguard_pneumatic', prio 60, 64 s
+pneumatic_sim: 63817 ticks, 58 > 1.5 ms, dt máx 4.69 ms, huecos recortados 0, lecturas 119155, comandos 59318
+pneumatic_sim: ventanas 3200, paciente conectado, ventanas perdidas 0, resultados descartados 0
+pneumatic_sim: mensajes de override 0

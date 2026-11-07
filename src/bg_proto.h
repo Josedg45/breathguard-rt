@@ -14,12 +14,19 @@
 #include "bg_types.h"
 
 #define BG_PNEUMATIC_NAME "breathguard_pneumatic"
+#define BG_SAFETY_NAME "breathguard_safety"
+
+/* Latido de breath_ctrl a safety_mon: pulso con el contador de secuencia en value. */
+#define BG_PULSE_HEARTBEAT (_PULSE_CODE_MINAVAIL + 1)
+/* Despedida: breath_ctrl termina a propósito; su desconexión no es una falla. */
+#define BG_PULSE_BYE (_PULSE_CODE_MINAVAIL + 2)
 
 enum {
     BG_MSG_READ = 0x4000, /* respuesta: sensors_t */
     BG_MSG_WRITE,         /* carga: actuators_t; respuesta vacía */
     BG_MSG_FAULT,         /* carga: plant_faults_t; respuesta vacía */
     BG_MSG_PATIENT,       /* carga: bg_patient_msg_t; respuesta: bg_window_t (diferida) */
+    BG_MSG_OVERRIDE,      /* carga: bg_override_msg_t; respuesta vacía (solo safety_mon) */
 };
 
 /* Acople con Pulse (proceso patient). La planta corta su tiempo en ventanas de BG_WINDOW_S.
@@ -55,6 +62,14 @@ typedef struct {
     bg_hdr_t hdr;
     plant_faults_t faults;
 } bg_fault_msg_t;
+
+/* safety_mon toma (on = 1) o devuelve (on = 0) el mando de los actuadores. Mientras lo tiene, la
+ * planta ignora los WRITE de breath_ctrl. */
+typedef struct {
+    bg_hdr_t hdr;
+    int32_t on;
+    actuators_t act;
+} bg_override_msg_t;
 
 typedef struct {
     bg_hdr_t hdr;
