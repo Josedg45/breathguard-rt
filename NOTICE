@@ -1,0 +1,10 @@
+BreathGuard RT
+Copyright 2026 Jose David Gomez
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This project uses the Pulse Physiology Engine (https://gitlab.kitware.com/physiology/engine),
+developed by Kitware, Inc., licensed under the Apache License, Version 2.0. Pulse is not
+redistributed in this repository: it is downloaded and built separately (see port/).
+The QNX build of Pulse also uses Protocol Buffers 21.12 (BSD-3-Clause, Google LLC) and
+Eigen (MPL-2.0).
