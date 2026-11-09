@@ -28,6 +28,7 @@
 #include <getopt.h>
 #include <signal.h>
 #include <spawn.h>
+#include <secpol/secpol.h>
 #include <sys/dispatch.h>
 #include <unistd.h>
 
@@ -62,14 +63,18 @@ typedef struct {
     char detail[64];
 } event_t;
 
-static event_t events[4096];
+static volatile sig_atomic_t stop; /* SIGTERM: apagado ordenado (termina a sus hijos) */
+static void on_term(int sig) { (void)sig; stop = 1; }
+
+#define N_EVENTS 4096
+static event_t events[N_EVENTS];
 static size_t n_events;
 static double t_start;
 
 static void event(double t, const char *what, const char *detail)
 {
-    if (n_events < sizeof events / sizeof events[0]) {
-        event_t *e = &events[n_events++];
+    { /* anillo: sin límite de tiempo se conservan los últimos */
+        event_t *e = &events[n_events++ % N_EVENTS];
         e->t = t;
         snprintf(e->what, sizeof e->what, "%s", what);
         snprintf(e->detail, sizeof e->detail, "%s", detail);
@@ -84,11 +89,17 @@ static const char *hmi_host = NULL; /* con -H: lanzar ./hmi apuntando a este hos
 static pid_t spawn_hmi(double secs_left)
 {
     char ss[32];
-    snprintf(ss, sizeof ss, "%.3f", secs_left);
+    snprintf(ss, sizeof ss, "%.3f", rt_child_secs(secs_left));
     char *argv[] = { "./hmi", "-h", (char *)hmi_host, "-s", ss, NULL };
     pid_t pid;
     extern char **environ;
-    int rc = posix_spawn(&pid, "./hmi", NULL, NULL, argv, environ);
+    /* Con política de seguridad (capa 2), la HMI nace con el tipo derivado "hmi" (p. ej. bg_hmi_t), que no puede
+     * conectarse al canal de la planta. Sin política, no hace nada. */
+    posix_spawnattr_t attr;
+    posix_spawnattr_init(&attr);
+    secpol_posix_spawnattr_settypeid(NULL, &attr, "hmi", 0);
+    int rc = posix_spawn(&pid, "./hmi", NULL, &attr, argv, environ);
+    posix_spawnattr_destroy(&attr);
     if (rc != 0) { errno = rc; return -1; }
     return pid;
 }
@@ -112,7 +123,7 @@ static pid_t spawn_ctrl(int plant, const bg_settings_t *cur, double secs_left)
     snprintf(ctrl_args[n_ctrl_args++], 32, "-i");
     snprintf(ctrl_args[n_ctrl_args++], 32, "%.3f", cur->set.ie);
     snprintf(t0s, sizeof t0s, "%.6f", cur->t0);
-    snprintf(ss, sizeof ss, "%.3f", secs_left);
+    snprintf(ss, sizeof ss, "%.3f", rt_child_secs(secs_left));
     char *argv[24];
     int k = 0;
     argv[k++] = (char *)ctrl_path;
@@ -127,7 +138,10 @@ static pid_t spawn_ctrl(int plant, const bg_settings_t *cur, double secs_left)
      * autorizado en la planta antes de que pueda mandar su primer WRITE, sin carrera. Luego se suelta con SIGCONT. */
     posix_spawnattr_t attr;
     posix_spawnattr_init(&attr);
-    posix_spawnattr_setxflags(&attr, POSIX_SPAWN_HOLD);
+    secpol_posix_spawnattr_settypeid(NULL, &attr, "ctrl", 0); /* tipo derivado (capa 2); sin política, nada */
+    uint32_t xf = 0;
+    posix_spawnattr_getxflags(&attr, &xf); /* sin perder la bandera de tipo que puso secpol */
+    posix_spawnattr_setxflags(&attr, xf | POSIX_SPAWN_HOLD);
     int rc = posix_spawn(&pid, ctrl_path, NULL, &attr, argv, environ);
     posix_spawnattr_destroy(&attr);
     if (rc != 0) { errno = rc; rt_die(PROG, "posix_spawn(breath_ctrl)"); }
@@ -185,12 +199,14 @@ int main(int argc, char **argv)
             return 1;
         }
     }
+    secs = rt_duration(secs); /* -s 0: sin límite (arranque desde la imagen) */
     /* Ajustes vigentes (cur) y, si el operador pidio un cambio, los programados (next, desde next.t0). */
     bg_settings_t cur = { .seq = 0, .vcv = vcv, .set = set, .vt = vt_ml / 1e3 }, next = cur;
     int pending = 0;
     uint32_t breath_base = 0; /* respiraciones completas con calendarios anteriores */
 
     signal(SIGCHLD, SIG_IGN); /* los hijos muertos no quedan como zombis */
+    signal(SIGTERM, on_term);
 
     /* Nuestro canal, con nombre: aquí llegan los latidos y el aviso de desconexión. */
     name_attach_t *att = name_attach(NULL, BG_SAFETY_NAME, 0);
@@ -263,6 +279,10 @@ int main(int argc, char **argv)
 
     for (;;) {
         int rcvid = MsgReceive(att->chid, &m, sizeof m, &info);
+        if (rcvid == -1 && errno == EINTR) { /* una señal: ¿apagado? */
+            if (stop) break;
+            continue;
+        }
         if (rcvid == -1) rt_die(PROG, "MsgReceive");
         double now = rt_now_s();
 
@@ -280,7 +300,7 @@ int main(int argc, char **argv)
                 bg_safety_status_t st = { .alarms = al.active, .backup = backup_mode, .failovers = failovers,
                                           .hmi_restarts = hmi_restarts, .n_events = (uint32_t)n_events };
                 if (n_events)
-                    snprintf(st.last_event, sizeof st.last_event, "%s", events[n_events - 1].what);
+                    snprintf(st.last_event, sizeof st.last_event, "%s", events[(n_events - 1) % N_EVENTS].what);
                 st.set = pending ? next : cur;
                 st.pending = pending;
                 st.loop = loop;
@@ -518,8 +538,11 @@ int main(int argc, char **argv)
     if (hmi_pid > 0) kill(hmi_pid, SIGTERM);
     name_detach(att, 0);
     rt_relax();
-    for (size_t i = 0; i < n_events; i++)
-        printf("%s: t=%.3f %s %s\n", PROG, events[i].t - t_start, events[i].what, events[i].detail);
+    size_t ev0 = n_events > N_EVENTS ? n_events - N_EVENTS : 0; /* los últimos N_EVENTS */
+    for (size_t j = ev0; j < n_events; j++) {
+        const event_t *e = &events[j % N_EVENTS];
+        printf("%s: t=%.3f %s %s\n", PROG, e->t - t_start, e->what, e->detail);
+    }
     printf("%s: %lu ticks, %u fallas del controlador, %zu eventos; vt_meter: %u respiraciones, Vti %.0f, "
            "Vte %.0f mL\n", PROG, ticks, failovers, n_events, vtm.breaths, vtm.vti * 1e3, vtm.vte * 1e3);
     printf("%s: peso ideal %.1f kg (talla %.1f cm); última respiración: auto-PEEP %.2f cmH2O, flujo final %.2f L/min, "
@@ -529,8 +552,10 @@ int main(int argc, char **argv)
         FILE *f = fopen(out_path, "w");
         if (!f) rt_die(PROG, out_path);
         fprintf(f, "t_s,evento,detalle\n");
-        for (size_t i = 0; i < n_events; i++)
-            fprintf(f, "%.6f,%s,%s\n", events[i].t, events[i].what, events[i].detail);
+        for (size_t j = ev0; j < n_events; j++) {
+            const event_t *e = &events[j % N_EVENTS];
+            fprintf(f, "%.6f,%s,%s\n", e->t, e->what, e->detail);
+        }
         fclose(f);
     }
     return 0;

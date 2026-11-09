@@ -151,7 +151,10 @@ int main(int argc, char **argv)
 
     /* Termina por tiempo de reloj, no por número de ciclos: en la VM se pierden pulsos del timer
      * (M1), y contar ciclos alargaba la corrida más allá de lo pedido. */
-    size_t cap = (size_t)(secs * 1000) + 1000, n = 0;
+    /* Sin límite (-s 0): el registro es un anillo con los últimos 60 s. */
+    int forever = secs <= 0;
+    secs = rt_duration(secs);
+    size_t cap = forever ? 61000 : (size_t)(secs * 1000) + 1000, n = 0;
     logrec_t *log = calloc(cap, sizeof *log);
     float *tmp = calloc(cap, sizeof *tmp);
     if (!log || !tmp) rt_die(PROG, "calloc");
@@ -205,7 +208,8 @@ int main(int argc, char **argv)
     bg_write_msg_t wr = { .hdr = { .type = BG_MSG_WRITE } };
     struct _pulse pulse;
 
-    for (size_t i = 0; i < cap; i++) {
+    int first_breath = 0;
+    for (size_t i = 0; forever || i < cap; i++) {
         if (MsgReceivePulse(chid, &pulse, sizeof pulse, NULL) == -1) {
             if (errno == EINTR) { /* SIGTERM interrumpió la espera: salir limpio */
                 if (stop) break;
@@ -243,7 +247,12 @@ int main(int argc, char **argv)
         if (safety != -1 && i % HEARTBEAT_EVERY == 0)
             MsgSendPulse(safety, prio, BG_PULSE_HEARTBEAT, (int)beat++);
 
-        logrec_t *r = &log[i];
+        if (!first_breath && now >= cur.t0 && vent.phase == 0) { /* para medir el arranque (punto C) */
+            first_breath = 1;
+            printf("%s: primera inspiración t=%.3f s del reloj del sistema\n", PROG, now);
+            fflush(stdout);
+        }
+        logrec_t *r = &log[i % cap];
         r->t = now;
         r->period_ms = (float)(dt * 1e3);
         r->exec_us = (float)((rt_now_s() - now) * 1e6);
@@ -267,16 +276,19 @@ int main(int argc, char **argv)
     rt_relax();
 
     /* Resumen: periodo (desde el 2.º ciclo) y tiempo de cómputo. */
+    /* Con el anillo lleno quedan los últimos cap ciclos: k0 es el más antiguo. */
+    size_t m = n < cap ? n : cap, k0 = n - m;
+#define REC(j) log[(k0 + (j)) % cap]
     size_t late = 0;
     float pmax = 0;
-    for (size_t i = 1; i < n; i++) {
-        if (log[i].period_ms > 1.5f) late++;
-        if (log[i].period_ms > pmax) pmax = log[i].period_ms;
+    for (size_t j = 1; j < m; j++) {
+        if (REC(j).period_ms > 1.5f) late++;
+        if (REC(j).period_ms > pmax) pmax = REC(j).period_ms;
     }
-    for (size_t i = 0; i < n; i++) tmp[i] = log[i].exec_us;
-    qsort(tmp, n, sizeof *tmp, cmp_float);
+    for (size_t j = 0; j < m; j++) tmp[j] = REC(j).exec_us;
+    qsort(tmp, m, sizeof *tmp, cmp_float);
     printf("%s: %zu ciclos, %zu con periodo > 1.5 ms, periodo máx %.2f ms; cómputo p50 %.1f us, "
-           "p99 %.1f us, máx %.1f us\n", PROG, n, late, pmax, tmp[n / 2], tmp[(size_t)(n * 0.99)], tmp[n - 1]);
+           "p99 %.1f us, máx %.1f us\n", PROG, n, late, pmax, tmp[m / 2], tmp[(size_t)(m * 0.99)], tmp[m - 1]);
     if (safety != -1 || changes)
         printf("%s: ajustes aplicados %u (último #%u), consultas sin respuesta %u\n", PROG, changes, cur.seq,
                fetch_fail);
@@ -287,8 +299,8 @@ int main(int argc, char **argv)
         FILE *f = fopen(out_path, "w");
         if (!f) rt_die(PROG, out_path);
         fprintf(f, "t_s,period_ms,exec_us,phase,target,paw_meas,flow_meas,blower,exh_open\n");
-        for (size_t i = 0; i < n; i++) {
-            logrec_t *r = &log[i];
+        for (size_t j = 0; j < m; j++) {
+            logrec_t *r = &REC(j);
             fprintf(f, "%.6f,%.3f,%.1f,%u,%.3f,%.3f,%.4f,%.4f,%.2f\n", r->t, r->period_ms,
                     r->exec_us, r->phase, r->target, r->paw, r->flow, r->blower, r->exh);
         }

@@ -54,7 +54,9 @@ int main(int argc, char **argv)
             return 1;
         }
     }
-    size_t cap = (size_t)(secs * 10) + 100, n = 0;
+    int forever = secs <= 0; /* -s 0: sin límite; se registran los primeros 10 min */
+    secs = rt_duration(secs);
+    size_t cap = forever ? 6100 : (size_t)(secs * 10) + 100, n = 0;
     logrec_t *log = calloc(cap, sizeof *log);
     if (!log) rt_die(PROG, "calloc");
 

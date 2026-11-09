@@ -88,7 +88,7 @@ $(BUILD)/m5_offline: tools/m5_offline.c src/battery.c src/plant.c src/vent.c | $
 # safety_mon enlaza el watchdog (tarea 1) y el medidor de Vt (tarea 2) del usuario.
 SAFETY_SRC := src/safety_mon.c src/alarms.c src/lung_mon.c src/vent.c src/plant.c src/settings.c $(TAREA3)/rate_limit.c $(TAREA1)/watchdog.c $(TAREA2)/vt_meter.c
 $(BUILD)/safety_mon: $(SAFETY_SRC) src/bg_power.h src/alarms.h src/lung_mon.h src/vent.h $(TAREA1)/watchdog.h $(TAREA2)/vt_meter.h $(COMMON_H) | $(BUILD)
-	$(CC) $(CFLAGS) -Isrc -I$(TAREA1) -I$(TAREA2) $(SAFETY_SRC) -lm -o $@
+	$(CC) $(CFLAGS) -Isrc -I$(TAREA1) -I$(TAREA2) $(SAFETY_SRC) -lm -lsecpol -o $@
 
 # /dev/ventilator: resource manager (punto A del plan QNX).
 $(BUILD)/ventd: src/ventd.c src/settings.c src/alarms.c $(TAREA3)/rate_limit.c src/alarms.h src/bg_power.h $(COMMON_H) | $(BUILD)

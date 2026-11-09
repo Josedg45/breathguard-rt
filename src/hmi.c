@@ -66,6 +66,7 @@ int main(int argc, char **argv)
         }
     }
     if (!host) { fprintf(stderr, "%s: falta -h ip_host\n", PROG); return 1; }
+    secs = rt_duration(secs); /* -s 0: sin límite */
     signal(SIGUSR1, on_sig);
     signal(SIGUSR2, on_sig);
     signal(SIGTERM, on_sig);

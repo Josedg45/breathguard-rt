@@ -20,6 +20,12 @@ static inline void rt_die(const char *prog, const char *what)
 }
 
 /* Segundos desde el arranque, con el contador de ciclos de la CPU (ClockCycles, de QNX). */
+/* Duración de una corrida: -s 0 (o negativo) = sin límite, para el arranque desde la imagen (punto C). */
+#define RT_FOREVER_S 1e15
+static inline double rt_duration(double s) { return s > 0 ? s : RT_FOREVER_S; }
+/* Lo que se pasa como -s a un hijo: 0 si la corrida no tiene límite. */
+static inline double rt_child_secs(double left) { return left > 1e12 ? 0 : left; }
+
 static inline double rt_now_s(void)
 {
     static double inv_cps = 0;
