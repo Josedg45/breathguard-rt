@@ -108,7 +108,7 @@ scripts/m4_run.sh kill 75 matar               # kill breath_ctrl at 40 s
 scripts/m4_run.sh disc 75 desconectar         # tube disconnection at 40 s
 scripts/m5_run.sh power 100 60 1.0            # mains loss (battery time x60)
 scripts/m6_run.sh hmi 60 hmi_colgar           # HMI hangs in an infinite loop
-scripts/m6_run.sh mono 90 mono_bug            # same display bug in the monolithic build
+GUI=1 scripts/m6_run.sh mono 90 mono_bug      # same display bug in the monolithic build (live dashboard)
 scripts/m6_run.sh set 90 ajustes              # operator settings changes + controller kill
 ```
 
