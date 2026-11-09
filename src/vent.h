@@ -18,6 +18,7 @@ enum { PHASE_INSP = 0, PHASE_EXP = 1, PHASE_PAUSE = 2 };
 enum { MODE_PCV = 0, MODE_VCV = 1 };
 
 #define VCV_FLOW_FRACTION 0.8 /* parte de Ti con flujo; el resto es pausa inspiratoria */
+#define PCV_HEADROOM 8.0      /* PCV: el soplador no pasa de p_insp + esto (cmH2O) */
 
 typedef struct {
     int mode;

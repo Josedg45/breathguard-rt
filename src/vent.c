@@ -47,13 +47,14 @@ static void expiration(vent_t *c, actuators_t *out)
     out->peep_cmd = c->set.peep;
 }
 
-/* PI con antisaturación: el integral solo crece si el soplador no está ya en un tope. */
-static double pi_blower(vent_t *c, double ff, double err, double kp, double ki, double dt)
+/* PI con antisaturación: el integral solo crece si el soplador no está ya en un tope. hi es el tope superior de
+ * presión del soplador (cmH2O). */
+static double pi_blower(vent_t *c, double ff, double err, double kp, double ki, double dt, double hi)
 {
     double pbl = ff + kp * err + c->integ;
-    if ((pbl < c->pbl_max || err < 0) && (pbl > 0 || err > 0))
+    if ((pbl < hi || err < 0) && (pbl > 0 || err > 0))
         c->integ += ki * err * clamp(dt, 0.0, 0.01);
-    return clamp(ff + kp * err + c->integ, 0.0, c->pbl_max);
+    return clamp(ff + kp * err + c->integ, 0.0, hi);
 }
 
 void vent_step(vent_t *c, double now_s, double dt, const sensors_t *s, actuators_t *out)
@@ -86,7 +87,11 @@ void vent_step(vent_t *c, double now_s, double dt, const sensors_t *s, actuators
         c->phase = PHASE_INSP;
         double ramp = v->rise_s > 0 ? clamp(tb / v->rise_s, 0.0, 1.0) : 1.0;
         c->target = v->peep + (v->p_insp - v->peep) * ramp;
-        out->blower = pi_blower(c, c->target, c->target - s->paw, c->kp, c->ki, dt) / c->pbl_max;
+        /* Fuente de presión limitada: el soplador nunca pasa de p_insp + PCV_HEADROOM. Una respiración normal
+         * usa 2-3 cmH2O por encima de p_insp; sin este tope, con el tubo desconectado el PI lleva el soplador a
+         * 60 cmH2O y al reconectar el paciente recibe 44 cmH2O en milisegundos (medido en la demo de M7). */
+        double hi = clamp(v->p_insp + PCV_HEADROOM, 0.0, c->pbl_max);
+        out->blower = pi_blower(c, c->target, c->target - s->paw, c->kp, c->ki, dt, hi) / c->pbl_max;
         return;
     }
 
@@ -107,7 +112,7 @@ void vent_step(vent_t *c, double now_s, double dt, const sensors_t *s, actuators
         c->target = q_set * (rise > 0 ? clamp(tb / rise, 0.0, 1.0) : 1.0);
         /* Prealimentación: para empujar q por la rama inspiratoria hace falta Paw + q·R_in. */
         double ff = s->paw + c->target * c->r_in;
-        out->blower = pi_blower(c, ff, c->target - s->flow, c->kq, c->kiq, dt) / c->pbl_max;
+        out->blower = pi_blower(c, ff, c->target - s->flow, c->kq, c->kiq, dt, c->pbl_max) / c->pbl_max;
     } else {
         c->phase = PHASE_PAUSE; /* pausa inspiratoria: sin flujo, válvula espiratoria cerrada */
         c->target = 0.0;
