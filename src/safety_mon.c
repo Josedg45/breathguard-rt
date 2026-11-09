@@ -285,10 +285,12 @@ int main(int argc, char **argv)
                 bg_settings_t req = m.sset.req;
                 bg_settings_reply_t r = { 0 };
                 req.set.rise_s = cur.set.rise_s;
-                r.ok = settings_validate(base, &req, r.why, sizeof r.why);
+                /* Validate first: an invalid value is a final NAK, while "busy" (a pending change about to start,
+                 * which breath_ctrl may already hold) only asks the operator to resend. */
+                r.ok = settings_validate(base, &req, r.why, sizeof r.why) &&
+                       settings_schedule(&cur, pending ? &next : NULL, now, &req.t0, r.why, sizeof r.why);
                 if (r.ok) {
                     req.seq = base->seq + 1;
-                    req.t0 = pending ? next.t0 : settings_next_breath(&cur, now);
                     next = req;
                     pending = 1;
                     snprintf(buf, sizeof buf, "#%u %s %.1f/%.1f %.0f rpm 1:%.1f Vt %.0f desde t=%.3f", next.seq,
