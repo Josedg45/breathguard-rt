@@ -107,6 +107,10 @@ $(BUILD)/step_test: src/step_test.c src/plant.c $(COMMON_H) | $(BUILD)
 $(BUILD)/design_ref: tools/design_ref.c src/plant.c src/vent.c | $(BUILD)
 	gcc -O2 -Wall -Wextra -Isrc $^ -lm -o $@
 
+# Prueba en el host de la regla de reemplazo de ajustes (settings_schedule).
+$(BUILD)/settings_schedule_test: tools/settings_schedule_test.c src/settings.c src/settings.h $(TAREA3)/rate_limit.c | $(BUILD)
+	gcc -std=c11 -O2 -Wall -Wextra -Isrc $(filter %.c,$^) -lm -o $@
+
 # Prueba en el host del estimador de auto-PEEP contra la presión alveolar verdadera de la planta.
 $(BUILD)/lung_mon_test: tools/lung_mon_test.c src/lung_mon.c src/plant.c src/vent.c src/settings.c $(TAREA3)/rate_limit.c src/lung_mon.h | $(BUILD)
 	gcc -O2 -Wall -Wextra -Isrc $(filter %.c,$^) -lm -o $@

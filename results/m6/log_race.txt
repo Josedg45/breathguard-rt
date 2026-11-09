@@ -1,0 +1,141 @@
+patient: ./states/BreathGuard_StandardMale_PCV.json cargado en 0.1 s
+patient: 3101 ventanas, pasos > 20 ms 2, paso máx 68.4 ms, atraso máx 2 ventanas, perdidas 0; final: SpO2 98.0 %, EtCO2 33.8 mmHg, FC 72
+power_mgr: batería 100 %, escala de tiempo x60, prio 30
+power_mgr: final SoC 100.0 %, 29.40 V, potencia media 58.9 W
+breath_ctrl: pid 19677211, PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 60 s
+hmi: 5950 muestras, 5950 enviadas a 172.31.1.1:5005, 120 comandos
+breath_ctrl: 59140 ciclos, 344 con periodo > 1.5 ms, periodo máx 18.85 ms; cómputo p50 7.6 us, p99 171.1 us, máx 3965.9 us
+breath_ctrl: ajustes aplicados 3 (último #117), consultas sin respuesta 0
+breath_ctrl: settings changes received after their start time: 0 (expected 0)
+safety_mon: t=0.000 LANZA_HMI pid 19677213
+safety_mon: t=0.000 LANZA_CONTROL pid 19677211
+safety_mon: t=16.233 AJUSTE_ACEPTADO #1 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=20.500
+safety_mon: t=16.343 AJUSTE_ACEPTADO #2 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=20.500
+safety_mon: t=16.454 AJUSTE_ACEPTADO #3 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=20.500
+safety_mon: t=16.583 AJUSTE_ACEPTADO #4 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=20.500
+safety_mon: t=16.764 AJUSTE_ACEPTADO #5 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=20.500
+safety_mon: t=16.913 AJUSTE_ACEPTADO #6 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=20.500
+safety_mon: t=17.043 AJUSTE_ACEPTADO #7 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=20.500
+safety_mon: t=17.194 AJUSTE_ACEPTADO #8 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=20.500
+safety_mon: t=17.374 AJUSTE_ACEPTADO #9 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=20.500
+safety_mon: t=17.513 AJUSTE_ACEPTADO #10 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=20.500
+safety_mon: t=17.644 AJUSTE_ACEPTADO #11 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=20.500
+safety_mon: t=17.754 AJUSTE_ACEPTADO #12 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=20.500
+safety_mon: t=17.883 AJUSTE_ACEPTADO #13 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=20.500
+safety_mon: t=18.004 AJUSTE_ACEPTADO #14 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=20.500
+safety_mon: t=18.113 AJUSTE_ACEPTADO #15 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=20.500
+safety_mon: t=18.233 AJUSTE_ACEPTADO #16 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=20.500
+safety_mon: t=18.353 AJUSTE_ACEPTADO #17 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=20.500
+safety_mon: t=18.463 AJUSTE_ACEPTADO #18 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=20.500
+safety_mon: t=18.585 AJUSTE_ACEPTADO #19 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=20.500
+safety_mon: t=18.703 AJUSTE_ACEPTADO #20 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=20.500
+safety_mon: t=18.813 AJUSTE_ACEPTADO #21 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=20.500
+safety_mon: t=18.933 AJUSTE_ACEPTADO #22 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=20.500
+safety_mon: t=19.043 AJUSTE_ACEPTADO #23 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=20.500
+safety_mon: t=19.153 AJUSTE_ACEPTADO #24 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=20.500
+safety_mon: t=19.254 AJUSTE_ACEPTADO #25 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=20.500
+safety_mon: t=19.364 AJUSTE_ACEPTADO #26 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=20.500
+safety_mon: t=19.464 AJUSTE_ACEPTADO #27 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=20.500
+safety_mon: t=19.573 AJUSTE_ACEPTADO #28 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=20.500
+safety_mon: t=19.684 AJUSTE_ACEPTADO #29 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=20.500
+safety_mon: t=19.784 AJUSTE_ACEPTADO #30 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=20.500
+safety_mon: t=19.883 AJUSTE_ACEPTADO #31 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=20.500
+safety_mon: t=19.994 AJUSTE_ACEPTADO #32 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=20.500
+safety_mon: t=20.093 AJUSTE_ACEPTADO #33 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=20.500
+safety_mon: t=20.203 AJUSTE_ACEPTADO #34 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=20.500
+safety_mon: t=20.303 AJUSTE_RECHAZADO busy: change #34 starts in 0.20 s; resend after it
+safety_mon: t=20.414 AJUSTE_RECHAZADO busy: change #34 starts in 0.09 s; resend after it
+safety_mon: t=20.500 AJUSTE_APLICADO #34
+safety_mon: t=20.514 AJUSTE_ACEPTADO #35 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=20.613 AJUSTE_ACEPTADO #36 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=20.714 AJUSTE_ACEPTADO #37 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=20.814 AJUSTE_ACEPTADO #38 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=20.924 AJUSTE_ACEPTADO #39 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=21.023 AJUSTE_ACEPTADO #40 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=21.123 AJUSTE_ACEPTADO #41 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=21.234 AJUSTE_ACEPTADO #42 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=21.334 AJUSTE_ACEPTADO #43 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=21.444 AJUSTE_ACEPTADO #44 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=21.544 AJUSTE_ACEPTADO #45 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=21.644 AJUSTE_ACEPTADO #46 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=21.744 AJUSTE_ACEPTADO #47 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=21.844 AJUSTE_ACEPTADO #48 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=21.954 AJUSTE_ACEPTADO #49 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=22.063 AJUSTE_ACEPTADO #50 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=22.164 AJUSTE_ACEPTADO #51 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=22.284 AJUSTE_ACEPTADO #52 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=22.384 AJUSTE_ACEPTADO #53 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=22.484 AJUSTE_ACEPTADO #54 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=22.583 AJUSTE_ACEPTADO #55 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=22.694 AJUSTE_ACEPTADO #56 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=22.794 AJUSTE_ACEPTADO #57 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=22.894 AJUSTE_ACEPTADO #58 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=22.994 AJUSTE_ACEPTADO #59 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=23.094 AJUSTE_ACEPTADO #60 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=23.204 AJUSTE_ACEPTADO #61 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=23.314 AJUSTE_ACEPTADO #62 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=23.413 AJUSTE_ACEPTADO #63 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=23.524 AJUSTE_ACEPTADO #64 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=23.623 AJUSTE_ACEPTADO #65 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=23.734 AJUSTE_ACEPTADO #66 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=23.833 AJUSTE_ACEPTADO #67 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=23.944 AJUSTE_ACEPTADO #68 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=24.054 AJUSTE_ACEPTADO #69 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=24.154 AJUSTE_ACEPTADO #70 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=24.253 AJUSTE_ACEPTADO #71 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=24.354 AJUSTE_ACEPTADO #72 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=24.464 AJUSTE_ACEPTADO #73 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=24.564 AJUSTE_ACEPTADO #74 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=24.674 AJUSTE_ACEPTADO #75 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=24.774 AJUSTE_ACEPTADO #76 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=24.874 AJUSTE_ACEPTADO #77 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=24.984 AJUSTE_ACEPTADO #78 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=25.084 AJUSTE_ACEPTADO #79 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=25.183 AJUSTE_ACEPTADO #80 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=25.293 AJUSTE_ACEPTADO #81 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=25.500
+safety_mon: t=25.394 AJUSTE_RECHAZADO busy: change #81 starts in 0.11 s; resend after it
+safety_mon: t=25.500 AJUSTE_APLICADO #81
+safety_mon: t=25.514 AJUSTE_ACEPTADO #82 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=30.500
+safety_mon: t=25.614 AJUSTE_ACEPTADO #83 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=30.500
+safety_mon: t=25.724 AJUSTE_ACEPTADO #84 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=30.500
+safety_mon: t=25.823 AJUSTE_ACEPTADO #85 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=30.500
+safety_mon: t=25.923 AJUSTE_ACEPTADO #86 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=30.500
+safety_mon: t=26.024 AJUSTE_ACEPTADO #87 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=30.500
+safety_mon: t=26.123 AJUSTE_ACEPTADO #88 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=30.500
+safety_mon: t=26.224 AJUSTE_ACEPTADO #89 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=30.500
+safety_mon: t=26.324 AJUSTE_ACEPTADO #90 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=30.500
+safety_mon: t=26.423 AJUSTE_ACEPTADO #91 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=30.500
+safety_mon: t=26.524 AJUSTE_ACEPTADO #92 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=30.500
+safety_mon: t=26.623 AJUSTE_ACEPTADO #93 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=30.500
+safety_mon: t=26.723 AJUSTE_ACEPTADO #94 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=30.500
+safety_mon: t=26.824 AJUSTE_ACEPTADO #95 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=30.500
+safety_mon: t=26.924 AJUSTE_ACEPTADO #96 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=30.500
+safety_mon: t=27.024 AJUSTE_ACEPTADO #97 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=30.500
+safety_mon: t=27.124 AJUSTE_ACEPTADO #98 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=30.500
+safety_mon: t=27.223 AJUSTE_ACEPTADO #99 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=30.500
+safety_mon: t=27.333 AJUSTE_ACEPTADO #100 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=30.500
+safety_mon: t=27.444 AJUSTE_ACEPTADO #101 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=30.500
+safety_mon: t=27.544 AJUSTE_ACEPTADO #102 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=30.500
+safety_mon: t=27.654 AJUSTE_ACEPTADO #103 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=30.500
+safety_mon: t=27.763 AJUSTE_ACEPTADO #104 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=30.500
+safety_mon: t=27.864 AJUSTE_ACEPTADO #105 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=30.500
+safety_mon: t=27.963 AJUSTE_ACEPTADO #106 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=30.500
+safety_mon: t=28.073 AJUSTE_ACEPTADO #107 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=30.500
+safety_mon: t=28.173 AJUSTE_ACEPTADO #108 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=30.500
+safety_mon: t=28.284 AJUSTE_ACEPTADO #109 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=30.500
+safety_mon: t=28.384 AJUSTE_ACEPTADO #110 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=30.500
+safety_mon: t=28.483 AJUSTE_ACEPTADO #111 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=30.500
+safety_mon: t=28.593 AJUSTE_ACEPTADO #112 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=30.500
+safety_mon: t=28.694 AJUSTE_ACEPTADO #113 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=30.500
+safety_mon: t=28.793 AJUSTE_ACEPTADO #114 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=30.500
+safety_mon: t=28.893 AJUSTE_ACEPTADO #115 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=30.500
+safety_mon: t=28.994 AJUSTE_ACEPTADO #116 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=30.500
+safety_mon: t=29.094 AJUSTE_ACEPTADO #117 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=30.500
+safety_mon: t=30.500 AJUSTE_APLICADO #117
+safety_mon: t=59.503 CONTROL_TERMINA despedida
+safety_mon: 59640 ticks, 0 fallas del controlador, 126 eventos; vt_meter: 0 respiraciones, Vti 0, Vte 0 mL
+safety_mon: peso ideal 75.4 kg (talla 180.3 cm); última respiración: auto-PEEP 1.07 cmH2O, flujo final -2.69 L/min, tau 1.41 s, R 23.8, C 59.6 mL/cmH2O
+pneumatic_sim: listo como 'breathguard_pneumatic', prio 60, 64 s
+pneumatic_sim: 63534 ticks, 106 > 1.5 ms, dt máx 8.52 ms, huecos recortados 0, lecturas 130692, comandos 59140
+pneumatic_sim: ventanas 3200, paciente conectado, ventanas perdidas 0, resultados descartados 0
+pneumatic_sim: mensajes de override 0

@@ -1,0 +1,5 @@
+1794241747.240155334 p_insp=25: ACK #1 PCV p_insp 25.0 peep 5.0 rr 12.0 ie 2.0 vt 500 desde t=10545.071
+1794241757.313538386 p_insp=50: NAK p_insp 50.0 fuera de 5-35 cmH2O
+1794241765.372107111 p_insp=25 peep=8 rr=15: ACK #2 PCV p_insp 25.0 peep 8.0 rr 15.0 ie 2.0 vt 500 desde t=10560.071
+1794241775.435283325 foo=3: NAK clave 'foo' desconocida
+1794241792.491096099 mode=vcv vt=450: ACK #3 VCV p_insp 25.0 peep 8.0 rr 15.0 ie 2.0 vt 450 desde t=10588.071

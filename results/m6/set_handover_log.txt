@@ -1,0 +1,29 @@
+bg_fault: marca t_abs=10579.600478
+patient: ./states/BreathGuard_StandardMale_PCV.json cargado en 0.2 s
+patient: 4600 ventanas, pasos > 20 ms 23, paso máx 63.0 ms, atraso máx 2 ventanas, perdidas 0; final: SpO2 98.1 %, EtCO2 33.0 mmHg, FC 72
+power_mgr: batería 100 %, escala de tiempo x60, prio 30
+power_mgr: final SoC 100.0 %, 29.40 V, potencia media 59.0 W
+breath_ctrl: pid 18628636, PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 90 s
+breath_ctrl: pid 18661403, PCV 25/8 cmH2O, 15 rpm, I:E 1:2, prio 50, 35 s
+hmi: 8931 muestras, 8931 enviadas a 172.31.1.1:5005, 5 comandos
+safety_mon: t=0.000 LANZA_HMI pid 18628637
+safety_mon: t=0.000 LANZA_CONTROL pid 18628636
+safety_mon: t=16.897 AJUSTE_ACEPTADO #1 PCV 25.0/5.0 12 rpm 1:2.0 Vt 500 desde t=20.500
+safety_mon: t=20.501 AJUSTE_APLICADO #1
+safety_mon: t=26.957 AJUSTE_RECHAZADO p_insp 50.0 fuera de 5-35 cmH2O
+safety_mon: t=35.017 AJUSTE_ACEPTADO #2 PCV 25.0/8.0 15 rpm 1:2.0 Vt 500 desde t=35.500
+safety_mon: t=35.501 AJUSTE_APLICADO #2
+safety_mon: t=55.035 CONTROL_MUERTO respaldo activo
+safety_mon: t=55.035 RELANZA_CONTROL pid 18661403; override enviado 0.03 ms tras detectar; spawn 0.7
+safety_mon: t=59.501 DEVUELVE_MANDO 446 latidos del nuevo controlador
+safety_mon: t=62.137 AJUSTE_ACEPTADO #3 VCV 25.0/8.0 15 rpm 1:2.0 Vt 450 desde t=63.500
+safety_mon: t=63.501 AJUSTE_APLICADO #3
+safety_mon: 88931 ticks, 1 fallas del controlador, 12 eventos; vt_meter: 0 respiraciones, Vti 0, Vte 0 mL
+safety_mon: peso ideal 75.4 kg (talla 180.3 cm); última respiración: auto-PEEP 1.53 cmH2O, flujo final -3.80 L/min, tau 1.52 s, R 24.1, C 63.0 mL/cmH2O
+breath_ctrl: 34733 ciclos, 201 con periodo > 1.5 ms, periodo máx 55.10 ms; cómputo p50 3.9 us, p99 81.6 us, máx 1225.0 us
+breath_ctrl: ajustes aplicados 2 (último #3), consultas sin respuesta 0
+breath_ctrl: settings changes received after their start time: 0 (expected 0)
+pneumatic_sim: listo como 'breathguard_pneumatic', prio 60, 94 s
+pneumatic_sim: 92907 ticks, 290 > 1.5 ms, dt máx 55.06 ms, huecos recortados 0, lecturas 195692, comandos 88937
+pneumatic_sim: ventanas 4700, paciente conectado, ventanas perdidas 0, resultados descartados 0
+pneumatic_sim: mensajes de override 4459

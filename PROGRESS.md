@@ -473,6 +473,23 @@ Resultados en QNX:
 Error corregido: la antigüedad del comando contaba desde el arranque de la planta, antes del primer comando (máximo
 1000 ms, p99 200 ms). Ahora cuenta desde el primer WRITE u OVERRIDE.
 
+### Rama de Santiago: `fix/settings-handover-race` (revisada y unida el 2026-11-09)
+- **Carrera real.** Un comando que reemplazaba un cambio pendiente en los últimos ~100 ms antes de su t0 podía llegar
+  a tiempo al respaldo y tarde a `breath_ctrl`, que consulta cada 100 ms. El control arrancaba los ajustes viejos y se
+  reiniciaba a mitad de la respiración.
+- **Arreglo.**
+  - `settings_schedule()` (`src/settings.c`) solo deja reemplazar un cambio pendiente si faltan ≥ `SET_LEAD_S`
+    (0.2 s) para que empiece. Si no, `safety_mon` responde `NAK busy:` y `bg_cmd.py` reenvía solo (`--retry`).
+  - `breath_ctrl` cuenta los cambios recibidos después de su inicio. Debe dar 0.
+- **Verificado** (él no lo había podido correr):
+  - compila sin avisos;
+  - la regla, probada en el host con `tools/settings_schedule_test.c` (pasó del README a una prueba real);
+  - el reenvío de `bg_cmd.py`, probado contra una HMI falsa;
+  - en la VM, la escena de ajustes no tiene regresiones y el contador da 0;
+  - en la VM, la escena de carrera (~120 reemplazos cada 0.1 s) dio 117 ACK y 3 busy, todos los cambios en su
+    inicio de respiración y el contador en 0.
+- Datos: `results/m6/*_race*` y `set_handover_*`.
+
 ### Pendiente
 - Grabar el video (< 3 min) con `scripts/demo_run.sh` y el contraste monolítico; subirlo a YouTube.
 - Repetir la escena "congelar" cuando el watchdog (tarea 1) funcione.

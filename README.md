@@ -167,127 +167,21 @@ after it`. `bg_cmd.py` resends by itself (`--retry`, default 3). At the end of a
 changes it received after their start time. That count should always be 0.
 
 Offline (Linux, no QNX) checks of the control and alarm logic: `make build/m3_offline build/m4_offline
-build/m5_offline build/lung_mon_test`.
+build/m5_offline build/lung_mon_test build/settings_schedule_test`.
 
 Fault injection on the target: `bg_fault -d 1` (disconnect), `-o 8` (obstruction), `-l` (leak), `-k 1` (stuck
 pressure sensor), `-m 0|1` (mains off/on).
 
-## Suggested checks: settings handover
+### Settings handover: checks
 
-These checks cover the `NAK busy` rule above (`settings_schedule()` in `src/settings.c`, used by `safety_mon`). They
-were not run when the change was written: that machine had no C toolchain and no QNX VM. They are here so the
-reviewer can run them before merging. Checks 1 and 2 need only the host; check 3 is the real one, on the VM.
-
-**1. Scheduling rule, host only (`gcc`, no QNX).**
-
-```bash
-cat > /tmp/check_schedule.c <<'EOF'
-#include <stdio.h>
-#include <string.h>
-
-#include "settings.h"
-
-#define CHECK(c) do { if (!(c)) { printf("FAIL line %d: %s\n", __LINE__, #c); return 1; } } while (0)
-
-int main(void)
-{
-    /* Breaths every 5 s (12 bpm) from t = 10 s. */
-    bg_settings_t cur = { .seq = 1, .set = { .rr = 12, .ie = 2, .p_insp = 20, .peep = 5 }, .t0 = 10.0 };
-    bg_settings_t next = cur;
-    char why[64] = "";
-    double t0 = -1;
-
-    /* No pending change: the first breath start at least SET_LEAD_S (0.2 s) away. */
-    CHECK(settings_schedule(&cur, NULL, 14.7, &t0, why, sizeof why) && t0 == 15.0);
-    CHECK(settings_schedule(&cur, NULL, 14.9, &t0, why, sizeof why) && t0 == 20.0);
-
-    /* Pending change 0.3 s away: replaced in place, same t0. */
-    next.seq = 2;
-    next.t0 = 15.0;
-    CHECK(settings_schedule(&cur, &next, 14.7, &t0, why, sizeof why) && t0 == 15.0);
-
-    /* Pending change 0.15 s away, or already due: refused as busy; no comma (it goes to the events CSV). */
-    t0 = -1;
-    CHECK(!settings_schedule(&cur, &next, 14.85, &t0, why, sizeof why) && t0 == -1);
-    CHECK(strncmp(why, SET_BUSY_PREFIX, strlen(SET_BUSY_PREFIX)) == 0 && !strchr(why, ','));
-    CHECK(!settings_schedule(&cur, &next, 15.0, &t0, why, sizeof why));
-    printf("%s\nsettings_schedule: all checks passed\n", why);
-    return 0;
-}
-EOF
-gcc -std=c11 -Wall -Wextra -Isrc /tmp/check_schedule.c src/settings.c tareas/03_rate_limit/rate_limit.c -lm \
-    -o /tmp/check_schedule && /tmp/check_schedule
-```
-
-Expected: no warnings, then `busy: change #2 starts in 0.00 s; resend after it` and `settings_schedule: all checks
-passed`.
-
-**2. Resend logic of `bg_cmd.py`, host only (Python 3, standard library).** A fake HMI answers `busy` once, then
-`ACK`:
-
-```bash
-python3 - <<'EOF'
-import socket, subprocess, sys, threading
-srv = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-srv.bind(("127.0.0.1", 0))
-answers = ["NAK busy: change #2 starts in 0.12 s; resend after it", "ACK #3 PCV p_insp 23.0"]
-def fake_hmi():
-    for ans in answers:
-        _, addr = srv.recvfrom(256)
-        srv.sendto(ans.encode(), addr)
-threading.Thread(target=fake_hmi, daemon=True).start()
-r = subprocess.run([sys.executable, "scripts/bg_cmd.py", "--vm", "127.0.0.1", "--port",
-                    str(srv.getsockname()[1]), "p_insp=23"], capture_output=True, text=True)
-print("stdout:", r.stdout.strip(), "| stderr:", r.stderr.strip(), "| exit", r.returncode)
-assert r.returncode == 0 and r.stdout.startswith("ACK") and "busy" in r.stderr
-print("bg_cmd.py resend: ok")
-EOF
-```
-
-Expected: `ACK` on stdout, the `busy` refusal on stderr, exit code 0. With `--retry 0` the script stops at the `NAK`
-and exits with 1.
-
-**3. On the QNX VM.**
-
-a. No regression in the existing settings scene:
-
-```bash
-scripts/m6_run.sh set 90 ajustes
-python3 scripts/m6_settings_check.py set              # compare with results/m6/ajustes_respiraciones.txt
-grep "after their start time" results/m6/log_set.txt  # breath_ctrl: ... 0 (expected 0)
-```
-
-The commands in this scene are 8–17 s apart, so none should get `busy`. Each accepted change should start at the next
-breath start, as in `results/m6/ajustes_respiraciones.txt` and `results/m6/cmd_ajustes.txt`.
-
-b. The race window itself. Start a scene with the live dashboard:
-
-```bash
-GUI=1 scripts/m6_run.sh race 60 normal
-```
-
-When the dashboard shows breaths, send a replacement about every 0.1 s for about 12 s from a second terminal:
-
-```bash
-for i in $(seq 120); do python3 scripts/bg_cmd.py --retry 0 p_insp=$((20 + i % 2 * 2)); sleep 0.05; done \
-    | awk '{print $1, ($2 == "busy:" ? "busy" : "")}' | sort | uniq -c
-```
-
-When the scene ends, read the controller's count:
-
-```bash
-grep "after their start time" results/m6/log_race.txt
-python3 scripts/m6_settings_check.py race
-```
-
-Expected:
-- the loop prints mostly `ACK` and a few `NAK busy` (about two at each breath start, so every 5 s), and no other
-  `NAK`;
-- `breath_ctrl` reports `0 (expected 0)`;
-- the breath table shows every breath driven by `breath_ctrl`, with the `busy` rejections listed between breaths.
-
-On `main` the same loop never gets `busy`, and the controller can pick up a replaced change after its start (then it
-re-initializes in the middle of an inspiration). This branch adds the counter that makes that visible.
+- Host: `make build/settings_schedule_test && build/settings_schedule_test` tests the scheduling rule.
+- QNX VM: the existing settings scene (`scripts/m6_run.sh set 90 ajustes`) shows no regression. Every accepted
+  change starts at the next breath start, Vt matches `results/m6/ajustes_respiraciones.txt`, and the late-change
+  count is 0.
+- Race window on the VM (`results/m6/*_race*`): about 120 replacement commands, one every ~0.1 s for 12 s, gave
+  117 `ACK` and 3 `NAK busy`. The busy ones all came within 0.2 s of a breath start. Each change was applied
+  exactly at its breath start, `breath_ctrl` reported 0 changes received after their start time, and every breath
+  was driven by `breath_ctrl`.
 
 ## Repository layout
 
