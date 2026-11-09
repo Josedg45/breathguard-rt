@@ -127,6 +127,36 @@ The first `AUTH` claims the plant (trust on first use). This works because `safe
 plant and launches the HMI itself. Layer 2, a secpol policy that stops the HMI type from even connecting to the
 plant, is planned.
 
+## The ventilator as files: `/dev/ventilator`
+
+In QNX a driver is an ordinary process that takes over part of the path namespace. `ventd` (`src/ventd.c`,
+priority 10) is a resource manager: `open`, `read` and `write` on its paths arrive as messages. Any tool can use the
+ventilator without knowing our protocol:
+
+```sh
+cat /dev/ventilator/status        # mode and settings, Paw, flow, vitals, alarms, power, loop timing
+cat /dev/ventilator/alarms        # active alarms, one per line
+echo "p_insp=22 peep=6" > /dev/ventilator/settings   # change request
+cat /dev/ventilator/settings      # current settings and the result of the last request
+```
+
+`ventd` validates and applies nothing itself. It forwards the request to `safety_mon` like the HMI does, and the
+`write()` fails with `EINVAL` if `safety_mon` rejects it (`EAGAIN` for "busy"). `ventd` has no connection to the
+plant either: it reads everything from `safety_mon` and `power_mgr`.
+
+`scripts/a_run.sh` tests it on QNX (`results/ventd/`). One client reads `status` in a loop: 1156 complete
+reads in 10 s. Then `ventd` is frozen with `SIGSTOP`: a reader blocks until `ventd` resumes, and nobody else
+notices. The plant's command age (1 ms ticks) shows the controller never noticed either:
+
+| Window | p50 | p99 | p99.9 | max |
+|---|---|---|---|---|
+| Baseline | 0.93 ms | 1.30 ms | 1.80 ms | 2.58 ms |
+| Client reading `/dev/ventilator/status` non-stop | 0.99 ms | 1.08 ms | 2.03 ms | 4.00 ms |
+| `ventd` frozen | 0.89 ms | 1.26 ms | 2.04 ms | 2.99 ms |
+
+In the same run, a valid write was applied at the next breath, and three writes failed with an error: out of
+range, malformed, and on a read-only file.
+
 ## Evidence of QNX usage
 
 | QNX feature | Where |
@@ -143,6 +173,7 @@ plant, is planned.
 | `posix_spawn()` to relaunch processes | `src/safety_mon.c` |
 | Sender identity from the kernel (`struct _msg_info`: `pid`, `srcmsglen`) to authorize actuator commands | `src/pneumatic_sim.c`, `tareas/04_plant_auth/` |
 | `POSIX_SPAWN_HOLD`: child created stopped, authorized, then released with `SIGCONT` | `src/safety_mon.c`: `spawn_ctrl()` |
+| Resource manager (`resmgr_attach`, `iofunc_*`, `dispatch_*`, `resmgr_msgget`) exposing `/dev/ventilator` | `src/ventd.c` |
 | `TimerTimeout()` bounding a blocking `MsgSend` (the controller never waits more than 2 ms for the supervisor) | `src/breath_ctrl.c`: `fetch_settings()` |
 | Loop metrics carried in the same bounded `MsgSend` (no extra message on the critical path) | `src/breath_ctrl.c`: `stats_add()`; `src/bg_proto.h`: `bg_loop_stats_t` |
 | Pulse ported to QNX (libc++, protobuf 21.12) | `port/build_pulse_qnx.sh`, `port/qnx-x86_64.cmake` |

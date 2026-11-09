@@ -3,6 +3,8 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 static int reject(char *why, size_t n, const char *msg, double v)
 {
@@ -68,4 +70,33 @@ uint32_t settings_breath(const bg_settings_t *cur, double now, int *insp, double
     if (insp) *insp = since >= 0 && in < ti;
     if (into) *into = in;
     return b;
+}
+
+/* Un comando de texto -> pedido de ajustes, partiendo de los actuales. Devuelve 0 si se entendio. */
+int settings_parse_cmd(char *txt, const bg_settings_t *base, bg_settings_t *req, char *err, size_t n)
+{
+    *req = *base;
+    int any = 0;
+    for (char *tok = strtok(txt, " \t\r\n,;"); tok; tok = strtok(NULL, " \t\r\n,;")) {
+        char *eq = strchr(tok, '=');
+        if (!eq) { snprintf(err, n, "falta '=' en '%.20s'", tok); return -1; }
+        *eq = 0;
+        const char *k = tok, *v = eq + 1;
+        char *end;
+        double x = strtod(v, &end);
+        if (!strcmp(k, "mode")) {
+            if (!strcmp(v, "pcv")) req->vcv = 0;
+            else if (!strcmp(v, "vcv")) req->vcv = 1;
+            else { snprintf(err, n, "modo '%.8s' desconocido", v); return -1; }
+        } else if (end == v || *end) { snprintf(err, n, "valor '%.12s' no numerico", v); return -1; }
+        else if (!strcmp(k, "p_insp")) req->set.p_insp = x;
+        else if (!strcmp(k, "peep")) req->set.peep = x;
+        else if (!strcmp(k, "rr")) req->set.rr = x;
+        else if (!strcmp(k, "ie")) req->set.ie = x;
+        else if (!strcmp(k, "vt")) req->vt = x / 1e3;
+        else { snprintf(err, n, "clave '%.12s' desconocida", k); return -1; }
+        any = 1;
+    }
+    if (!any) { snprintf(err, n, "comando vacio"); return -1; }
+    return 0;
 }

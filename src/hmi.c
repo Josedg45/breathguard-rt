@@ -43,35 +43,6 @@ static void on_sig(int sig)
     if (sig == SIGTERM) stop = 1;
 }
 
-/* Un comando de texto -> pedido de ajustes, partiendo de los actuales. Devuelve 0 si se entendio. */
-static int parse_cmd(char *txt, const bg_settings_t *base, bg_settings_t *req, char *err, size_t n)
-{
-    *req = *base;
-    int any = 0;
-    for (char *tok = strtok(txt, " \t\r\n,;"); tok; tok = strtok(NULL, " \t\r\n,;")) {
-        char *eq = strchr(tok, '=');
-        if (!eq) { snprintf(err, n, "falta '=' en '%.20s'", tok); return -1; }
-        *eq = 0;
-        const char *k = tok, *v = eq + 1;
-        char *end;
-        double x = strtod(v, &end);
-        if (!strcmp(k, "mode")) {
-            if (!strcmp(v, "pcv")) req->vcv = 0;
-            else if (!strcmp(v, "vcv")) req->vcv = 1;
-            else { snprintf(err, n, "modo '%.8s' desconocido", v); return -1; }
-        } else if (end == v || *end) { snprintf(err, n, "valor '%.12s' no numerico", v); return -1; }
-        else if (!strcmp(k, "p_insp")) req->set.p_insp = x;
-        else if (!strcmp(k, "peep")) req->set.peep = x;
-        else if (!strcmp(k, "rr")) req->set.rr = x;
-        else if (!strcmp(k, "ie")) req->set.ie = x;
-        else if (!strcmp(k, "vt")) req->vt = x / 1e3;
-        else { snprintf(err, n, "clave '%.12s' desconocida", k); return -1; }
-        any = 1;
-    }
-    if (!any) { snprintf(err, n, "comando vacio"); return -1; }
-    return 0;
-}
-
 static int try_open(const char *name)
 {
     return name_open(name, 0);
@@ -185,7 +156,7 @@ int main(int argc, char **argv)
             bg_settings_reply_t rep;
             char err[64];
             if (safety == -1) snprintf(ans, sizeof ans, "NAK safety_mon no disponible\n");
-            else if (parse_cmd(cbuf, &ss.set, &sm.req, err, sizeof err) == -1) snprintf(ans, sizeof ans, "NAK %s\n", err);
+            else if (settings_parse_cmd(cbuf, &ss.set, &sm.req, err, sizeof err) == -1) snprintf(ans, sizeof ans, "NAK %s\n", err);
             else if (MsgSend(safety, &sm, sizeof sm, &rep, sizeof rep) == -1) snprintf(ans, sizeof ans, "NAK MsgSend\n");
             else if (!rep.ok) snprintf(ans, sizeof ans, "NAK %s\n", rep.why);
             else {

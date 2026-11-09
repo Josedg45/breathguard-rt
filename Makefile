@@ -23,6 +23,7 @@ M5_BINS := $(BUILD)/power_mgr
 M6_BINS := $(BUILD)/hmi $(BUILD)/mono_vent
 DESIGN_BINS := $(BUILD)/step_test
 SEC_BINS := $(BUILD)/evil_hmi
+VENTD_BINS := $(BUILD)/ventd
 COMMON_H := src/bg_types.h src/bg_proto.h src/rt_util.h src/settings.h
 
 .PHONY: all clean deploy check-env tarea1 tarea2 tarea3 tarea4 m3 m4 m5 m6 patient
@@ -53,7 +54,7 @@ tarea4: check-env | $(BUILD)
 	scp -o LogLevel=ERROR -q $(BUILD)/test_plant_auth $(QNX_HOST_SSH):$(QNX_DIR)/
 	ssh -o LogLevel=ERROR $(QNX_HOST_SSH) "$(QNX_DIR)/test_plant_auth"
 
-all: check-env $(BINS) $(M3_BINS) $(M4_BINS) $(M5_BINS) $(M6_BINS) $(DESIGN_BINS) $(SEC_BINS)
+all: check-env $(BINS) $(M3_BINS) $(M4_BINS) $(M5_BINS) $(M6_BINS) $(DESIGN_BINS) $(SEC_BINS) $(VENTD_BINS)
 
 m3: check-env $(M3_BINS)
 
@@ -71,8 +72,8 @@ m5: check-env $(M3_BINS) $(M4_BINS) $(M5_BINS)
 m6: check-env $(M3_BINS) $(M4_BINS) $(M5_BINS) $(M6_BINS)
 
 # En QNX los sockets están en libsocket.
-$(BUILD)/hmi: src/hmi.c src/bg_power.h $(COMMON_H) | $(BUILD)
-	$(CC) $(CFLAGS) -Isrc src/hmi.c -lsocket -o $@
+$(BUILD)/hmi: src/hmi.c src/settings.c $(TAREA3)/rate_limit.c src/bg_power.h $(COMMON_H) | $(BUILD)
+	$(CC) $(CFLAGS) -Isrc src/hmi.c src/settings.c $(TAREA3)/rate_limit.c -lsocket -lm -o $@
 
 # Version monolitica (control + pantalla en un proceso) para el contraste de la demo.
 $(BUILD)/mono_vent: src/mono_vent.c src/vent.c src/vent.h src/plant.c $(COMMON_H) | $(BUILD)
@@ -88,6 +89,10 @@ $(BUILD)/m5_offline: tools/m5_offline.c src/battery.c src/plant.c src/vent.c | $
 SAFETY_SRC := src/safety_mon.c src/alarms.c src/lung_mon.c src/vent.c src/plant.c src/settings.c $(TAREA3)/rate_limit.c $(TAREA1)/watchdog.c $(TAREA2)/vt_meter.c
 $(BUILD)/safety_mon: $(SAFETY_SRC) src/bg_power.h src/alarms.h src/lung_mon.h src/vent.h $(TAREA1)/watchdog.h $(TAREA2)/vt_meter.h $(COMMON_H) | $(BUILD)
 	$(CC) $(CFLAGS) -Isrc -I$(TAREA1) -I$(TAREA2) $(SAFETY_SRC) -lm -o $@
+
+# /dev/ventilator: resource manager (punto A del plan QNX).
+$(BUILD)/ventd: src/ventd.c src/settings.c src/alarms.c $(TAREA3)/rate_limit.c src/alarms.h src/bg_power.h $(COMMON_H) | $(BUILD)
+	$(CC) $(CFLAGS) -Isrc src/ventd.c src/settings.c src/alarms.c $(TAREA3)/rate_limit.c -lm -o $@
 
 # HMI comprometida para la prueba de la tarea 4.
 $(BUILD)/evil_hmi: src/evil_hmi.c $(COMMON_H) | $(BUILD)
@@ -139,7 +144,7 @@ $(BUILD):
 
 deploy: all
 	ssh $(QNX_HOST_SSH) "mkdir -p $(QNX_DIR)"
-	scp -q $(BINS) $(M3_BINS) $(M4_BINS) $(M5_BINS) $(M6_BINS) $(SEC_BINS) $(QNX_HOST_SSH):$(QNX_DIR)/
+	scp -q $(BINS) $(M3_BINS) $(M4_BINS) $(M5_BINS) $(M6_BINS) $(SEC_BINS) $(VENTD_BINS) $(QNX_HOST_SSH):$(QNX_DIR)/
 
 clean:
 	rm -rf $(BUILD)

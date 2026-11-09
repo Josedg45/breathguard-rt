@@ -529,7 +529,7 @@ la planta) y B2 (política secpol: el tipo de la HMI no tiene `channel_connect` 
 2. B capa 1. **Modo tutor:** la comprobación por pid en `pneumatic_sim` la escribe el usuario (estructura, TODO,
    explicación de `_msg_info` y prueba con una "HMI maliciosa"). Claude: la HMI lee de `safety_mon` y el registro
    del evento. **Parte de Claude hecha; falta la tarea 4 del usuario** (ver "B1" abajo).
-3. A — `/dev/ventilator` con `ventd`.
+3. A — `/dev/ventilator` con `ventd`. **Hecho** (ver "A" abajo).
 4. C + B capa 2. Antes de regenerar: copia de `~/qnxvm`, empezar con `--secpol=open`, arranque automático con la IP
    172.31.1.2.
 5. D — copiloto con ML real: modelo pequeño (p. ej. árbol de decisión) entrenado offline en Python con datos del
@@ -569,3 +569,16 @@ la planta) y B2 (política secpol: el tipo de la HMI no tiene `channel_connect` 
   próximas corridas.
 - **Al entregar la tarea 4:** correr `make tarea4` y `scripts/b1_run.sh b1_final`, publicar los resultados
   "con comprobación" en el README y en `results/sec/`, y actualizar la frase "in progress" del README.
+
+### A — `/dev/ventilator` con `ventd` (2026-11-09)
+- `src/ventd.c`: resource manager (prio 10) con `status`, `alarms` (0444) y `settings` (0664). Cada lectura toma una
+  copia al empezar (offset 0). La escritura reenvía el pedido a `safety_mon` (`settings_parse_cmd`, que se movió de
+  `hmi.c` a `settings.c`), con `EINVAL` si lo rechaza y `EAGAIN` si es "busy". El último resultado se lee en
+  `settings`. `status` no se puede escribir (`EROFS`, aunque seas root). Sin conexión con la planta.
+- Prueba `scripts/a_run.sh` → `a_check.py` (`results/ventd/*ventd1*`): PASA.
+  - 1156 lecturas (`cat`) en 10 s.
+  - Con `ventd` congelado, el lector queda bloqueado hasta `SIGCONT`.
+  - La escritura válida se aplica en la respiración siguiente; las tres inválidas devuelven error.
+  - 0 fallas del controlador.
+  - Antigüedad del comando, p99: 1.30 ms en la línea base, 1.08 con el lector y 1.26 con `ventd` congelado.
+- Límite: `ventd` no está supervisado (nadie lo relanza). En el punto C lo lanzará el arranque de la imagen.

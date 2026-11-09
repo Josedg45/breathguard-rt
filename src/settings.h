@@ -64,4 +64,9 @@ int settings_schedule(const bg_settings_t *cur, const bg_settings_t *pending, do
 /* Numero de respiracion (desde t0 de cur) en now, y si esta en inspiracion. */
 uint32_t settings_breath(const bg_settings_t *cur, double now, int *insp, double *into);
 
+/* Comando de texto del operador ("p_insp=25 peep=8", claves mode=pcv|vcv, p_insp, peep, rr, ie, vt en mL) ->
+ * pedido de ajustes, partiendo de base. Modifica txt (strtok). Devuelve 0 si se entendio; si no, -1 y el motivo
+ * en err. Lo usan la HMI (UDP) y ventd (/dev/ventilator/settings). */
+int settings_parse_cmd(char *txt, const bg_settings_t *base, bg_settings_t *req, char *err, size_t n);
+
 #endif

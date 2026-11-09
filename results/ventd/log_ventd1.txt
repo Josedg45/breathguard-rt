@@ -1,0 +1,58 @@
+== ls -l /dev/ventilator
+total 0
+-r--r--r--  1 root root 0 2026-11-09 22:51 alarms
+-rw-rw-r--  1 root root 0 2026-11-09 22:51 settings
+-r--r--r--  1 root root 0 2026-11-09 22:51 status
+== status
+source=breath_ctrl
+mode=pcv p_insp=20.0 peep=5.0 rr=12.0 ie=2.0 vt=500
+pending=0 seq=0
+paw_cmh2o=5.07 flow_lpm=-3.9
+spo2_pct=na etco2_mmhg=na hr_bpm=na (sin Pulse)
+ibw_kg=75.4 auto_peep_cmh2o=1.02
+alarms=0x0 failovers=0 hmi_restarts=0 denied=0
+loop_p99_ms=1.335 loop_max_ms=2.626 loop_late=34 loop_cycles=9900
+power=mains soc_pct=100 autonomy_min=163
+last_event=LANZA_CONTROL
+MARCA lectura_inicio 1794264672
+MARCA lectura_fin 1794264682
+LECTURAS 1156
+MARCA congelado 1794264682
+MARCA descongelado 1794264687
+none
+CAT_TERMINO 1794264687
+== write p_insp=22
+RC_OK 0
+== write p_insp=50
+RC_RANGO 1
+== write foo
+RC_MAL 1
+== write status
+RC_RO 1
+== settings
+mode=pcv p_insp=22.0 peep=5.0 rr=12.0 ie=2.0 vt=500
+seq=1 pending=0
+last=NAK falta '=' en 'foo' (foo)
+T0 1794264662
+pneumatic_sim: listo como 'breathguard_pneumatic', prio 60, 42 s
+pneumatic_sim: AUTH t_abs=333.717189 de pid 1544215: controlador autorizado pid 1560601
+pneumatic_sim: 41912 ticks, 24 > 1.5 ms, dt máx 3.83 ms, huecos recortados 0, lecturas 83321, comandos 39406
+pneumatic_sim: ventanas 2100, paciente sin Pulse (RC fijo), ventanas perdidas 0, resultados descartados 0
+pneumatic_sim: comandos rechazados por autorización 0 (último: pid 0, tipo 0x0)
+pneumatic_sim: mensajes de override 0
+breath_ctrl: pid 1560601, PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 40 s
+breath_ctrl: 39406 ciclos, 100 con periodo > 1.5 ms, periodo máx 4.87 ms; cómputo p50 10.2 us, p99 157.8 us, máx 1477.7 us
+breath_ctrl: ajustes aplicados 1 (último #1), consultas sin respuesta 0
+breath_ctrl: settings changes received after their start time: 0 (expected 0)
+safety_mon: t=0.000 LANZA_CONTROL pid 1560601
+safety_mon: t=25.398 AJUSTE_ACEPTADO #1 PCV 22.0/5.0 12 rpm 1:2.0 Vt 500 desde t=30.500
+safety_mon: t=26.403 AJUSTE_RECHAZADO p_insp 50.0 fuera de 5-35 cmH2O
+safety_mon: t=30.501 AJUSTE_APLICADO #1
+safety_mon: t=39.502 CONTROL_TERMINA despedida
+safety_mon: 39924 ticks, 0 fallas del controlador, 5 eventos; vt_meter: 0 respiraciones, Vti 0, Vte 0 mL
+safety_mon: peso ideal 75.4 kg (talla 180.3 cm); última respiración: auto-PEEP 1.16 cmH2O, flujo final -2.90 L/min, tau 1.40 s, R 24.1, C 58.3 mL/cmH2O
+ventd: listo en /dev/ventilator/{status,alarms,settings}, prio 10
+ventd: escritura de pid 1511445: ACK #1 desde t=364.217 (p_insp=22)
+ventd: escritura de pid 1511445: NAK p_insp 50.0 fuera de 5-35 cmH2O (p_insp=50)
+ventd: escritura de pid 1511445: NAK falta '=' en 'foo' (foo)
+ventd: fin
