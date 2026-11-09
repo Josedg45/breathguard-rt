@@ -493,3 +493,46 @@ Error corregido: la antigüedad del comando contaba desde el arranque de la plan
 ### Pendiente
 - Grabar el video (< 3 min) con `scripts/demo_run.sh` y el contraste monolítico; subirlo a YouTube.
 - Repetir la escena "congelar" cuando el watchdog (tarea 1) funcione.
+
+## Plan QNX-específico (informe del 2026-11-09)
+
+### Disponibilidad en el SDP 8.0 (investigado en `~/qnx800` y en la VM)
+| Tecnología | ¿Disponible? | Cómo |
+|---|---|---|
+| Resource managers | Sí | `resmgr_attach`, `iofunc_*`, `dispatch_*`; con política, `secpol_resmgr_attach` |
+| Políticas de seguridad (secpol) | Sí, en el SDP | `secpol`, `secpolcompile`, `secpolgenerate`, `secpolpush`, `libsecpol` (`secpol_posix_spawnattr_settypeid`, `secpol_check_permission`, `secpol_transition_type`), `on -T/-A/-u`, habilidad `channel_connect`. Imagen: `mkqnximage --secpol=no\|develop\|open\|secure --policy=archivo` |
+| Arranque personalizado (IFS) | Sí | snippets en `~/qnxvm/local/snippets/`: `post_start.custom` (`START(tipo)`, `STARTU(tipo, uid)`, `DROPROOT`), `ifs_start.custom`, `system_files.custom`, `ifs_files.custom`, `data_files.custom` |
+| Particionamiento adaptativo (APS) | **No** | sin utilidad `aps` ni documentación; `SchedCtl` solo `SCHED_PROCESSOR_ONLINE/OFFLINE`. Alternativas: `SCHED_SPORADIC`, runmask (`on -R`), `RLIMIT` (`on -L`) |
+
+Estado de la VM actual: `--secpol=no` (`OPT_POLICY='none'`); tiene `libsecpol.so.1`, `secpol`, `on` y `ability`; no
+tiene `secpolpush` ni `timestamp`.
+
+### Hallazgo de seguridad
+`pneumatic_sim` acepta WRITE / OVERRIDE / FAULT de **cualquier** proceso: no comprueba quién envía. La HMI ya abre una
+conexión a la planta (lee sensores y VITALS), así que una HMI comprometida podría mover el soplador. Se corrige en
+dos capas: B1 (la planta solo acepta actuadores del pid de `breath_ctrl`/`safety_mon`; la HMI deja de conectarse a
+la planta) y B2 (política secpol: el tipo de la HMI no tiene `channel_connect` hacia la planta).
+
+### Estimaciones
+| Pieza | Esfuerzo |
+|---|---|
+| A — `/dev/ventilator` con `ventd` (resmgr) | 1–1.5 días |
+| B1 — autorización por pid en la planta | 0.5–1 día |
+| B2 — política secpol con tipos | 2–3 días |
+| C — arranque automático y tiempo de encendido a la primera respiración | 1 día |
+| D — copiloto aislado, validado por `safety_mon` | 2–3 días |
+
+### Orden de trabajo (decidido por el usuario)
+0. Guardar este informe y las lecciones en CLAUDE.md. **Hecho.**
+1. Ajustes 1–5 del dashboard (métricas RT honestas, Vt en mL/kg, auto-PEEP, datos clínicos, marcadores de eventos).
+   **Ya hechos** en 9785f04 (ver "Revisión del dashboard").
+2. B capa 1. **Modo tutor:** la comprobación por pid en `pneumatic_sim` la escribe el usuario (estructura, TODO,
+   explicación de `_msg_info` y prueba con una "HMI maliciosa"). Claude: la HMI lee de `safety_mon` y el registro
+   del evento.
+3. A — `/dev/ventilator` con `ventd`.
+4. C + B capa 2. Antes de regenerar: copia de `~/qnxvm`, empezar con `--secpol=open`, arranque automático con la IP
+   172.31.1.2.
+5. D — copiloto con ML real: modelo pequeño (p. ej. árbol de decisión) entrenado offline en Python con datos del
+   banco de pruebas, exportado a C y ejecutado en QNX a baja prioridad. `safety_mon` valida y el operador confirma.
+   Documentar qué es aprendido y qué son reglas de seguridad; nunca llamar IA a reglas fijas.
+6. Paquete `design/` para MATLAB: **ya hecho** en 9785f04. Mejoras, si hacen falta, quedan para después.
