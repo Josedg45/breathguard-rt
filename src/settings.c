@@ -42,6 +42,23 @@ double settings_next_breath(const bg_settings_t *cur, double now)
     return cur->t0 + k * period;
 }
 
+int settings_schedule(const bg_settings_t *cur, const bg_settings_t *pending, double now, double *t0, char *why,
+                      size_t n)
+{
+    if (!pending) {
+        *t0 = settings_next_breath(cur, now);
+        return 1;
+    }
+    double left = pending->t0 - now;
+    if (left < SET_LEAD_S) {
+        snprintf(why, n, SET_BUSY_PREFIX " change #%u starts in %.2f s; resend after it", pending->seq,
+                 left > 0 ? left : 0.0);
+        return 0;
+    }
+    *t0 = pending->t0;
+    return 1;
+}
+
 uint32_t settings_breath(const bg_settings_t *cur, double now, int *insp, double *into)
 {
     double period = 60.0 / cur->set.rr, ti = period / (1.0 + cur->set.ie);
