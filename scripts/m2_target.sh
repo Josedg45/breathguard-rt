@@ -1,6 +1,8 @@
 #!/bin/sh
 # M2: corre en la VM QNX. Mide el paso de tiempo de Pulse en QNX, con y sin carga.
 cd /data/pulse || exit 1
+# El ventilador que arranca con la imagen (punto C) ocupa CPU y nombres: se detiene antes de la prueba.
+[ -x /system/bg/bg_stop.sh ] && /system/bg/bg_stop.sh
 OUT=/data/pulse/results_m2
 rm -rf "$OUT"
 mkdir -p "$OUT"

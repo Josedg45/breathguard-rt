@@ -3,6 +3,8 @@
 # HMI comprometida (evil_hmi) ataca la planta durante 2 s. Prueba de la tarea 4 (autorización por pid).
 # uso: b1_target.sh etiqueta segundos ip_host
 cd "$(dirname "$0")" || exit 1
+# El ventilador que arranca con la imagen (punto C) ocupa los nombres: se detiene antes de la prueba.
+[ -x /system/bg/bg_stop.sh ] && /system/bg/bg_stop.sh
 L=$1; S=$2; HOST=$3
 rm -f log_*_$L.txt
 ./pneumatic_sim -s $((S + 2)) -e 5 -o "sim_$L.csv" > "log_sim_$L.txt" &

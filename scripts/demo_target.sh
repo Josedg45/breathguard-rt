@@ -3,6 +3,8 @@
 # (scripts/demo_run.sh) por SSH, para que el video y los subtitulos vayan sincronizados.
 # uso: demo_target.sh etiqueta segundos ip_host
 cd "$(dirname "$0")" || exit 1
+# El ventilador que arranca con la imagen (punto C) ocupa los nombres: se detiene antes de la prueba.
+[ -x /system/bg/bg_stop.sh ] && /system/bg/bg_stop.sh
 D=$(pwd)
 L=$1; S=$2; HOST=$3
 rm -f log_*_$L.txt

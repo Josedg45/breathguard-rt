@@ -104,6 +104,7 @@ static void build(const iofunc_attr_t *attr)
     }
     const bg_vitals_t *v = &mo.vt;
     const bg_loop_stats_t *L = &ss.loop;
+    PUT("clock_s=%.3f\n", rt_now_s()); /* reloj del sistema (ClockCycles): el mismo de los registros */
     PUT("source=%s\n", ss.backup ? "backup (safety_mon)" : "breath_ctrl");
     k += put_settings(b + k, n - k, &ss.set);
     PUT("pending=%d seq=%u\n", ss.pending, ss.set.seq);

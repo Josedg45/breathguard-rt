@@ -8,6 +8,8 @@ SECS=10
 rm -rf "$OUT"
 mkdir -p "$OUT"
 cd "$BIN" || exit 1
+# El ventilador que arranca con la imagen (punto C) ocupa CPU y nombres: se detiene antes de la prueba.
+[ -x /system/bg/bg_stop.sh ] && /system/bg/bg_stop.sh
 SUM="$OUT/summary.csv"
 NOISE="$OUT/noise_summary.csv"
 

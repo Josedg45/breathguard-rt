@@ -8,7 +8,8 @@
  * Si la planta acepta el OVERRIDE, al final lo devuelve (on = 0) para no dejar la corrida bloqueada: un atacante
  * real no lo haría.
  *
- * Sale con 0 si la planta rechazó todo (EPERM) y con 1 si aceptó algo.
+ * Sale con 0 si el ataque se bloqueó (capa 1: la planta responde EPERM; capa 2: el kernel no deja conectarse) y con
+ * 1 si la planta aceptó algo.
  * Uso: evil_hmi [-d segundos]
  */
 #include <errno.h>
@@ -36,6 +37,13 @@ int main(int argc, char **argv)
         else { fprintf(stderr, "uso: %s [-d segundos]\n", PROG); return 2; }
     }
     int coid = name_open(BG_PNEUMATIC_NAME, 0);
+    if (coid == -1 && (errno == EACCES || errno == EPERM)) {
+        /* Capa 2: con una política de seguridad, el tipo de la HMI no tiene channel_connect hacia la planta. El
+         * kernel rechaza la conexión: el atacante no puede ni mandar el primer mensaje. */
+        printf("%s: pid %d, t_abs=%.6f: name_open(planta) RECHAZADO por el kernel (%s): ataque bloqueado (capa 2)\n",
+               PROG, getpid(), rt_now_s(), strerror(errno));
+        return 0;
+    }
     if (coid == -1) rt_die(PROG, "name_open(" BG_PNEUMATIC_NAME ")");
     actuators_t bad = { .blower = 1.0, .exh_open = 0.0, .peep_cmd = 5.0 };
     int accepted = 0;

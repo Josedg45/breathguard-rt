@@ -1,0 +1,375 @@
+1.093 QEMU Command: qemu-system-x86_64 -smp 2 --enable-kvm --cpu host -m 1G -drive file=output/disk-qemu.vmdk,if=ide,id=drv0 -netdev bridge,br=br0,id=net0 -device virtio-net-pci,netdev=net0,mac=52:54:00:ca:c5:c7 -pidfile output/qemu.pid -nographic -kernel output/ifs.bin -serial mon:stdio -object rng-random,filename=/dev/urandom,id=rng0 -device virtio-rng-pci,rng=rng0 -nographic
+1.305 c[?7l[2J[0mSeaBIOS (version 1.17.0-debian-1.17.0-1ubuntu1)
+1.310 
+1.318 
+1.324 iPXE (https://ipxe.org) 00:03.0 CA00 PCI2.10 PnP PMM+3EFC7B50+3EF07B50 CA00
+1.343 Press Ctrl-B to configure iPXE (PCI 00:03.0)...                                                                               
+1.348 
+1.352 
+1.357 Booting from ROM..
+1.363 non UEFI or UEFI+CSM boot
+1.374 ACPI table not found (0x4746434d)
+1.381 overriding mask for controller 2, vector_base 0
+2.200 ---> Starting policy generator
+2.970 Path=0 - Intel 82371SB
+2.978  target=0 lun=0     Direct-Access(0) -          QEMU HARDDISK    Rev: 2.5+
+2.985 Path=1 - Intel 82371SB
+2.994  target=0 lun=0            CD-ROM(5) - QEMU     QEMU DVD-ROM     Rev: 2.5+
+3.313 ---> Loading security policy
+3.318 ---> Starting slogger2
+3.331 ---> Starting PCI Services
+3.755 ---> Startinfs#e vmgr
+3.769 ---> Starting devb
+4.160 ---> Mounting file systems
+4.167 Path=---> Mounting file systems
+4.175 0 - Intel 82371SB
+4.181  target=0 lun=0     Direct-Access(0) -          QEMU HARDDISK    Rev: 2.5+
+4.190 Path=1 - Intel 82371SB
+4.198  target=0 lun=0            CD-ROM(5) - QEMU     QEMU DVD-ROM     Rev: 2.5+
+4.220 ---> BreathGuard RT
+4.338 ---> Starting Networking
+4.345 secpolgenerate: dumper (pid:372755 uid:30 type:dumper_t) failed to access /dev/slog2/stderr
+4.350 secpolgenerate: dumper (pid:372755 uid:30 type:dumper_t) failed to access /dev/slog2/stdout
+5.499 ifconfig: WARNING: setting interface address without mask is deprecated,
+5.504 default mask may not be correct.
+5.525 ---> Starting sshd
+5.573 ---> Starting misc
+5.612 
+5.617 To exit QEMU, type <ctrl>a x
+5.622 
+5.627 [?7hProcess count:32
+5.633 Startup complete
+5.638 QNX noname 8.0.0 2026/06/05-16:26:03EDT x86pc x86_64
+7.070 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+7.075 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+7.699 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+7.705 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+9.069 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+9.074 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+11.083 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+11.089 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+11.096 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+11.103 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+13.108 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+13.113 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+13.118 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+13.123 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+15.131 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+15.136 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+15.141 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+15.145 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+17.151 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+17.156 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+17.162 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+17.166 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+19.172 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+19.178 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+19.184 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+19.189 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+21.200 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+21.206 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+21.211 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+21.215 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+23.222 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+23.227 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+23.232 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+23.237 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+25.241 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+25.246 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+25.252 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+25.257 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+27.265 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+27.269 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+27.275 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+27.280 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+29.283 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+29.290 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+29.296 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+29.302 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+31.299 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+31.303 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+31.309 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+31.313 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+33.321 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+33.328 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+33.333 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+33.339 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+35.347 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+35.352 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+35.357 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+35.361 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+37.370 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+37.375 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+37.382 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+37.388 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+39.394 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+39.398 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+39.404 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+39.408 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+41.416 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+41.424 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+41.430 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+41.435 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+43.436 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+43.442 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+43.448 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+43.455 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+45.461 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+45.468 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+45.473 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+45.484 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+47.492 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+47.499 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+47.506 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+47.512 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+49.517 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+49.523 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+49.529 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+49.534 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+51.541 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+51.550 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+51.555 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+51.560 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+53.567 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+53.571 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+53.577 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+53.582 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+55.589 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+55.596 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+55.604 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+55.610 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+57.618 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+57.625 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+57.630 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+57.636 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+59.636 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+59.642 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+59.647 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+59.653 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+61.659 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+61.664 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+61.670 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+61.676 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+63.683 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+63.687 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+63.694 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+63.700 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+65.707 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+65.715 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+65.723 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+65.732 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+67.736 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+67.743 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+67.750 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+67.756 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+69.762 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+69.767 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+69.772 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+69.778 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+71.785 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+71.792 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+71.800 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+71.806 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+73.816 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+73.824 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+73.830 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+73.836 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+75.840 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+75.845 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+75.850 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+75.854 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+77.861 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+77.867 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+77.873 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+77.878 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+79.883 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+79.888 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+79.893 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+79.900 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+79.905 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+79.910 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+81.911 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+81.915 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+81.919 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+81.925 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+83.934 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+83.941 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+83.945 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+83.950 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+85.956 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+85.962 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+85.967 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+85.971 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+87.975 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+87.980 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+87.985 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+87.990 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+90.005 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+90.010 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+90.014 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+90.019 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+92.026 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+92.033 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+92.039 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+92.045 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+94.054 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+94.063 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+94.069 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+94.076 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+96.075 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+96.083 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+96.089 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+96.094 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+98.098 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+98.104 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+98.110 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+98.115 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+100.120 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+100.124 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+100.130 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+100.135 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+102.141 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+102.146 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+102.152 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+102.157 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+104.163 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+104.169 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+104.175 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+104.180 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+106.185 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+106.190 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+106.196 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+106.200 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+108.207 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+108.214 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+108.219 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+108.224 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+110.232 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+110.238 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+110.243 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+110.249 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+112.248 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+112.254 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+112.261 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+112.265 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+114.274 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+114.279 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+114.284 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+114.290 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+116.299 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+116.308 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+116.316 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+116.323 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+118.323 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+118.328 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+118.334 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+118.341 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+120.347 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+120.353 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+120.358 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+120.364 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+122.373 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+122.379 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+122.384 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+122.388 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+124.394 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+124.400 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+124.406 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+124.410 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+126.416 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+126.421 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+126.427 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+126.432 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+128.440 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+128.445 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+128.451 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+128.456 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+130.462 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+130.466 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+130.474 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+130.478 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+132.478 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+132.483 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+132.488 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+132.493 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+134.502 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+134.507 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+134.513 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+134.518 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+136.524 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+136.531 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+136.536 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+136.541 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+138.548 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+138.554 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+138.559 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+138.563 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+140.585 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+140.590 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+140.597 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+140.603 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+142.610 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+142.616 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+142.622 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+142.627 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+144.643 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+144.649 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+144.654 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+144.658 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+146.663 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+146.670 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+146.676 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+146.681 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+148.683 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+148.690 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+148.695 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+148.701 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+150.705 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+150.710 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+150.714 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+150.719 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+152.726 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+152.731 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+152.736 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+152.741 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+154.748 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+154.754 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+154.762 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+154.769 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+156.775 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+156.781 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+156.787 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+156.791 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+158.799 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+158.805 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+158.812 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+158.818 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+160.815 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+160.821 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+160.829 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+160.834 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+162.839 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+162.847 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+162.853 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+162.860 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+164.866 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+164.872 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+164.877 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+164.882 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+166.888 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+166.895 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+166.901 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+166.907 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+168.913 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+168.917 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+168.922 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+168.927 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+170.936 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+170.943 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+170.949 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+170.954 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+172.958 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+172.964 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+172.971 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+172.977 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+174.981 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg

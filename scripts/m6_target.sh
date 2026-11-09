@@ -6,6 +6,8 @@
 # autopeep: el host pone 30 rpm con I:E 1:1 (espiracion de 1 s) y luego vuelve a 12 rpm 1:2
 # Contraste con la version monolitica (mono_vent, sin safety_mon): mono_normal | mono_bug | mono_colgar
 cd "$(dirname "$0")" || exit 1
+# El ventilador que arranca con la imagen (punto C) ocupa los nombres: se detiene antes de la prueba.
+[ -x /system/bg/bg_stop.sh ] && /system/bg/bg_stop.sh
 D=$(pwd)
 L=$1; S=$2; ESC=$3; HOST=$4
 rm -f log_*_$L.txt

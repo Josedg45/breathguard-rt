@@ -10,6 +10,8 @@
 #   obstruir    bg_fault -o 8 (resistencia x8), y se quita 15 s después
 #   carga_matar como matar, con la CPU saturada (2 hilos a prio 9)
 cd "$(dirname "$0")" || exit 1
+# El ventilador que arranca con la imagen (punto C) ocupa los nombres: se detiene antes de la prueba.
+[ -x /system/bg/bg_stop.sh ] && /system/bg/bg_stop.sh
 D=$(pwd)
 L=$1; S=$2; ESC=$3; shift 3
 T_FALLA=40

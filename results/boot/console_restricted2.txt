@@ -1,0 +1,46 @@
+1.201 QEMU Command: qemu-system-x86_64 -smp 2 --enable-kvm --cpu host -m 1G -drive file=output/disk-qemu.vmdk,if=ide,id=drv0 -netdev bridge,br=br0,id=net0 -device virtio-net-pci,netdev=net0,mac=52:54:00:ca:c5:c7 -pidfile output/qemu.pid -nographic -kernel output/ifs.bin -serial mon:stdio -object rng-random,filename=/dev/urandom,id=rng0 -device virtio-rng-pci,rng=rng0 -nographic
+1.544 c[?7l[2J[0mSeaBIOS (version 1.17.0-debian-1.17.0-1ubuntu1)
+1.548 
+1.553 
+1.558 iPXE (https://ipxe.org) 00:03.0 CA00 PCI2.10 PnP PMM+3EFC7B50+3EF07B50 CA00
+1.566 Press Ctrl-B to configure iPXE (PCI 00:03.0)...                                                                               
+1.571 
+1.575 
+1.580 Booting from ROM..
+1.586 non UEFI or UEFI+CSM boot
+1.590 ACPI table not found (0x4746434d)
+1.619 overriding mask for controller 2, vector_base 0
+2.414 ---> Starting policy generator
+3.145 Path=0 - Intel 82371SB
+3.152  target=0 lun=0     Direct-Access(0) -          QEMU HARDDISK    Rev: 2.5+
+3.159 Path=1 - Intel 82371SB
+3.165  target=0 lun=0            CD-ROM(5) - QEMU     QEMU DVD-ROM     Rev: 2.5+
+3.191 ---> Loading security policy
+3.199 ---> Starting slogger2
+3.209 ---> Starting PCI Services
+3.577 ---> Starting fsevm# ---> Starting devb
+3.989 ---> Mounting file systems
+3.995 Path=0 - Intel 82371SB
+3.999 ---> Mounting file systems
+4.004  target=0 lun=0     Direct-Access(0) -          QEMU HARDDISK    Rev: 2.5+
+4.009 Path=1 - Intel 82371SB
+4.013  target=0 lun=0            CD-ROM(5) - QEMU     QEMU DVD-ROM     Rev: 2.5+
+4.034 ---> BreathGuard RT
+4.148 ---> Starting Networking
+4.157 secpolgenerate: dumper (pid:372755 uid:30 type:dumper_t) failed to access /dev/slog2/stderr
+4.163 secpolgenerate: dumper (pid:372755 uid:30 type:dumper_t) failed to access /dev/slog2/stdout
+5.346 ifconfig: WARNING: setting interface address without mask is deprecated,
+5.353 default mask may not be correct.
+5.376 ---> Starting sshd
+5.429 ---> Starting misc
+5.494 
+5.499 To exit QEMU, type <ctrl>a x
+5.505 
+5.511 [?7hProcess count:33
+5.515 Startup complete
+5.521 QNX noname 8.0.0 2026/06/05-16:26:03EDT x86pc x86_64
+7.177 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+7.181 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+7.546 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+7.553 secpolgenerate: io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+7.676 qemu-system-x86_64: terminating on signal 15 from pid 9402 (/bin/bash)

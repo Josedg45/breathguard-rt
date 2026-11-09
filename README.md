@@ -49,6 +49,8 @@ firmware without patients.
 | Tube reconnected in mid-inspiration | Peak 23.3 cmH2O after a fix found by this test bench (was 44 cmH2O; see `docs/demo.md`) |
 | Operator changes settings while ventilating | Applied exactly at the next breath start by controller and backup alike; invalid values rejected with a reason |
 | Auto-PEEP (gas trapping) at 30 bpm, I:E 1:1 | Estimated 5.1–5.4 cmH2O from Y-piece sensors alone (true value 5.1 in the fixed-RC model); AUTO-PEEP alarm after 2 breaths, cleared when the rate is lowered |
+| Power-on to first breath | 4.5–4.7 s from QEMU launch (3 runs), ~0.85 s before the VM even answers a ping: the ventilator starts before the network and `sshd` |
+| Compromised HMI (security policy, layer 2) | The kernel refuses its connection to the plant (`EPERM` at `name_open`); the plant never sees a message |
 | Loop timing, live | Period p50/p99/p99.9/max, deadline misses and a period histogram on the dashboard. VM noise varies by run: 0.3 % to 3 % of cycles later than 1.5 ms, worst case 7–82 ms. The gaps appear with and without CPU load, and M1 measured gaps of 1–18 ms even for a priority-200 thread that never blocks: they come from the host (Windows + WSL2 + QEMU), so treat them as an upper bound |
 
 ## Clinical monitoring
@@ -124,8 +126,51 @@ completed, the plant accepts every command, as before. The results with the chec
 here.
 
 The first `AUTH` claims the plant (trust on first use). This works because `safety_mon` starts right after the
-plant and launches the HMI itself. Layer 2, a secpol policy that stops the HMI type from even connecting to the
-plant, is planned.
+plant and launches the HMI itself.
+
+## Layer 2: the kernel decides who may even connect (security policy)
+
+The image runs a QNX security policy (secpol). Every ventilator process has a **type**: the boot script starts the
+plant, `safety_mon`, `power_mgr` and `ventd` with `on -T <type>`, and `safety_mon` gives its children their types
+at spawn time (`secpol_posix_spawnattr_settypeid()`: `bg_safety_t__ctrl` for the controller, `bg_safety_t__hmi`
+for the HMI). The policy lists, per type, which channels it may open (`channel_connect`). The HMI type may talk to
+`safety_mon`, `power_mgr` and the network stack. It may **not** talk to the plant or to `ventd`. That check is done
+by the kernel at `name_open()`/`ConnectAttach()`, before any message exists.
+
+`scripts/b2_run.sh` (`results/sec/log_b2.txt`, PASS) starts the ventilator as the boot does and attacks:
+
+| Attempt | Result |
+|---|---|
+| `evil_hmi` with the HMI type | `name_open(plant)`: `EPERM` from the kernel |
+| `evil_hmi` with the `ventd` type | `name_open(plant)`: `EPERM` |
+| shell with the HMI type: `echo p_insp=21 > /dev/ventilator/settings` | `Operation not permitted` |
+| root shell (unrestricted): same write | accepted, applied at the next breath |
+
+The kernel logged the three denials (`/dev/secpolgenerate/errors`) and no denial of a legitimate process; the
+plant's own counter of rejected commands stayed at 0, because nothing reached it. Ventilation never changed source.
+
+The policy was learned, not written by hand: in open mode `secpolgenerate` recorded what each type used while
+the whole system ran (including restarts), and then our types were restricted to it. The rules, how they were made
+and the limits of this development image are in [`image/README.md`](image/README.md).
+
+## Power-on to first breath
+
+The ventilator is part of the image (`/system/bg`) and starts from `startup.sh` right after the filesystems mount,
+before the console, network and `sshd` (`image/startup_postfs.custom`). It needs nothing else.
+`scripts/vm_run.sh` boots the VM with its serial console in a log and measures from the host
+(`scripts/boot_watch.py`, `results/boot/`):
+
+| From QEMU launch (s) | Run 1 | Run 2 | Run 3 |
+|---|---|---|---|
+| First inspiration (`breath_ctrl`) | 4.56 | 4.51 | 4.69 |
+| VM answers ping | 5.36 | 5.35 | 5.50 |
+| First HMI telemetry packet | 5.41 | 5.40 | 5.55 |
+| `sshd` listening | 5.46 | 5.45 | 5.60 |
+
+The QNX clock starts about 1.1 s after QEMU launch, so the first breath comes 3.3–3.6 s after the kernel starts.
+0.5 s of that is deliberate: `safety_mon` schedules the first breath 0.5 s after it starts. The first breath time is
+read from `breath_ctrl`'s log (QNX clock) and converted to host time (±0.08 s). This is QEMU with a virtual disk;
+real hardware with a minimal IFS would be different (likely faster), and we have not measured it.
 
 ## The ventilator as files: `/dev/ventilator`
 
@@ -176,6 +221,10 @@ range, malformed, and on a read-only file.
 | Resource manager (`resmgr_attach`, `iofunc_*`, `dispatch_*`, `resmgr_msgget`) exposing `/dev/ventilator` | `src/ventd.c` |
 | `TimerTimeout()` bounding a blocking `MsgSend` (the controller never waits more than 2 ms for the supervisor) | `src/breath_ctrl.c`: `fetch_settings()` |
 | Loop metrics carried in the same bounded `MsgSend` (no extra message on the critical path) | `src/breath_ctrl.c`: `stats_add()`; `src/bg_proto.h`: `bg_loop_stats_t` |
+| Security policy types: `on -T` at boot, `secpol_posix_spawnattr_settypeid()` for spawned children, derived types | `image/startup_postfs.custom`, `src/safety_mon.c`: `spawn_ctrl()`, `spawn_hmi()`, `image/policy.txt` |
+| `channel_connect` abilities: the kernel refuses the HMI's connection to the plant | `image/policy.txt`, `scripts/b2_target.sh` |
+| Policy learned with `secpolgenerate` in open mode, then enforced for our types | `image/data_files.custom`, `image/README.md` |
+| Custom boot image (`mkqnximage` snippets): ventilator in `/system`, started before network and `sshd` | `image/`, `scripts/image_build.sh` |
 | Pulse ported to QNX (libc++, protobuf 21.12) | `port/build_pulse_qnx.sh`, `port/qnx-x86_64.cmake` |
 
 ## Build and run
@@ -190,6 +239,18 @@ port/build_pulse_qnx.sh         # once: builds Pulse for QNX into ~/pulse/qnx (n
 make build/patient              # virtual patient process
 port/deploy_pulse_qnx.sh        # copies Pulse data to the VM (/data/pulse)
 ```
+
+Target image with the ventilator inside (automatic start, security policy, static IP `172.31.1.2`):
+
+```bash
+scripts/image_build.sh          # make + mkqnximage --secpol=open --policy=image/policy.txt (CLEAN=1 rebuilds /data)
+scripts/vm_run.sh               # boots the VM in the background, console in results/boot/, measures boot time
+kill $(cat ~/qnxvm/output/qemu.pid)   # stops it
+scripts/b2_run.sh               # layer-2 test (security policy)
+```
+
+The test scripts below stop the boot-time ventilator (`/system/bg/bg_stop.sh`) and run their own copy from
+`/tmp/medpower`.
 
 Run the scenarios from Ubuntu (the VM must be reachable at `172.31.1.2`):
 
@@ -256,6 +317,7 @@ port/       recipe to build Pulse for QNX 8.0
 scripts/    run scripts (host + target) and analysis
 results/    raw data and summaries of every measurement
 design/     plant and controller equations + 1 kHz reference data for an independent (Simulink) model
+image/      QNX image snippets: automatic start and security policy
 tareas/     learning exercises (watchdog, tidal-volume meter, settings rate limit, plant authorization)
 ```
 

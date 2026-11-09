@@ -4,6 +4,8 @@
 #   Corte de red a los t_corte s (30) y vuelta duración_corte s después (45), si la corrida dura lo suficiente.
 #   escala: la batería corre 'escala' veces más rápido (60 = 1 s real es 1 min de batería).
 cd "$(dirname "$0")" || exit 1
+# El ventilador que arranca con la imagen (punto C) ocupa los nombres: se detiene antes de la prueba.
+[ -x /system/bg/bg_stop.sh ] && /system/bg/bg_stop.sh
 D=$(pwd)
 L=$1; S=$2; X=$3; B=$4; TC=${5:-30}; DC=${6:-45}
 rm -f log_*_$L.txt

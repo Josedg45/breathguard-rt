@@ -1,0 +1,121 @@
+== 1. types
+ 2654221 ./pneumatic_sim                                                                  pneumatic_sim      bg_plant_t       
+ 2670606 ./safety_mon                                                                     safety_mon         bg_safety_t      
+ 2670610 ./power_mgr                                                                      power_mgr          bg_power_t       
+ 2670614 ./ventd                                                                          ventd              bg_ventd_t       
+ 2699285 ./breath_ctrl                                                                    breath_ctrl        bg_safety_t__ctr 
+ 2699292 ./hmi                                                                            hmi                bg_safety_t__hmi 
+== status before
+clock_s=326.896
+source=breath_ctrl
+mode=pcv p_insp=20.0 peep=5.0 rr=12.0 ie=2.0 vt=500
+pending=0 seq=0
+paw_cmh2o=5.29 flow_lpm=-2.5
+spo2_pct=na etco2_mmhg=na hr_bpm=na (sin Pulse)
+ibw_kg=75.4 auto_peep_cmh2o=1.10
+alarms=0x0 failovers=0 hmi_restarts=0 denied=0
+loop_p99_ms=1.375 loop_max_ms=12.448 loop_late=108 loop_cycles=14800
+power=mains soc_pct=100 autonomy_min=160
+last_event=LANZA_CONTROL
+MARK attack 1794266092
+== 2. evil_hmi as bg_safety_t__hmi
+evil_hmi: pid 2736154, t_abs=326.907762: name_open(planta) RECHAZADO por el kernel (Operation not permitted): ataque bloqueado (capa 2)
+RC_HMI 0
+== 3. evil_hmi as bg_ventd_t
+evil_hmi: pid 2748442, t_abs=326.920128: name_open(planta) RECHAZADO por el kernel (Operation not permitted): ataque bloqueado (capa 2)
+RC_VENTD 0
+== 4. settings write as bg_safety_t__hmi
+/proc/boot/ksh: cannot create /dev/ventilator/settings: Operation not permitted
+RC_HMI_WRITE 1
+== 5. settings write as root (unrestricted, the operator's console)
+RC_ROOT_WRITE 0
+== status after
+clock_s=338.943
+source=breath_ctrl
+mode=pcv p_insp=21.0 peep=5.0 rr=12.0 ie=2.0 vt=500
+pending=0 seq=1
+paw_cmh2o=20.99 flow_lpm=11.4
+spo2_pct=na etco2_mmhg=na hr_bpm=na (sin Pulse)
+ibw_kg=75.4 auto_peep_cmh2o=1.16
+alarms=0x0 failovers=0 hmi_restarts=0 denied=0
+loop_p99_ms=1.345 loop_max_ms=12.448 loop_late=166 loop_cycles=26800
+power=mains soc_pct=100 autonomy_min=160
+last_event=AJUSTE_APLICADO
+== settings
+mode=pcv p_insp=21.0 peep=5.0 rr=12.0 ie=2.0 vt=500
+seq=1 pending=0
+last=ACK #1 desde t=327.357 (p_insp=21)
+== secpolgenerate errors (kernel denials)
+# This file represents errors that have been encountered.  These errors might be
+# expected.  Alternatively, some of these rules might need to be added to the
+# security policy.
+
+2026-11-09 23:14:38 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:38 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:40 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:40 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:40 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:41 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:43 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:43 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:43 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:43 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:45 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:45 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:45 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:45 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:47 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:47 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:47 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:47 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:49 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:49 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:49 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:49 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:51 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:51 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:51 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:51 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:52 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:52 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:52 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:52 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:52 evil_hmi (pid:2736154 type:bg_safety_t__hmi) failed to use ability channel_connect:bg_plant_t as root
+2026-11-09 23:14:52 evil_hmi (pid:2748442 type:bg_ventd_t) failed to use ability channel_connect:bg_plant_t as root
+2026-11-09 23:14:53 ksh (pid:2760730 type:bg_safety_t__hmi) failed to use ability channel_connect:bg_ventd_t as root
+2026-11-09 23:14:55 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:55 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:55 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:55 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:57 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:57 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:57 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:57 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:59 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:59 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:59 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:14:59 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:15:01 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:15:01 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:15:01 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:15:01 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:15:03 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:15:03 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:15:03 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:15:03 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:15:04 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:15:04 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:15:04 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-09 23:15:04 io-sock (pid:380948 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+
+# === Rules for type bg_safety_t__hmi ============
+allow bg_safety_t__hmi self:ability {
+    channel_connect:bg_plant_t,bg_ventd_t
+};
+
+# === Rules for type bg_ventd_t ============
+allow bg_ventd_t self:ability {
+    channel_connect:bg_plant_t
+};
+
+== end

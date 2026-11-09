@@ -1,0 +1,19 @@
+# BreathGuard RT: ventilator binaries in /system/bg (read-only system partition).
+# scripts/image_build.sh replaces @BUILD@ with the repo's build/ folder.
+[uid=0 gid=0 perms=0755 dperms=0755 type=dir] bg
+[uid=0 gid=0 perms=0755] bg/pneumatic_sim=@BUILD@/pneumatic_sim
+[uid=0 gid=0 perms=0755] bg/breath_ctrl=@BUILD@/breath_ctrl
+[uid=0 gid=0 perms=0755] bg/safety_mon=@BUILD@/safety_mon
+[uid=0 gid=0 perms=0755] bg/power_mgr=@BUILD@/power_mgr
+[uid=0 gid=0 perms=0755] bg/hmi=@BUILD@/hmi
+[uid=0 gid=0 perms=0755] bg/ventd=@BUILD@/ventd
+[uid=0 gid=0 perms=0755] bg/bg_fault=@BUILD@/bg_fault
+[uid=0 gid=0 perms=0755] bg/evil_hmi=@BUILD@/evil_hmi
+[uid=0 gid=0 perms=0755] bg/bg_stop.sh = {
+#!/bin/sh
+# Stops the ventilator started at boot (so the tests can run their own copy from /tmp/medpower).
+slay -s TERM safety_mon ventd power_mgr > /dev/null 2>&1
+sleep 1
+slay -s TERM pneumatic_sim > /dev/null 2>&1
+exit 0
+}

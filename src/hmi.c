@@ -82,6 +82,12 @@ int main(int argc, char **argv)
     int power = try_open(BG_POWER_NAME);
 
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
+    /* Desde el arranque de la imagen (punto C), la HMI puede nacer antes que la red (io-sock): espera hasta 2 min.
+     * Mientras espera no consulta a safety_mon, que por eso no la da por colgada. */
+    for (int i = 0; sock == -1 && i < 1200; i++) {
+        usleep(100000);
+        sock = socket(AF_INET, SOCK_DGRAM, 0);
+    }
     if (sock == -1) rt_die(PROG, "socket");
     struct sockaddr_in dst = { .sin_family = AF_INET, .sin_port = htons((uint16_t)port) };
     if (inet_pton(AF_INET, host, &dst.sin_addr) != 1) { fprintf(stderr, "%s: ip inválida\n", PROG); return 1; }

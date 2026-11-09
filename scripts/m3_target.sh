@@ -5,6 +5,8 @@
 #   pulse: el pulmón lo da Pulse (proceso patient, prio 20) en vez del RC fijo.
 #   pulse_bajo: igual, pero patient a prio 5, POR DEBAJO de la carga (experimento de control).
 cd "$(dirname "$0")" || exit 1
+# El ventilador que arranca con la imagen (punto C) ocupa los nombres: se detiene antes de la prueba.
+[ -x /system/bg/bg_stop.sh ] && /system/bg/bg_stop.sh
 D=$(pwd)
 L=$1; P=$2; E=$3; R=$4; S=$5; shift 5
 LOAD=; PULSE=; PPRIO=20

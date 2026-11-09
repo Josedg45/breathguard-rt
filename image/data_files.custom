@@ -1,0 +1,16 @@
+# BreathGuard RT - secpolgenerate configuration (layer 2). Replaces the one mkqnximage installs with --secpol=open
+# (this file is included first and the image ignores duplicates).
+# The rest of the system stays unrestricted (option unrestricted: development mode, its behaviour is learned);
+# our types are RESTRICTED to what the policy allows (image/policy.txt -> /data/var/secpol/secpol.bin).
+[gid=0 uid=0 dperms=777 type=dir] var/secpol
+[gid=0 uid=0 perms=666] var/secpol/config {
+option unrestricted
+option deny_read_exec
+type console_t unrestricted
+type bg_plant_t restricted
+type bg_safety_t restricted
+type bg_safety_t__ctrl restricted
+type bg_safety_t__hmi restricted
+type bg_power_t restricted
+type bg_ventd_t restricted
+}

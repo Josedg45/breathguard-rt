@@ -6,6 +6,8 @@
 #   25-40 s  escrituras: aceptada, fuera de rango, mal formada, sobre un archivo de solo lectura
 # uso: a_target.sh etiqueta
 cd "$(dirname "$0")" || exit 1
+# El ventilador que arranca con la imagen (punto C) ocupa los nombres: se detiene antes de la prueba.
+[ -x /system/bg/bg_stop.sh ] && /system/bg/bg_stop.sh
 L=$1; S=40
 rm -f log_*_$L.txt
 ./pneumatic_sim -s $((S + 2)) -e 5 -o "sim_$L.csv" > "log_sim_$L.txt" &

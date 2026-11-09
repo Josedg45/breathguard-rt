@@ -17,6 +17,8 @@ for b in $BINS; do
 done
 mkdir -p $OUT
 
+# El ventilador que arranca con la imagen (punto C) ocupa los nombres: se detiene antes.
+$SSH $VM "[ -x /system/bg/bg_stop.sh ] && /system/bg/bg_stop.sh; true"
 echo "design_run: PCV 60 s en QNX"
 $SSH $VM "cd $DIR && (./pneumatic_sim -s 63 -e 5 -o sim_dref.csv > log_sim_dref.txt &) && sleep 0.5 && \
   ./breath_ctrl -s 60 -m pcv -P 20 -e 5 -r 12 -i 2 -o ctrl_dref.csv && sleep 3 && cat log_sim_dref.txt"

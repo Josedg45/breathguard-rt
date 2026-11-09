@@ -504,8 +504,8 @@ Error corregido: la antigüedad del comando contaba desde el arranque de la plan
 | Arranque personalizado (IFS) | Sí | snippets en `~/qnxvm/local/snippets/`: `post_start.custom` (`START(tipo)`, `STARTU(tipo, uid)`, `DROPROOT`), `ifs_start.custom`, `system_files.custom`, `ifs_files.custom`, `data_files.custom` |
 | Particionamiento adaptativo (APS) | **No** | sin utilidad `aps` ni documentación; `SchedCtl` solo `SCHED_PROCESSOR_ONLINE/OFFLINE`. Alternativas: `SCHED_SPORADIC`, runmask (`on -R`), `RLIMIT` (`on -L`) |
 
-Estado de la VM actual: `--secpol=no` (`OPT_POLICY='none'`); tiene `libsecpol.so.1`, `secpol`, `on` y `ability`; no
-tiene `secpolpush` ni `timestamp`.
+Estado de la VM: hasta el punto 4, `--secpol=no`. Desde el punto 4, `--secpol=open` con `image/policy.txt` y nuestros
+tipos restringidos (ver "C + B2"). La VM vieja está respaldada en `~/qnxvm_backup_secpol_no_20261109/`.
 
 ### Hallazgo de seguridad
 `pneumatic_sim` acepta WRITE / OVERRIDE / FAULT de **cualquier** proceso: no comprueba quién envía. La HMI ya abre una
@@ -531,7 +531,7 @@ la planta) y B2 (política secpol: el tipo de la HMI no tiene `channel_connect` 
    del evento. **Parte de Claude hecha; falta la tarea 4 del usuario** (ver "B1" abajo).
 3. A — `/dev/ventilator` con `ventd`. **Hecho** (ver "A" abajo).
 4. C + B capa 2. Antes de regenerar: copia de `~/qnxvm`, empezar con `--secpol=open`, arranque automático con la IP
-   172.31.1.2.
+   172.31.1.2. **Hecho** (ver "C + B2" abajo).
 5. D — copiloto con ML real: modelo pequeño (p. ej. árbol de decisión) entrenado offline en Python con datos del
    banco de pruebas, exportado a C y ejecutado en QNX a baja prioridad. `safety_mon` valida y el operador confirma.
    Documentar qué es aprendido y qué son reglas de seguridad; nunca llamar IA a reglas fijas.
@@ -563,7 +563,11 @@ la planta) y B2 (política secpol: el tipo de la HMI no tiene `channel_connect` 
   ataque. Funcionaron los relanzamientos de `breath_ctrl` (KILL, y STOP detectado por apnea; 3 AUTH, 0 rechazos
   legítimos), `breath_ctrl` solo y `step_test` (se autorizan solos).
 - **Regresión** con la escena `hmi_matar` (Pulse + HMI): la HMI se relanza, SpO2 98 %, 0 rechazos.
-- **Pendiente de explicar:** en una corrida la antigüedad máxima del comando en la HMI llegó a 433 ms (los datos se
+- **Explicado (punto 4):** en la regresión `hmi_matar` sobre la imagen nueva, la máxima fue 398.7 ms, pero todas
+  las filas por encima de 12.6 ms son posteriores a la despedida del controlador (`CONTROL_TERMINA`, t = 63.7 s): la
+  HMI sigue publicando cuando ya no hay controlador. Es un artefacto del final de la corrida, no un hueco del lazo.
+  Lo más probable es que el de 433 ms fuera lo mismo (no se puede comprobar: esos datos se borraron).
+- **Antes:** en una corrida la antigüedad máxima del comando en la HMI llegó a 433 ms (los datos se
   borraron antes de revisarlos). La corrida siguiente dio 96.5 ms, coincidente con huecos de 55–57 ms de la propia
   planta (ruido de la VM). Antes de este cambio ya había un pico de 179 ms (pausa de la vCPU). Vigilarlo en las
   próximas corridas.
@@ -582,3 +586,29 @@ la planta) y B2 (política secpol: el tipo de la HMI no tiene `channel_connect` 
   - 0 fallas del controlador.
   - Antigüedad del comando, p99: 1.30 ms en la línea base, 1.08 con el lector y 1.26 con `ventd` congelado.
 - Límite: `ventd` no está supervisado (nadie lo relanza). En el punto C lo lanzará el arranque de la imagen.
+
+### C + B2 — Arranque automático y política de seguridad (capa 2) (2026-11-09)
+- **Imagen** (`image/`, `scripts/image_build.sh`): binarios en `/system/bg`; `startup_postfs.custom` lanza planta,
+  `safety_mon`, `power_mgr` y `ventd` justo después de montar los sistemas de archivos, antes de la consola, la red y
+  `sshd`. Opciones: `--secpol=open --policy=image/policy.txt --ip=172.31.1.2 --data-size=200 --data-inodes=6000`.
+  Correr sin límite de tiempo (`-s 0`) y apagado ordenado con SIGTERM (`bg_stop.sh`) en `dba10bb`.
+- **Arranque de la VM:** `scripts/vm_run.sh` (sin terminal propia; consola en `results/boot/`; `OPT_NETWORK=bridge:br0`
+  porque con IP fija no hace falta dnsmasq). Detener: `kill $(cat ~/qnxvm/output/qemu.pid)`. Ya no hay que poner
+  la IP a mano.
+- **Tiempo de encendido** (3 corridas, desde que se lanza QEMU): primera inspiración 4.51–4.69 s; ping 5.35–5.50;
+  HMI 5.40–5.55; sshd 5.45–5.60. El reloj de QNX arranca ~1.1 s después de QEMU. 0.5 s son el adelanto propio de
+  `safety_mon` para la primera respiración.
+- **Tipos:** `bg_plant_t`, `bg_safety_t`, `bg_power_t`, `bg_ventd_t` (con `on -T` en el arranque) y los derivados
+  `bg_safety_t__ctrl` y `bg_safety_t__hmi` (los pone `safety_mon` con `secpol_posix_spawnattr_settypeid`).
+- **Política aprendida** con `secpolgenerate` en modo abierto (arranque, ventilación, comandos por HMI y por
+  `/dev/ventilator`, relanzamientos), y después nuestros tipos restringidos a ella (`data_files.custom`). Explicada
+  en `image/README.md`.
+- **Prueba `scripts/b2_run.sh`** (`results/sec/log_b2.txt`): PASA. El kernel rechaza `name_open(planta)` de
+  `evil_hmi` con el tipo de la HMI y con el de `ventd` (EPERM), y la escritura de ajustes desde un shell con el tipo
+  de la HMI. Root sí puede escribir. 0 rechazos legítimos; la planta no recibió ningún mensaje (denied = 0); la
+  ventilación siguió en `breath_ctrl`.
+- **Regresión** `m6_run.sh c_reg 60 hmi_matar` con Pulse sobre la imagen nueva: rc = 0, la HMI se relanza, SpO2
+  97.9–98.0 %, dt máximo de la planta 5.24 ms, 0 rechazos.
+- **Límites:** imagen de desarrollo: el resto del sistema (consola, `sshd`, root) sigue sin restricciones; root puede
+  usar `on -T` con cualquier tipo. Producción: `--secpol=secure`, todos los tipos restringidos y sin root.
+- **Pendiente:** `ventd` sigue sin supervisión (si muere, nadie lo relanza; la ventilación no se entera).
