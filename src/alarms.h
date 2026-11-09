@@ -24,8 +24,9 @@ enum {
     ALARM_LEAK = 1u << 7,
     ALARM_POWER = 1u << 8,
     ALARM_AUTO_PEEP = 1u << 9,  /* auto-PEEP estimado sobre el limite (lung_mon) */
+    ALARM_SECURITY = 1u << 10,  /* la planta rechazó un comando no autorizado (tarea 4) */
 };
-#define ALARM_COUNT 10
+#define ALARM_COUNT 11
 
 typedef struct {
     double p_alarm;     /* cmH2O: alarma de presión alta */

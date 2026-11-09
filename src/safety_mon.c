@@ -54,6 +54,8 @@ typedef union {
     bg_settings_get_t sget;
 } safety_msg_t;
 
+#define SEC_ALARM_S 10.0 /* la alarma de comando no autorizado dura esto tras el último rechazo */
+
 typedef struct {
     double t;
     char what[24];
@@ -95,7 +97,7 @@ static int n_ctrl_args;
 
 /* breath_ctrl se lanza (y relanza) con los ajustes vigentes y su inicio de ciclo; si hay un cambio programado,
  * lo pide el mismo con BG_MSG_SETTINGS_GET al arrancar. */
-static pid_t spawn_ctrl(const bg_settings_t *cur, double secs_left)
+static pid_t spawn_ctrl(int plant, const bg_settings_t *cur, double secs_left)
 {
     char t0s[32], ss[32];
     n_ctrl_args = 0;
@@ -121,8 +123,20 @@ static pid_t spawn_ctrl(const bg_settings_t *cur, double secs_left)
     argv[k] = NULL;
     pid_t pid;
     extern char **environ;
-    int rc = posix_spawn(&pid, ctrl_path, NULL, NULL, argv, environ);
+    /* POSIX_SPAWN_HOLD (extensión de QNX): el hijo se crea detenido, antes de su primera instrucción. Así queda
+     * autorizado en la planta antes de que pueda mandar su primer WRITE, sin carrera. Luego se suelta con SIGCONT. */
+    posix_spawnattr_t attr;
+    posix_spawnattr_init(&attr);
+    posix_spawnattr_setxflags(&attr, POSIX_SPAWN_HOLD);
+    int rc = posix_spawn(&pid, ctrl_path, NULL, &attr, argv, environ);
+    posix_spawnattr_destroy(&attr);
     if (rc != 0) { errno = rc; rt_die(PROG, "posix_spawn(breath_ctrl)"); }
+    bg_auth_msg_t au = { .hdr = { .type = BG_MSG_AUTH }, .pid = pid };
+    if (MsgSend(plant, &au, sizeof au, NULL, 0) == -1) { /* EPERM: otro proceso reclamó la planta antes */
+        kill(pid, SIGKILL);
+        rt_die(PROG, "MsgSend(AUTH): la planta no acepta a safety_mon");
+    }
+    kill(pid, SIGCONT);
     return pid;
 }
 
@@ -213,7 +227,7 @@ int main(int argc, char **argv)
     uint32_t vtm_breaths_seen = 0;
 
     watchdog_t wd;
-    pid_t ctrl_pid = spawn_ctrl(&cur, secs - 0.5);
+    pid_t ctrl_pid = spawn_ctrl(plant, &cur, secs - 0.5);
     wd_arm(&wd, (uint64_t)(rt_now_s() * 1e9), (uint64_t)(WD_TIMEOUT_S * 1e9), (uint64_t)(WD_STARTUP_S * 1e9));
     char buf[64];
     int ctrl_scoid = -1;
@@ -238,7 +252,11 @@ int main(int argc, char **argv)
     uint32_t power_bits = 0;
     double last_tick = t_start;
 
-    bg_hdr_t rd = { .type = BG_MSG_READ };
+    bg_hdr_t rd = { .type = BG_MSG_READ }, rv = { .type = BG_MSG_VITALS };
+    sensors_t last_s = { 0 };  /* la última lectura, para la HMI (BG_MSG_MONITOR) */
+    bg_vitals_t last_vt = { 0 };
+    uint32_t denied_seen = 0;  /* rechazos de la planta ya registrados como evento */
+    double sec_alarm_t = -1;   /* último rechazo visto */
     bg_override_msg_t ov = { .hdr = { .type = BG_MSG_OVERRIDE } };
     safety_msg_t m;
     struct _msg_info info;
@@ -250,6 +268,12 @@ int main(int argc, char **argv)
 
         if (rcvid > 0) { /* mensajes: conexiones y consultas de estado de la HMI */
             if (m.hdr.type == _IO_CONNECT) MsgReply(rcvid, EOK, NULL, 0);
+            else if (m.hdr.type == BG_MSG_MONITOR) { /* la HMI ve la planta solo a través de safety_mon */
+                hmi_scoid = info.scoid;
+                last_hmi_query = now;
+                bg_monitor_t mo = { .s = last_s, .vt = last_vt };
+                MsgReply(rcvid, EOK, &mo, sizeof mo);
+            }
             else if (m.hdr.type == BG_MSG_SAFETY_STATUS) {
                 hmi_scoid = info.scoid; /* así reconocemos la desconexión de la HMI */
                 last_hmi_query = now;
@@ -274,6 +298,7 @@ int main(int argc, char **argv)
                 st.q_ee = lm.q_ee;
                 st.tau_exp = lm.valid ? lm.tau : -1;
                 st.eef = lm.eef;
+                st.denied = last_vt.denied;
                 MsgReply(rcvid, EOK, &st, sizeof st);
             }
             else if (m.hdr.type == BG_MSG_SETTINGS_GET) { /* breath_ctrl: lo más reciente, con su t0 */
@@ -375,6 +400,19 @@ int main(int argc, char **argv)
         /* --- Cada tick: sensores propios, alarmas, respaldo --- */
         sensors_t s;
         if (MsgSend(plant, &rd, sizeof rd, &s, sizeof s) == -1) break; /* la planta terminó */
+        last_s = s;
+        if (ticks % 100 == 1) { /* cada 100 ms: signos vitales y registro de la planta (para la HMI y la tarea 4) */
+            if (MsgSend(plant, &rv, sizeof rv, &last_vt, sizeof last_vt) == -1) break;
+            if (last_vt.denied != denied_seen) {
+                snprintf(buf, sizeof buf, "pid %d tipo 0x%x; %u rechazos", last_vt.denied_pid,
+                         last_vt.denied_type, last_vt.denied);
+                event(now, "COMANDO_NO_AUTORIZADO", buf);
+                denied_seen = last_vt.denied;
+                sec_alarm_t = now;
+                al.active |= ALARM_SECURITY;
+            }
+            if (sec_alarm_t >= 0 && now - sec_alarm_t > SEC_ALARM_S) { al.active &= ~ALARM_SECURITY; sec_alarm_t = -1; }
+        }
 
         if (pending && now >= next.t0) { /* empieza la respiración desde la que valen los ajustes nuevos */
             breath_base += settings_breath(&cur, next.t0 - 1e-6, NULL, NULL) + 1;
@@ -465,7 +503,7 @@ int main(int argc, char **argv)
         if (need_spawn) { /* el respaldo ya manda: ahora sí, lo lento (cargar el binario desde disco) */
             need_spawn = 0;
             double t_ov = rt_now_s();
-            ctrl_pid = spawn_ctrl(&cur, secs - (t_ov - t_start));
+            ctrl_pid = spawn_ctrl(plant, &cur, secs - (t_ov - t_start));
             wd_arm(&wd, (uint64_t)(rt_now_s() * 1e9), (uint64_t)(WD_TIMEOUT_S * 1e9), (uint64_t)(WD_STARTUP_S * 1e9));
             beats_since_spawn = 0;
             watching = 1;

@@ -1,0 +1,26 @@
+pneumatic_sim: listo como 'breathguard_pneumatic', prio 60, 42 s
+pneumatic_sim: AUTH t_abs=12460.075509 de pid 20869143: controlador autorizado pid 20877337
+pneumatic_sim: AUTH t_abs=12480.074613 de pid 20881432: controlador autorizado pid 20881432
+pneumatic_sim: 41756 ticks, 292 > 1.5 ms, dt máx 17.47 ms, huecos recortados 0, lecturas 79075, comandos 40295
+pneumatic_sim: ventanas 2100, paciente sin Pulse (RC fijo), ventanas perdidas 0, resultados descartados 0
+pneumatic_sim: comandos rechazados por autorización 0 (último: pid 0, tipo 0x0)
+pneumatic_sim: mensajes de override 445
+breath_ctrl: pid 20877337, PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 40 s
+hmi: 3950 muestras, 3950 enviadas a 172.31.1.1:5005, 0 comandos
+breath_ctrl: 39300 ciclos, 369 con periodo > 1.5 ms, periodo máx 17.66 ms; cómputo p50 4.2 us, p99 190.7 us, máx 17656.4 us
+breath_ctrl: ajustes aplicados 0 (último #0), consultas sin respuesta 0
+breath_ctrl: settings changes received after their start time: 0 (expected 0)
+safety_mon: t=0.000 LANZA_HMI pid 20877338
+safety_mon: t=0.000 LANZA_CONTROL pid 20877337
+safety_mon: t=20.055 PRESION_ALTA Paw 39.72 flujo 1.438 Vti 0 Vte 0
+safety_mon: t=20.059 ALIVIO_PRESION válvula espiratoria abierta hasta la próxima respiración
+safety_mon: t=39.551 CONTROL_TERMINA despedida
+safety_mon: 39776 ticks, 0 fallas del controlador, 5 eventos; vt_meter: 0 respiraciones, Vti 0, Vte 0 mL
+safety_mon: peso ideal 75.4 kg (talla 180.3 cm); última respiración: auto-PEEP 1.08 cmH2O, flujo final -2.68 L/min, tau 1.40 s, R 24.3, C 57.9 mL/cmH2O
+evil_hmi: pid 20881432, t_abs=12480.074541, ataque de 2.0 s
+evil_hmi: 1. AUTH para sí misma: ACEPTADO
+evil_hmi: 2. OVERRIDE con el soplador al máximo: ACEPTADO
+evil_hmi: 3. WRITE con el soplador al máximo: 995 aceptados, 0 rechazados (EPERM), 0 otros errores
+evil_hmi: devuelvo el OVERRIDE (on = 0) para no dejar la corrida bloqueada
+evil_hmi: t_abs=12482.077092 ATAQUE ACEPTADO: la planta obedeció a la HMI
+evil_hmi salió con 1

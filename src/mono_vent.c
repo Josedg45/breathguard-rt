@@ -92,6 +92,9 @@ int main(int argc, char **argv)
         if (plant == -1) usleep(10000);
     }
     if (plant == -1) rt_die(PROG, "name_open(" BG_PNEUMATIC_NAME ")");
+    /* El monolito no tiene safety_mon: reclama la autorización de la planta y se autoriza a sí mismo. */
+    bg_auth_msg_t au = { .hdr = { .type = BG_MSG_AUTH }, .pid = getpid() };
+    if (MsgSend(plant, &au, sizeof au, NULL, 0) == -1) rt_die(PROG, "MsgSend(AUTH)");
 
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock == -1) rt_die(PROG, "socket");

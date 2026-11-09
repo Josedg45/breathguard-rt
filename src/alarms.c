@@ -66,6 +66,7 @@ const char *alarm_name(uint32_t bit)
     case ALARM_LEAK: return "FUGA";
     case ALARM_POWER: return "ENERGIA";
     case ALARM_AUTO_PEEP: return "AUTO_PEEP";
+    case ALARM_SECURITY: return "SEGURIDAD";
     default: return "?";
     }
 }

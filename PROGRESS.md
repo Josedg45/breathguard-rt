@@ -528,7 +528,7 @@ la planta) y B2 (política secpol: el tipo de la HMI no tiene `channel_connect` 
    **Ya hechos** en 9785f04 (ver "Revisión del dashboard").
 2. B capa 1. **Modo tutor:** la comprobación por pid en `pneumatic_sim` la escribe el usuario (estructura, TODO,
    explicación de `_msg_info` y prueba con una "HMI maliciosa"). Claude: la HMI lee de `safety_mon` y el registro
-   del evento.
+   del evento. **Parte de Claude hecha; falta la tarea 4 del usuario** (ver "B1" abajo).
 3. A — `/dev/ventilator` con `ventd`.
 4. C + B capa 2. Antes de regenerar: copia de `~/qnxvm`, empezar con `--secpol=open`, arranque automático con la IP
    172.31.1.2.
@@ -536,3 +536,36 @@ la planta) y B2 (política secpol: el tipo de la HMI no tiene `channel_connect` 
    banco de pruebas, exportado a C y ejecutado en QNX a baja prioridad. `safety_mon` valida y el operador confirma.
    Documentar qué es aprendido y qué son reglas de seguridad; nunca llamar IA a reglas fijas.
 6. Paquete `design/` para MATLAB: **ya hecho** en 9785f04. Mejoras, si hacen falta, quedan para después.
+
+### B1 — Autorización por pid en la planta (capa 1) (2026-11-09; falta la tarea 4)
+- **Tarea 4 del usuario** (`tareas/04_plant_auth/`): `auth_check()` en `plant_auth.c` (esqueleto que acepta todo,
+  con TODO), README con la explicación de `_msg_info`, las reglas y 3 preguntas. Pruebas:
+  - `make tarea4`: prueba unitaria en la VM (22 casos con `_msg_info` fabricados). Con el esqueleto fallan 11.
+  - `scripts/b1_run.sh`: integración. Ventilador completo con HMI; a los 20 s `evil_hmi` ataca 2 s (AUTH para sí
+    misma, OVERRIDE y WRITE cada 1 ms con el soplador al máximo). `b1_check.py` evalúa 4 criterios.
+- **Hecho por Claude:**
+  - Protocolo: `BG_MSG_AUTH` (`bg_auth_msg_t`) y `BG_MSG_MONITOR` (`bg_monitor_t`). `VITALS` lleva los rechazos
+    (total, último pid y tipo) y el estado de seguridad, el total.
+  - `pneumatic_sim`: `MsgReceive(..., &info)` → `auth_check()`. Si rechaza: `MsgError(EPERM)`, contador y log
+    limitado (los 5 primeros y uno cada 1000).
+  - `safety_mon`: lanza `breath_ctrl` con `POSIX_SPAWN_HOLD`, lo autoriza (`AUTH`) y lo suelta con `SIGCONT`, sin
+    carrera. Consulta `VITALS` cada 100 ms y sirve `MONITOR` a la HMI. Ante rechazos: evento
+    `COMANDO_NO_AUTORIZADO` y alarma `SEGURIDAD` (bit 10) durante 10 s.
+  - `hmi`: ya no abre conexión con la planta; lee sensores y signos vitales de `safety_mon`. La línea RT lleva
+    `denied`.
+  - `breath_ctrl` sin `-S`, `step_test` y `mono_vent` se autorizan a sí mismos (sin supervisor).
+  - Dashboard: alarma "UNAUTHORIZED COMMAND BLOCKED" y el evento.
+- **Resultados con el esqueleto** (`results/sec/*_b1_esqueleto*`): se aceptan el AUTH, el OVERRIDE y 995 WRITE; la Paw
+  sube de 20.4 a 41.1 cmH2O y la frena el alivio de presión de `safety_mon`. La HMI funciona a través de
+  `safety_mon` (3950 muestras).
+- **Verificado con una solución de referencia privada** (fuera del repo; no se le da al usuario): 22/22 casos y
+  PRUEBA B1 PASA. Se rechazaron 1003 comandos, la Paw quedó en 20.3 (antes 20.7) y el evento llegó 92 ms después del
+  ataque. Funcionaron los relanzamientos de `breath_ctrl` (KILL, y STOP detectado por apnea; 3 AUTH, 0 rechazos
+  legítimos), `breath_ctrl` solo y `step_test` (se autorizan solos).
+- **Regresión** con la escena `hmi_matar` (Pulse + HMI): la HMI se relanza, SpO2 98 %, 0 rechazos.
+- **Pendiente de explicar:** en una corrida la antigüedad máxima del comando en la HMI llegó a 433 ms (los datos se
+  borraron antes de revisarlos). La corrida siguiente dio 96.5 ms, coincidente con huecos de 55–57 ms de la propia
+  planta (ruido de la VM). Antes de este cambio ya había un pico de 179 ms (pausa de la vCPU). Vigilarlo en las
+  próximas corridas.
+- **Al entregar la tarea 4:** correr `make tarea4` y `scripts/b1_run.sh b1_final`, publicar los resultados
+  "con comprobación" en el README y en `results/sec/`, y actualizar la frase "in progress" del README.

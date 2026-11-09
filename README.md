@@ -96,6 +96,37 @@ Honesty notes: all timings come from a virtualized target, so they include host 
 (about 0.2–0.3 % late cycles at idle and 7–10 % under load in this VM; late cycles did not change ventilation).
 They do not prove what real hardware would achieve. Details and raw data: `PROGRESS.md` and `results/`.
 
+## Who may move the actuators (compromised-HMI defense, layer 1)
+
+The HMI is the most exposed process: display, network, operator commands. Until now `pneumatic_sim` obeyed any
+process that sent it a `WRITE` or an `OVERRIDE`, and the HMI kept a connection to the plant to read the sensors. A
+compromised HMI could command "blower at maximum, exhalation valve closed".
+
+`src/evil_hmi.c` does exactly that, with the HMI's privileges: it tries to authorize itself, to take over as if it
+were `safety_mon`, and then sends maximum-blower `WRITE`s every 1 ms for 2 s. `scripts/b1_run.sh` runs it against the
+full ventilator at t = 20 s. Without the check, airway pressure rose from 20 to 41 cmH2O. It stopped there only
+because `safety_mon` detected high pressure and opened the exhalation valve
+(`results/sec/*_b1_esqueleto*`).
+
+Layer 1 of the defense:
+- **The HMI no longer connects to the plant.** It reads sensors and vitals through `safety_mon`
+  (`BG_MSG_MONITOR`).
+- **The plant checks the sender of every actuator command.** The check uses `info.pid` from
+  `MsgReceive(..., &info)`. The kernel fills that field, so the sender cannot forge it. Only the `breath_ctrl` that
+  `safety_mon` authorized (`BG_MSG_AUTH`) may `WRITE`, and only `safety_mon` may `OVERRIDE`. Rejected commands get
+  `EPERM`; `safety_mon` logs `COMANDO_NO_AUTORIZADO` and raises a security alarm. After a restart, only the new
+  controller's pid is accepted, so a stale controller cannot write.
+- **No start-up race.** `safety_mon` spawns `breath_ctrl` with `POSIX_SPAWN_HOLD` (a QNX extension). The child is
+  created stopped; it is authorized in the plant and only then released with `SIGCONT`.
+
+The plant-side check (`auth_check()`) is a learning exercise in progress (`tareas/04_plant_auth`). Until it is
+completed, the plant accepts every command, as before. The results with the check in place will be published
+here.
+
+The first `AUTH` claims the plant (trust on first use). This works because `safety_mon` starts right after the
+plant and launches the HMI itself. Layer 2, a secpol policy that stops the HMI type from even connecting to the
+plant, is planned.
+
 ## Evidence of QNX usage
 
 | QNX feature | Where |
@@ -110,6 +141,8 @@ They do not prove what real hardware would achieve. Details and raw data: `PROGR
 | `ClockCycles()` time base shared by all processes | `src/rt_util.h`: `rt_now_s()` |
 | `mlockall()` to avoid page faults in loops | `src/rt_util.h` |
 | `posix_spawn()` to relaunch processes | `src/safety_mon.c` |
+| Sender identity from the kernel (`struct _msg_info`: `pid`, `srcmsglen`) to authorize actuator commands | `src/pneumatic_sim.c`, `tareas/04_plant_auth/` |
+| `POSIX_SPAWN_HOLD`: child created stopped, authorized, then released with `SIGCONT` | `src/safety_mon.c`: `spawn_ctrl()` |
 | `TimerTimeout()` bounding a blocking `MsgSend` (the controller never waits more than 2 ms for the supervisor) | `src/breath_ctrl.c`: `fetch_settings()` |
 | Loop metrics carried in the same bounded `MsgSend` (no extra message on the critical path) | `src/breath_ctrl.c`: `stats_add()`; `src/bg_proto.h`: `bg_loop_stats_t` |
 | Pulse ported to QNX (libc++, protobuf 21.12) | `port/build_pulse_qnx.sh`, `port/qnx-x86_64.cmake` |
@@ -192,7 +225,7 @@ port/       recipe to build Pulse for QNX 8.0
 scripts/    run scripts (host + target) and analysis
 results/    raw data and summaries of every measurement
 design/     plant and controller equations + 1 kHz reference data for an independent (Simulink) model
-tareas/     learning exercises (watchdog, tidal-volume meter, settings rate limit)
+tareas/     learning exercises (watchdog, tidal-volume meter, settings rate limit, plant authorization)
 ```
 
 ## License

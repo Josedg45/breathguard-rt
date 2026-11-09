@@ -13,6 +13,9 @@
  *    resultado de Pulse se corrige el volumen y se actualizan R, C y V0 del pulmón.
  *  - Arbitraje: safety_mon puede tomar el mando (BG_MSG_OVERRIDE). Mientras lo tiene, los WRITE de
  *    breath_ctrl se guardan pero no se aplican, como un relé de seguridad entre controlador y válvulas.
+ *  - Autorización (tarea 4): solo el pid que autorizó safety_mon (BG_MSG_AUTH) puede mandar WRITE, y solo
+ *    safety_mon puede mandar OVERRIDE. El pid del emisor lo pone el kernel en struct _msg_info: no se puede
+ *    falsificar desde el mensaje. Un comando rechazado recibe EPERM y queda registrado (VITALS lo informa).
  *
  * Uso: pneumatic_sim [-s segundos] [-p prio] [-e peep_inicial] [-o salida.csv]
  */
@@ -22,6 +25,7 @@
 
 #include "bg_proto.h"
 #include "plant.h"
+#include "plant_auth.h"
 #include "rt_util.h"
 
 #define PROG "pneumatic_sim"
@@ -35,6 +39,7 @@ typedef union {
     bg_fault_msg_t fault;
     bg_patient_msg_t pat;
     bg_override_msg_t ov;
+    bg_auth_msg_t auth;
 } sim_msg_t;
 
 typedef struct {
@@ -200,9 +205,16 @@ int main(int argc, char **argv)
     printf("%s: listo como '%s', prio %d, %.0f s\n", PROG, BG_PNEUMATIC_NAME, prio, secs);
     fflush(stdout);
 
+    plant_auth_t auth;
+    auth_init(&auth);
+    uint32_t denied = 0;
+    pid_t denied_pid = 0;
+    uint32_t denied_type = 0;
+
     sim_msg_t m;
+    struct _msg_info info; /* el kernel la llena: pid del emisor, bytes enviados... */
     for (;;) {
-        int rcvid = MsgReceive(att->chid, &m, sizeof m, NULL);
+        int rcvid = MsgReceive(att->chid, &m, sizeof m, &info);
         if (rcvid == -1) rt_die(PROG, "MsgReceive");
 
         if (rcvid == 0) { /* pulso */
@@ -243,6 +255,20 @@ int main(int argc, char **argv)
 
         if (m.hdr.type == _IO_CONNECT) { /* name_open() de un cliente */
             MsgReply(rcvid, EOK, NULL, 0);
+            continue;
+        }
+
+        /* Tarea 4: ¿puede este emisor mandar este mensaje? */
+        if (!auth_check(&auth, &info, m.hdr.type, m.hdr.type == BG_MSG_AUTH ? &m.auth : NULL)) {
+            denied++;
+            denied_pid = info.pid;
+            denied_type = m.hdr.type;
+            if (denied <= 5 || denied % 1000 == 0) { /* sin inundar el log si el ataque insiste */
+                printf("%s: RECHAZADO t_abs=%.6f pid %d tipo 0x%x (%u rechazos)\n", PROG, rt_now_s(), info.pid,
+                       m.hdr.type, denied);
+                fflush(stdout);
+            }
+            MsgError(rcvid, EPERM);
             continue;
         }
 
@@ -288,11 +314,18 @@ int main(int argc, char **argv)
                                .age_s = have_patient ? pl.t - last_patient_t : -1, .r = pl.p.r_pat,
                                .c = pl.p.c_pat, .src = override_on, .cmd_age_max = cmd_age_max,
                                .cmd_age_p99_all = age_p99(), .cmd_age_max_all = age_max_all,
-                               .fio2 = have_patient ? vitals.fio2 : -1 };
+                               .fio2 = have_patient ? vitals.fio2 : -1, .denied = denied,
+                               .denied_pid = denied_pid, .denied_type = denied_type };
             cmd_age_max = 0;
             MsgReply(rcvid, EOK, &vt, sizeof vt);
             break;
         }
+        case BG_MSG_AUTH:
+            printf("%s: AUTH t_abs=%.6f de pid %d: controlador autorizado pid %d\n", PROG, rt_now_s(), info.pid,
+                   m.auth.pid);
+            fflush(stdout);
+            MsgReply(rcvid, EOK, NULL, 0);
+            break;
         case BG_MSG_FAULT:
             sync_to_now();
             printf("%s: falla t_abs=%.6f desconectado=%d obstruccion=%.1f fuga=%.3f sensor=%d\n", PROG,
@@ -321,6 +354,8 @@ int main(int argc, char **argv)
            PROG, n, late, dt_max, gaps_clamped, reads, writes);
     printf("%s: ventanas %u, paciente %s, ventanas perdidas %u, resultados descartados %u\n", PROG, win_k,
            have_patient ? "conectado" : "sin Pulse (RC fijo)", lost, stale);
+    printf("%s: comandos rechazados por autorización %u (último: pid %d, tipo 0x%x)\n", PROG, denied, denied_pid,
+           denied_type);
     printf("%s: mensajes de override %lu\n", PROG, overrides);
 
     if (out_path) {

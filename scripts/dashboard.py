@@ -31,7 +31,7 @@ COLS = ("t,paw,flow,spo2,etco2,hr,vit_age,src,alarms,backup,failovers,hmi_restar
         "pwr_bits,soc,autonomy_min,hmi_pid,r,c_ml,vcv,p_insp,peep,rr,ie,vt_ml,set_seq,set_pending,cmd_age_ms").split(",")
 N_OK = (19, 27, len(COLS))  # formatos anteriores (monolito, M6 antes de los ajustes y de cmd_age) y el actual
 ALARMS = ["HIGH PRESSURE", "DISCONNECTION", "APNEA", "CONTROLLER DEAD", "CONTROLLER HUNG", "LOW Vt",
-          "HIGH Vt (> 8 mL/kg)", "LEAK", "POWER", "AUTO-PEEP"]
+          "HIGH Vt (> 8 mL/kg)", "LEAK", "POWER", "AUTO-PEEP", "UNAUTHORIZED COMMAND BLOCKED"]
 # Clases del histograma del periodo (como bg_hist_edge en bg_proto.h): 4 por octava, centradas en 1 ms.
 HIST_EDGES = [0.25 * 2 ** ((i - 0.5) / 4) for i in range(29)]
 # Umbrales de color de las metricas de tiempo real (ms). Verde: dentro del plazo de 1 ms (+0.5). Ambar: hasta
@@ -50,7 +50,8 @@ EVENTS = {"ALIVIO_PRESION": "pressure relief", "APNEA_CON_CONTROL_VIVO": "apnea,
           "AJUSTE_ACEPTADO": "settings accepted", "AJUSTE_RECHAZADO": "settings REJECTED",
           "AJUSTE_APLICADO": "settings applied", "PRESION_ALTA": "high pressure alarm",
           "DESCONEXION": "disconnection alarm", "APNEA": "apnea alarm", "VT_BAJO": "low Vt alarm",
-          "VT_ALTO": "high Vt alarm", "FUGA": "leak alarm", "AUTO_PEEP": "auto-PEEP alarm"}
+          "VT_ALTO": "high Vt alarm", "FUGA": "leak alarm", "AUTO_PEEP": "auto-PEEP alarm",
+          "COMANDO_NO_AUTORIZADO": "unauthorized command blocked"}
 GAP_S = 0.3          # sin datos por mas de esto = la HMI no esta enviando
 # Colores: superficie oscura de monitor; una serie por panel; colores de estado reservados para estados.
 BG, PANEL, INK, MUTED, GRID = "#1a1a19", "#222220", "#ecebe7", "#9a9993", "#3a3a37"

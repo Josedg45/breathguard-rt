@@ -1,7 +1,7 @@
 /* hmi.c - M6: interfaz y telemetría del ventilador, proceso QNX de prioridad BAJA (10).
  *
- * Cada 10 ms lee los sensores de la planta y, cada 100 ms, los signos vitales (planta), el estado de
- * seguridad (safety_mon) y el de energía (power_mgr). Manda una línea de texto por UDP al host, donde el
+ * Cada 10 ms pide a safety_mon la última lectura de los sensores y los signos vitales (BG_MSG_MONITOR) y, cada
+ * 100 ms, el estado de seguridad (safety_mon) y el de energía (power_mgr). No se conecta con la planta. Manda una línea de texto por UDP al host, donde el
  * dashboard la dibuja. Es lo único que el operador "ve".
  *
  * Es deliberadamente prescindible: corre por debajo de todo lo crítico y nadie depende de ella. Si muere,
@@ -99,13 +99,15 @@ int main(int argc, char **argv)
     signal(SIGUSR2, on_sig);
     signal(SIGTERM, on_sig);
 
-    int plant = -1;
-    for (int i = 0; i < 300 && plant == -1; i++) {
-        plant = try_open(BG_PNEUMATIC_NAME);
-        if (plant == -1) usleep(10000);
+    /* La HMI no abre conexión con la planta (tarea 4): ve sensores y signos vitales a través de safety_mon. Si la
+     * HMI se compromete, no tiene un canal hacia los actuadores. */
+    int safety = -1;
+    for (int i = 0; i < 300 && safety == -1; i++) {
+        safety = try_open(BG_SAFETY_NAME);
+        if (safety == -1) usleep(10000);
     }
-    if (plant == -1) rt_die(PROG, "name_open(" BG_PNEUMATIC_NAME ")");
-    int safety = try_open(BG_SAFETY_NAME), power = try_open(BG_POWER_NAME);
+    if (safety == -1) rt_die(PROG, "name_open(" BG_SAFETY_NAME ")");
+    int power = try_open(BG_POWER_NAME);
 
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock == -1) rt_die(PROG, "socket");
@@ -127,9 +129,9 @@ int main(int argc, char **argv)
     if (chid == -1) rt_die(PROG, "ChannelCreate");
     timer_t tm = rt_periodic_pulse(PROG, chid, prio, PULSE_TICK, 10000000);
 
-    bg_hdr_t rd = { .type = BG_MSG_READ }, rv = { .type = BG_MSG_VITALS }, rs = { .type = BG_MSG_SAFETY_STATUS },
+    bg_hdr_t rmo = { .type = BG_MSG_MONITOR }, rs = { .type = BG_MSG_SAFETY_STATUS },
              rp = { .type = BG_MSG_POWER_STATUS };
-    bg_vitals_t vt = { 0 };
+    bg_monitor_t mo = { 0 };
     bg_safety_status_t ss = { 0 };
     bg_power_status_t ps = { 0 };
     struct _pulse pulse;
@@ -151,12 +153,15 @@ int main(int argc, char **argv)
             for (;;) spin++;
         }
 
-        sensors_t s;
-        if (MsgSend(plant, &rd, sizeof rd, &s, sizeof s) == -1) break;
+        if (safety == -1) safety = try_open(BG_SAFETY_NAME);
+        if (safety == -1 || MsgSend(safety, &rmo, sizeof rmo, &mo, sizeof mo) == -1) {
+            if (safety != -1) name_close(safety);
+            safety = -1;
+            continue; /* sin safety_mon no hay datos que mostrar */
+        }
+        const sensors_t s = mo.s;
         if (n % 10 == 0) {
-            MsgSend(plant, &rv, sizeof rv, &vt, sizeof vt); /* también la antigüedad máx. del comando (100 ms) */
-            if (safety == -1) safety = try_open(BG_SAFETY_NAME);
-            if (safety != -1 && MsgSend(safety, &rs, sizeof rs, &ss, sizeof ss) == -1) {
+            if (MsgSend(safety, &rs, sizeof rs, &ss, sizeof ss) == -1) {
                 name_close(safety);
                 safety = -1;
             }
@@ -197,11 +202,12 @@ int main(int argc, char **argv)
         int len = snprintf(line, sizeof line,
                            "%.4f,%.3f,%.4f,%.4f,%.2f,%.1f,%.2f,%d,%u,%d,%u,%u,%s,%u,%.4f,%.1f,%d,%.2f,%.4f,"
                            "%d,%.1f,%.1f,%.1f,%.1f,%.0f,%u,%d,%.2f\n",
-                           rt_now_s(), s.paw, s.flow, vt.have ? vt.spo2 : -1.0, vt.etco2, vt.hr, vt.age_s, vt.src,
+                           rt_now_s(), s.paw, s.flow, mo.vt.have ? mo.vt.spo2 : -1.0, mo.vt.etco2, mo.vt.hr,
+                           mo.vt.age_s, mo.vt.src,
                            ss.alarms, ss.backup, ss.failovers, ss.hmi_restarts, ss.last_event[0] ? ss.last_event : "-",
-                           ps.bits, ps.soc, ps.autonomy_s / 60, (int)getpid(), vt.r, vt.c * 1e3,
+                           ps.bits, ps.soc, ps.autonomy_s / 60, (int)getpid(), mo.vt.r, mo.vt.c * 1e3,
                            st->vcv, st->set.p_insp, st->set.peep, st->set.rr, st->set.ie, st->vt * 1e3, st->seq,
-                           ss.pending, vt.cmd_age_max * 1e3);
+                           ss.pending, mo.vt.cmd_age_max * 1e3);
         if (sendto(sock, line, (size_t)len, 0, (struct sockaddr *)&dst, sizeof dst) > 0) sent++;
 
         if (n % 100 == 1) { /* 1 Hz: metricas y limites (cambian despacio) */
@@ -211,12 +217,12 @@ int main(int argc, char **argv)
                              "RT,t=%.3f,pid=%d,cyc=%u,late=%u,lost=%u,p50=%.3f,p99=%.3f,p999=%.3f,max=%.3f,"
                              "ex99=%.1f,exmax=%.1f,loop_age=%.2f,age99=%.2f,agemax=%.2f,fio2=%.2f,ibw=%.1f,"
                              "ap=%.2f,qee=%.4f,tau=%.3f,eef=%d,lim_phi=%.1f,lim_plo=%.1f,lim_apnea=%.1f,"
-                             "lim_vtlo=%.0f,lim_vthi=%.0f,lim_ap=%.1f,hist=",
+                             "lim_vtlo=%.0f,lim_vthi=%.0f,lim_ap=%.1f,denied=%u,hist=",
                              rt_now_s(), L->pid, L->cycles, L->late, L->lost, L->p50_ms, L->p99_ms, L->p999_ms,
-                             L->max_ms, L->exec_p99_us, L->exec_max_us, ss.loop_age_s, vt.cmd_age_p99_all * 1e3,
-                             vt.cmd_age_max_all * 1e3, vt.fio2, ss.ibw_kg, ss.auto_peep, ss.q_ee, ss.tau_exp,
+                             L->max_ms, L->exec_p99_us, L->exec_max_us, ss.loop_age_s, mo.vt.cmd_age_p99_all * 1e3,
+                             mo.vt.cmd_age_max_all * 1e3, mo.vt.fio2, ss.ibw_kg, ss.auto_peep, ss.q_ee, ss.tau_exp,
                              ss.eef, ss.lim_p_high, ss.lim_p_low, ss.lim_apnea_s, ss.lim_vt_lo * 1e3,
-                             ss.lim_vt_hi * 1e3, ss.lim_auto_peep);
+                             ss.lim_vt_hi * 1e3, ss.lim_auto_peep, ss.denied);
             for (int h = 0; h < BG_HIST_BINS && k < (int)sizeof rt - 16; h++)
                 k += snprintf(rt + k, sizeof rt - k, h ? "|%u" : "%u", L->hist[h]);
             k += snprintf(rt + k, sizeof rt - k, "\n");

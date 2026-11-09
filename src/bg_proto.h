@@ -37,7 +37,17 @@ enum {
     BG_MSG_SAFETY_STATUS, /* respuesta: bg_safety_status_t (a safety_mon) */
     BG_MSG_SETTINGS_SET,  /* carga: bg_settings_msg_t (hmi -> safety_mon); respuesta: bg_settings_reply_t */
     BG_MSG_SETTINGS_GET,  /* carga: bg_settings_get_t (con las metricas del lazo); respuesta: bg_settings_t */
+    BG_MSG_AUTH,          /* carga: bg_auth_msg_t (safety_mon -> planta); respuesta vacía o EPERM */
+    BG_MSG_MONITOR,       /* respuesta: bg_monitor_t (hmi -> safety_mon) */
 };
+
+/* Autorización de actuadores en la planta (tarea 4, tareas/04_plant_auth). safety_mon le dice a pneumatic_sim
+ * qué pid puede mandar WRITE: el del breath_ctrl que acaba de lanzar. La confianza no viene del pid escrito en
+ * el mensaje, sino del pid del EMISOR, que pone el kernel en struct _msg_info. */
+typedef struct {
+    bg_hdr_t hdr;
+    int32_t pid; /* proceso que podrá mandar WRITE */
+} bg_auth_msg_t;
 
 /* Metricas de tiempo real del lazo de breath_ctrl, desde que arranco esa instancia. Viajan en la consulta de
  * ajustes (cada 100 ms), asi no hace falta otro mensaje. Histograma del periodo en BG_HIST_BINS clases
@@ -103,6 +113,10 @@ typedef struct {
     double cmd_age_max;  /* s: antigüedad máxima del último comando aplicado desde la consulta anterior */
     double cmd_age_p99_all, cmd_age_max_all; /* s: p99 y máximo de la antigüedad desde el arranque (cada 1 ms) */
     double fio2;
+    /* Comandos rechazados por la autorización (tarea 4): total, y el último emisor y tipo de mensaje. */
+    uint32_t denied;
+    int32_t denied_pid;
+    uint32_t denied_type;
 } bg_vitals_t;
 
 /* Estado de safety_mon para la HMI. */
@@ -123,7 +137,14 @@ typedef struct {
     /* Mecanica por respiracion (lung_mon): auto-PEEP estimado, flujo al final de la espiracion, tau espiratoria */
     double auto_peep, q_ee, tau_exp;
     int32_t eef;           /* 1 = el flujo no vuelve a cero al final de la espiracion */
+    uint32_t denied;       /* comandos rechazados por la planta (tarea 4) */
 } bg_safety_status_t;
+
+/* Lo que la HMI ve de la planta, a través de safety_mon: la HMI ya no abre conexión con pneumatic_sim. */
+typedef struct {
+    sensors_t s;     /* la última lectura de safety_mon (cada 1 ms) */
+    bg_vitals_t vt;  /* la última consulta de safety_mon a la planta (cada 100 ms) */
+} bg_monitor_t;
 
 /* Pedido de cambio de ajustes del operador (la HMI lo reenvia). seq y t0 los pone safety_mon. */
 typedef struct {

@@ -171,6 +171,11 @@ int main(int argc, char **argv)
     if (heartbeat) {
         safety = name_open(BG_SAFETY_NAME, 0);
         if (safety == -1) rt_die(PROG, "name_open(" BG_SAFETY_NAME ")");
+    } else {
+        /* Sin safety_mon (pruebas M3, design/): nadie nos autoriza en la planta. Reclamamos la autorización y nos
+         * autorizamos a nosotros mismos (tarea 4). Con safety_mon (-S), él ya lo hizo antes de soltarnos. */
+        bg_auth_msg_t au = { .hdr = { .type = BG_MSG_AUTH }, .pid = getpid() };
+        if (MsgSend(coid, &au, sizeof au, NULL, 0) == -1) rt_die(PROG, "MsgSend(AUTH)");
     }
 
     rt_setup(PROG, prio);

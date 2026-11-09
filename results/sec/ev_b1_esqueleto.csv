@@ -1,0 +1,6 @@
+t_s,evento,detalle
+12460.074513,LANZA_HMI,pid 20877338
+12460.074513,LANZA_CONTROL,pid 20877337
+12480.129154,PRESION_ALTA,Paw 39.72 flujo 1.438 Vti 0 Vte 0
+12480.133274,ALIVIO_PRESION,válvula espiratoria abierta hasta la próxima respiración
+12499.625320,CONTROL_TERMINA,despedida
