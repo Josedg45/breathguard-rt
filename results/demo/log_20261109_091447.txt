@@ -1,0 +1,32 @@
+patient: ./states/BreathGuard_StandardMale_PCV.json cargado en 0.2 s
+patient: 9101 ventanas, pasos > 20 ms 13, paso máx 264.9 ms, atraso máx 12 ventanas, perdidas 0; final: SpO2 98.5 %, EtCO2 28.6 mmHg, FC 72
+power_mgr: batería 100 %, escala de tiempo x60, prio 30
+power_mgr: red CORTADA t_abs=2608.042712
+power_mgr: CORTE detectado a 1.9 ms de la orden; recorte de consumos
+power_mgr: red restablecida t_abs=2643.036239
+power_mgr: red restablecida; consumos normales y carga
+power_mgr: final SoC 100.0 %, 29.40 V, potencia media 59.5 W
+breath_ctrl: pid 11526171, PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 180 s
+breath_ctrl: pid 11710491, PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 95 s
+hmi: 16092 muestras, 16092 enviadas a 172.31.1.1:5005, 1 comandos
+safety_mon: t=0.000 LANZA_HMI pid 11526172
+safety_mon: t=0.000 LANZA_CONTROL pid 11526171
+safety_mon: t=19.073 HMI_MUERTA_RELANZADA pid 11554844
+safety_mon: t=59.055 DESCONEXION Paw 0.89 flujo 1.440 Vti 0 Vte 0
+safety_mon: t=67.549 APNEA Paw 0.51 flujo 1.420 Vti 0 Vte 0
+safety_mon: t=85.009 CONTROL_MUERTO respaldo activo
+safety_mon: t=85.009 RELANZA_CONTROL pid 11710491; override enviado 0.18 ms tras detectar; spawn 1.9
+safety_mon: t=90.501 DEVUELVE_MANDO 545 latidos del nuevo controlador
+safety_mon: t=104.959 AJUSTE_ACEPTADO #1 PCV 25.0/5.0 12 rpm 1:2.0 Vt 500 desde t=105.500
+safety_mon: t=105.500 AJUSTE_APLICADO #1
+safety_mon: t=122.043 ENERGIA_CORTE en batería; consumos no esenciales recortados
+safety_mon: t=157.037 ENERGIA_RED red restablecida
+safety_mon: 179125 ticks, 1 fallas del controlador, 12 eventos; vt_meter: 0 respiraciones, Vti 0, Vte 0 mL
+breath_ctrl: 94661 ciclos, 426 con periodo > 1.5 ms, periodo máx 4.68 ms; cómputo p50 12.0 us, p99 182.1 us, máx 1575.0 us
+breath_ctrl: ajustes aplicados 1 (último #1), consultas sin respuesta 0
+pneumatic_sim: listo como 'breathguard_pneumatic', prio 60, 184 s
+pneumatic_sim: falla t_abs=2545.044609 desconectado=1 obstruccion=1.0 fuga=0.000 sensor=0
+pneumatic_sim: falla t_abs=2557.009905 desconectado=0 obstruccion=1.0 fuga=0.000 sensor=0
+pneumatic_sim: 183111 ticks, 203 > 1.5 ms, dt máx 9.56 ms, huecos recortados 0, lecturas 394029, comandos 179001
+pneumatic_sim: ventanas 9200, paciente conectado, ventanas perdidas 0, resultados descartados 0
+pneumatic_sim: mensajes de override 5481

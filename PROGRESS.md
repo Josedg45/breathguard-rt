@@ -14,7 +14,7 @@ Cambio de enfoque (2026-11-06): el proyecto pasó de MedPower (continuidad eléc
 | M4 | `safety_mon` | En curso (escenas en la VM hechas; falta la tarea 1 del usuario) |
 | M5 | `power_mgr` | Completado |
 | M6 | HMI, dashboard, comandos del operador, versión monolítica | Completado (contraste medido; tarea 3 del usuario pendiente) |
-| M7 | Entrega | Pendiente |
+| M7 | Entrega | En curso (demo grabable lista; falta el video) |
 
 ## M1 — Prueba de latencia (completado)
 
@@ -404,3 +404,26 @@ el control, múltiplo del periodo de 5 s).
 - Cambios de ajustes solo al inicio de una respiración; no hay confirmación de cambios grandes (tarea 3: límite por
   comando).
 - El monolito no tiene watchdog de hardware; con uno se reiniciaría en segundos (respiraciones perdidas igualmente).
+
+## M7 — Entrega (en curso)
+
+### Demo grabable
+- `scripts/demo_run.sh` (+ `demo_target.sh`): el sistema completo 180 s en la VM; el host dispara las escenas por SSH y
+  manda subtítulos al dashboard (`CAPTION,texto` por UDP). El dashboard graba lo recibido (`--record`).
+- Telemetría nueva: la planta reporta la antigüedad máxima del último comando aplicado (de breath_ctrl o del
+  respaldo) cada 100 ms; el dashboard la muestra como "Loop 1 kHz: command age max".
+- Resultados de la corrida de referencia (`results/demo/*_20261109_091447*`, detalle en `docs/demo.md`): HMI relanzada
+  sin cambio en el Vt; con la CPU saturada Vt 569 en todas las respiraciones y antigüedad del comando ≤ 13 ms (mediana
+  1.3 ms); desconexión detectada a 21.1 ms (SpO2 mín 96.3 %); respaldo 0.18 ms tras detectar la muerte del control;
+  ajuste aplicado en la respiración siguiente; corte de red detectado en 1.9 ms. SpO2 final 98.5 %.
+
+### Bug encontrado por la demo: pico de presión al reconectar el tubo
+- Corrida `20261109_090520`: al reconectar en plena inspiración, Paw 44.3 cmH2O en 3 ms; saltó el alivio de
+  `safety_mon` (40). Causa: con el tubo abierto el PI de PCV llevaba el soplador a 60 cmH2O.
+- Arreglo (`src/vent.c`, `PCV_HEADROOM` 8 cmH2O): el soplador de PCV no pasa de p_insp + 8; el anti-windup usa ese tope.
+  Offline: 44.1 → 23.5 cmH2O; Vt normal igual (576 mL); solo pulmones irreales (C 100, R 5) pierden hasta 3 % de Vt.
+  En QNX: 23.3 cmH2O, sin alarma.
+
+### Pendiente
+- Grabar el video (< 3 min) con `scripts/demo_run.sh` y el contraste monolítico; subirlo a YouTube.
+- Repetir la escena "congelar" cuando el watchdog (tarea 1) funcione.

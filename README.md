@@ -32,6 +32,8 @@ us within milliseconds and a separate safety process takes over.
 A by-product: a **virtual-patient test bench** (Pulse + real-time controller) for testing respiratory device
 firmware without patients.
 
+![Live dashboard during the demo: on battery, load shedding, autonomy estimate](results/demo/dash_140s.png)
+
 ## Key results (measured in a QEMU/KVM VM on Windows + WSL2)
 
 | Scenario | Result |
@@ -44,6 +46,7 @@ firmware without patients.
 | Controller hang (`SIGSTOP`) | Detected by the apnea alarm after 9 s (heartbeat watchdog in progress, target 0.2 s) |
 | Mains power loss | Detected in ~2 ms; load shedding raises autonomy from 160 to 524 min; low/critical battery alarms |
 | HMI killed, crashed (NULL pointer) or hung (infinite loop) | Ventilation unchanged; HMI relaunched in 0.1–2 s |
+| Tube reconnected in mid-inspiration | Peak 23.3 cmH2O after a fix found by this test bench (was 44 cmH2O; see `docs/demo.md`) |
 | Operator changes settings while ventilating | Applied exactly at the next breath start by controller and backup alike; invalid values rejected with a reason |
 
 ## Same bug, two architectures
@@ -107,6 +110,13 @@ scripts/m5_run.sh power 100 60 1.0            # mains loss (battery time x60)
 scripts/m6_run.sh hmi 60 hmi_colgar           # HMI hangs in an infinite loop
 scripts/m6_run.sh mono 90 mono_bug            # same display bug in the monolithic build
 scripts/m6_run.sh set 90 ajustes              # operator settings changes + controller kill
+```
+
+The whole demo (six scenes in 3 minutes, with captions for the video) is one command; details and measured results
+in [`docs/demo.md`](docs/demo.md):
+
+```bash
+scripts/demo_run.sh
 ```
 
 Live dashboard and operator commands (host side, while a scenario runs):

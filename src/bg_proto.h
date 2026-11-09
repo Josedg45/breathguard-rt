@@ -75,6 +75,7 @@ typedef struct {
     double age_s;        /* antigüedad del último resultado de Pulse */
     double r, c;         /* R (cmH2O/(L/s)) y C (L/cmH2O) actuales del pulmón */
     int32_t src;         /* quién manda los actuadores: 0 breath_ctrl, 1 safety_mon */
+    double cmd_age_max;  /* s: antigüedad máxima del último comando aplicado desde la consulta anterior */
 } bg_vitals_t;
 
 /* Estado de safety_mon para la HMI. */

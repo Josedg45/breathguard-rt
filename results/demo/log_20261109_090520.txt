@@ -1,0 +1,34 @@
+patient: ./states/BreathGuard_StandardMale_PCV.json cargado en 0.1 s
+patient: 9101 ventanas, pasos > 20 ms 2, paso máx 24.2 ms, atraso máx 0 ventanas, perdidas 0; final: SpO2 98.5 %, EtCO2 28.9 mmHg, FC 72
+power_mgr: batería 100 %, escala de tiempo x60, prio 30
+power_mgr: red CORTADA t_abs=2040.787035
+power_mgr: CORTE detectado a 1.5 ms de la orden; recorte de consumos
+power_mgr: red restablecida t_abs=2075.780125
+power_mgr: red restablecida; consumos normales y carga
+power_mgr: final SoC 100.0 %, 29.40 V, potencia media 59.5 W
+breath_ctrl: pid 8884251, PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 180 s
+breath_ctrl: pid 9064480, PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 95 s
+safety_mon: t=0.000 LANZA_HMI pid 8884252
+safety_mon: t=0.000 LANZA_CONTROL pid 8884251
+safety_mon: t=19.016 HMI_MUERTA_RELANZADA pid 8912924
+safety_mon: t=59.008 DESCONEXION Paw 0.87 flujo 1.422 Vti 0 Vte 0
+safety_mon: t=67.550 APNEA Paw 0.23 flujo 1.433 Vti 0 Vte 0
+safety_mon: t=70.970 PRESION_ALTA Paw 44.34 flujo 1.919 Vti 0 Vte 0
+safety_mon: t=70.970 ALIVIO_PRESION válvula espiratoria abierta hasta la próxima respiración
+safety_mon: t=84.998 CONTROL_MUERTO respaldo activo
+safety_mon: t=84.998 RELANZA_CONTROL pid 9064480; override enviado 0.02 ms tras detectar; spawn 1.1 
+safety_mon: t=85.500 DEVUELVE_MANDO 50 latidos del nuevo controlador
+safety_mon: t=104.929 AJUSTE_ACEPTADO #1 PCV 25.0/5.0 12 rpm 1:2.0 Vt 500 desde t=105.500
+safety_mon: t=105.500 AJUSTE_APLICADO #1
+safety_mon: t=122.012 ENERGIA_CORTE en batería; consumos no esenciales recortados
+safety_mon: t=157.004 ENERGIA_RED red restablecida
+safety_mon: 179228 ticks, 1 fallas del controlador, 14 eventos; vt_meter: 0 respiraciones, Vti 0, Vte 0 mhmi: 16098 muestras, 16098 enviadas a 172.31.1.1:5005, 1 comandos
+L
+breath_ctrl: 94611 ciclos, 482 con periodo > 1.5 ms, periodo máx 8.51 ms; cómputo p50 10.5 us, p99 175.2 us, máx 1569.2 us
+breath_ctrl: ajustes aplicados 1 (último #1), consultas sin respuesta 0
+pneumatic_sim: listo como 'breathguard_pneumatic', prio 60, 184 s
+pneumatic_sim: falla t_abs=1977.772296 desconectado=1 obstruccion=1.0 fuga=0.000 sensor=0
+pneumatic_sim: falla t_abs=1989.745409 desconectado=0 obstruccion=1.0 fuga=0.000 sensor=0
+pneumatic_sim: 183249 ticks, 176 > 1.5 ms, dt máx 5.20 ms, huecos recortados 0, lecturas 394361, comandos 179209
+pneumatic_sim: ventanas 9200, paciente conectado, ventanas perdidas 0, resultados descartados 0
+pneumatic_sim: mensajes de override 5016

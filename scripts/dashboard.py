@@ -9,6 +9,8 @@ Uso:
   dashboard.py                              en vivo, escucha UDP en el puerto 5005
   dashboard.py --replay hmi_x.csv[.gz]      reproduce una corrida grabada por hmi_recv.py
   dashboard.py --replay f.csv --snapshot out.png --at 40   guarda una imagen del instante 40 s (sin ventana)
+  dashboard.py --record demo.csv            en vivo y ademas graba lo recibido (para --replay)
+Subtitulos para el video: una linea UDP "CAPTION,texto" al mismo puerto (la manda scripts/demo_run.sh).
 La interfaz va en ingles (la ve el jurado); los comentarios, en espanol como el resto del codigo.
 """
 import argparse
@@ -22,8 +24,8 @@ import time
 import matplotlib
 
 COLS = ("t,paw,flow,spo2,etco2,hr,vit_age,src,alarms,backup,failovers,hmi_restarts,last_event,"
-        "pwr_bits,soc,autonomy_min,hmi_pid,r,c_ml,vcv,p_insp,peep,rr,ie,vt_ml,set_seq,set_pending").split(",")
-N_OLD = 19  # columnas antes de los ajustes del operador (corridas grabadas antes y el monolito)
+        "pwr_bits,soc,autonomy_min,hmi_pid,r,c_ml,vcv,p_insp,peep,rr,ie,vt_ml,set_seq,set_pending,cmd_age_ms").split(",")
+N_OK = (19, 27, len(COLS))  # formatos anteriores (monolito, M6 antes de los ajustes y de cmd_age) y el actual
 ALARMS = ["HIGH PRESSURE", "DISCONNECTION", "APNEA", "CONTROLLER DEAD", "CONTROLLER HUNG", "LOW Vt", "HIGH Vt",
           "LEAK", "POWER"]
 WINDOW_S = 15.0      # segundos de curva visibles
@@ -45,9 +47,11 @@ GOOD, WARN, SERIOUS, CRIT = "#0ca30c", "#fab219", "#ec835a", "#d03b3b"
 
 
 def parse(line):
-    """Una linea CSV de la HMI -> dict. Devuelve None si no se puede leer."""
+    """Una linea CSV de la HMI -> dict (o {"caption": texto}). Devuelve None si no se puede leer."""
+    if line.startswith("CAPTION,"):
+        return {"caption": line[8:].strip()}
     p = line.strip().split(",")
-    if len(p) not in (len(COLS), N_OLD):
+    if len(p) not in N_OK:
         return None
     d = dict(zip(COLS, p))
     try:
@@ -77,8 +81,13 @@ class State:
         # detectarla, la presion ya esta subiendo).
         self.recent_paw = collections.deque(maxlen=10)
         self.hmi_pids = []
+        self.caption = ("", 0.0)
+        self.ages = collections.deque(maxlen=100)  # (t, antigüedad máx. del comando en ms) del último segundo
 
     def add(self, d, rx):
+        if "caption" in d:
+            self.caption = (d["caption"], rx)
+            return
         if self.last is not None:
             dt = d["t"] - self.last["t"]
             if dt > 0.1 or dt < 0:          # hueco: cortar la curva
@@ -112,6 +121,8 @@ class State:
         while self.t and (math.isnan(self.t[0]) or self.t[0] < d["t"] - WINDOW_S - 1):
             for q in (self.t, self.paw, self.flow, self.vol):
                 q.popleft()
+        if "cmd_age_ms" in d:
+            self.ages.append((d["t"], d["cmd_age_ms"]))
         pid = int(d["hmi_pid"])
         if not self.hmi_pids or self.hmi_pids[-1] != pid:
             self.hmi_pids.append(pid)
@@ -152,6 +163,11 @@ def status_lines(st, now_rx):
         tag = " (next)" if d["set_pending"] else ""
         out.append((f"Set {mode} {main} / PEEP {d['peep']:.0f} / {d['rr']:.0f} bpm{tag}",
                     WARN if d["set_pending"] else INK, 9))
+    if st.ages:
+        recent = [a for t, a in st.ages if t > d["t"] - 1.0]
+        age = max(recent) if recent else st.ages[-1][1]
+        col = GOOD if age < 5 else WARN if age < 50 else CRIT
+        out.append((f"Loop 1 kHz: command age max {age:5.1f} ms", col, 10))
     out.append(("", INK, 6))
     if d["last_event"] == "MONO":
         out.append(("Controller: MONOLITHIC", SERIOUS, 11))
@@ -189,7 +205,7 @@ def build_figure(plt):
     fig.canvas.manager.set_window_title("BreathGuard RT") if hasattr(fig.canvas, "manager") and fig.canvas.manager \
         else None
     gs = fig.add_gridspec(3, 2, width_ratios=[2.6, 1], hspace=0.28, wspace=0.08,
-                          left=0.06, right=0.98, top=0.92, bottom=0.07)
+                          left=0.06, right=0.98, top=0.87, bottom=0.07)
     axes = []
     specs = [("Airway pressure (cmH2O)", C_PAW, (-2, 42)), ("Flow (L/min)", C_FLOW, (-90, 90)),
              ("Volume (mL)", C_VOL, (-50, 800))]
@@ -218,10 +234,17 @@ def build_figure(plt):
     fig.text(0.06, 0.955, "BreathGuard RT  ·  QNX 8.0  ·  virtual patient: Pulse", color=INK, fontsize=13,
              weight="bold")
     clock = fig.text(0.98, 0.955, "", color=MUTED, fontsize=10, ha="right")
-    return fig, axes, lines, side, clock
+    caption = fig.text(0.06, 0.905, "", color=WARN, fontsize=13)
+    return fig, axes, lines, side, (clock, caption)
 
 
-def draw(st, now_rx, lines, side, clock):
+CAPTION_S = 12.0  # segundos que se ve un subtitulo
+
+
+def draw(st, now_rx, lines, side, texts):
+    clock, caption = texts
+    text, t_cap = st.caption
+    caption.set_text(text if text and now_rx - t_cap < CAPTION_S else "")
     if st.t:
         t_end = st.last["t"]
         xs = [x - t_end for x in st.t]
@@ -245,7 +268,7 @@ def read_csv(path):
         for raw in f:
             host, _, rest = raw.partition(",")
             d = parse(rest)
-            if d:
+            if d and (rows or "caption" not in d):  # el tiempo de inicio lo da la telemetria
                 rows.append((float(host), d))
     return rows
 
@@ -257,6 +280,7 @@ def main():
     ap.add_argument("--speed", type=float, default=1.0)
     ap.add_argument("--snapshot")
     ap.add_argument("--at", type=float, default=30.0)
+    ap.add_argument("--record")
     a = ap.parse_args()
 
     if a.snapshot:
@@ -293,6 +317,9 @@ def main():
         sock.bind(("0.0.0.0", a.port))
         sock.setblocking(False)
         print(f"dashboard: escuchando UDP {a.port}", file=sys.stderr)
+        rec = open(a.record, "w") if a.record else None
+        if rec:
+            rec.write("t_host," + ",".join(COLS) + "\n")
 
         def poll():
             while True:
@@ -300,9 +327,14 @@ def main():
                     data, _ = sock.recvfrom(2048)
                 except BlockingIOError:
                     break
-                d = parse(data.decode(errors="replace"))
+                now, line = time.time(), data.decode(errors="replace").strip()
+                if rec:
+                    rec.write(f"{now:.4f},{line}\n")
+                d = parse(line)
                 if d:
-                    st.add(d, time.time())
+                    st.add(d, now)
+            if rec:
+                rec.flush()
             return time.time()
 
     from matplotlib.animation import FuncAnimation

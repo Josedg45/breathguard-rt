@@ -150,7 +150,7 @@ int main(int argc, char **argv)
         sensors_t s;
         if (MsgSend(plant, &rd, sizeof rd, &s, sizeof s) == -1) break;
         if (n % 10 == 0) {
-            MsgSend(plant, &rv, sizeof rv, &vt, sizeof vt);
+            MsgSend(plant, &rv, sizeof rv, &vt, sizeof vt); /* también la antigüedad máx. del comando (100 ms) */
             if (safety == -1) safety = try_open(BG_SAFETY_NAME);
             if (safety != -1 && MsgSend(safety, &rs, sizeof rs, &ss, sizeof ss) == -1) {
                 name_close(safety);
@@ -192,12 +192,12 @@ int main(int argc, char **argv)
         const bg_settings_t *st = &ss.set;
         int len = snprintf(line, sizeof line,
                            "%.4f,%.3f,%.4f,%.4f,%.2f,%.1f,%.2f,%d,%u,%d,%u,%u,%s,%u,%.4f,%.1f,%d,%.2f,%.4f,"
-                           "%d,%.1f,%.1f,%.1f,%.1f,%.0f,%u,%d\n",
+                           "%d,%.1f,%.1f,%.1f,%.1f,%.0f,%u,%d,%.2f\n",
                            rt_now_s(), s.paw, s.flow, vt.have ? vt.spo2 : -1.0, vt.etco2, vt.hr, vt.age_s, vt.src,
                            ss.alarms, ss.backup, ss.failovers, ss.hmi_restarts, ss.last_event[0] ? ss.last_event : "-",
                            ps.bits, ps.soc, ps.autonomy_s / 60, (int)getpid(), vt.r, vt.c * 1e3,
                            st->vcv, st->set.p_insp, st->set.peep, st->set.rr, st->set.ie, st->vt * 1e3, st->seq,
-                           ss.pending);
+                           ss.pending, vt.cmd_age_max * 1e3);
         if (sendto(sock, line, (size_t)len, 0, (struct sockaddr *)&dst, sizeof dst) > 0) sent++;
     }
     timer_delete(tm);

@@ -48,6 +48,7 @@ static actuators_t act;       /* lo que se aplica */
 static actuators_t act_ctrl;  /* último comando de breath_ctrl */
 static int override_on;       /* 1 = manda safety_mon */
 static double last_sync;
+static double last_cmd, cmd_age_max; /* último comando aplicado (de quien mande) y su antigüedad máxima */
 static unsigned long gaps_clamped;
 
 /* Ventanas de 20 ms para Pulse. Un anillo guarda las últimas para cuando patient va atrasado. */
@@ -176,7 +177,7 @@ int main(int argc, char **argv)
     timer_t tm = rt_periodic_pulse(PROG, att->chid, prio, PULSE_TICK, 1000000);
 
     double t_start = rt_now_s(), last_write = t_start;
-    last_sync = t_start;
+    last_sync = last_cmd = t_start;
     win_end = BG_WINDOW_S;
     unsigned long reads = 0, writes = 0, overrides = 0;
     printf("%s: listo como '%s', prio %d, %.0f s\n", PROG, BG_PNEUMATIC_NAME, prio, secs);
@@ -191,6 +192,7 @@ int main(int argc, char **argv)
             if (m.pulse.code == PULSE_TICK) {
                 double prev = last_sync;
                 double now = sync_to_now();
+                if (now - last_cmd > cmd_age_max) cmd_age_max = now - last_cmd;
                 if (n < cap) {
                     logrec_t *r = &log[n++];
                     r->t = now;
@@ -232,7 +234,7 @@ int main(int argc, char **argv)
         case BG_MSG_WRITE:
             last_write = sync_to_now(); /* lo anterior se integra con el comando viejo */
             act_ctrl = m.write.act;
-            if (!override_on) act = act_ctrl;
+            if (!override_on) { act = act_ctrl; last_cmd = last_write; }
             writes++;
             MsgReply(rcvid, EOK, NULL, 0);
             break;
@@ -253,13 +255,15 @@ int main(int argc, char **argv)
             sync_to_now();
             override_on = m.ov.on;
             act = override_on ? m.ov.act : act_ctrl;
+            if (override_on) last_cmd = last_sync;
             overrides++;
             MsgReply(rcvid, EOK, NULL, 0);
             break;
         case BG_MSG_VITALS: {
             bg_vitals_t vt = { .have = have_patient, .spo2 = vitals.spo2, .etco2 = vitals.etco2, .hr = vitals.hr,
                                .age_s = have_patient ? pl.t - last_patient_t : -1, .r = pl.p.r_pat,
-                               .c = pl.p.c_pat, .src = override_on };
+                               .c = pl.p.c_pat, .src = override_on, .cmd_age_max = cmd_age_max };
+            cmd_age_max = 0;
             MsgReply(rcvid, EOK, &vt, sizeof vt);
             break;
         }

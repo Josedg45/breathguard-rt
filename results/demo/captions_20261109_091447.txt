@@ -1,0 +1,10 @@
+09:14:54.913 1/6  Stable ventilation: PCV 20/5 cmH2O, 12 bpm. Virtual patient (Pulse) runs inside QNX 8.0
+09:15:11.917 2/6  Killing the display process (HMI)... the patient keeps breathing; the HMI is relaunched
+09:15:27.896 3/6  Both CPUs saturated with junk load for 20 s: the breathing loop keeps its period
+09:15:51.900 4/6  Tube disconnected: alarm in ~20 ms
+09:16:04.017      Tube reconnected
+09:16:17.868 5/6  kill -9 breath_ctrl: safety_mon takes over in ~2 ms and relaunches it
+09:16:37.884      Operator command: Pinsp 20 -> 25 cmH2O (validated by safety_mon, applied at next breath)
+ACK #1 PCV p_insp 25.0 peep 5.0 rr 12.0 ie 2.0 vt 500 desde t=2591.510
+09:16:54.892 6/6  Mains power lost: on battery, non-essential loads shed, autonomy estimate (battery time x60)
+09:17:30.020      Mains restored
