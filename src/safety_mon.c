@@ -45,6 +45,7 @@
 typedef union {
     bg_hdr_t hdr;
     struct _pulse pulse;
+    bg_settings_msg_t sset;
 } safety_msg_t;
 
 typedef struct {
@@ -83,13 +84,26 @@ static pid_t spawn_hmi(double secs_left)
     if (rc != 0) { errno = rc; return -1; }
     return pid;
 }
-static char ctrl_args[8][32];
+static char ctrl_args[10][32];
 static int n_ctrl_args;
 
-static pid_t spawn_ctrl(double t0_breath, double secs_left)
+/* breath_ctrl se lanza (y relanza) con los ajustes vigentes y su inicio de ciclo; si hay un cambio programado,
+ * lo pide el mismo con BG_MSG_SETTINGS_GET al arrancar. */
+static pid_t spawn_ctrl(const bg_settings_t *cur, double secs_left)
 {
     char t0s[32], ss[32];
-    snprintf(t0s, sizeof t0s, "%.6f", t0_breath);
+    n_ctrl_args = 0;
+    snprintf(ctrl_args[n_ctrl_args++], 32, "-m");
+    snprintf(ctrl_args[n_ctrl_args++], 32, "%s", cur->vcv ? "vcv" : "pcv");
+    snprintf(ctrl_args[n_ctrl_args++], 32, "%s", cur->vcv ? "-V" : "-P");
+    snprintf(ctrl_args[n_ctrl_args++], 32, "%.1f", cur->vcv ? cur->vt * 1e3 : cur->set.p_insp);
+    snprintf(ctrl_args[n_ctrl_args++], 32, "-e");
+    snprintf(ctrl_args[n_ctrl_args++], 32, "%.2f", cur->set.peep);
+    snprintf(ctrl_args[n_ctrl_args++], 32, "-r");
+    snprintf(ctrl_args[n_ctrl_args++], 32, "%.3f", cur->set.rr);
+    snprintf(ctrl_args[n_ctrl_args++], 32, "-i");
+    snprintf(ctrl_args[n_ctrl_args++], 32, "%.3f", cur->set.ie);
+    snprintf(t0s, sizeof t0s, "%.6f", cur->t0);
     snprintf(ss, sizeof ss, "%.3f", secs_left);
     char *argv[24];
     int k = 0;
@@ -104,6 +118,12 @@ static pid_t spawn_ctrl(double t0_breath, double secs_left)
     int rc = posix_spawn(&pid, ctrl_path, NULL, NULL, argv, environ);
     if (rc != 0) { errno = rc; rt_die(PROG, "posix_spawn(breath_ctrl)"); }
     return pid;
+}
+
+static void init_vent(vent_t *v, const bg_settings_t *s, double pbl_max)
+{
+    if (s->vcv) vent_init_vcv(v, &s->set, s->vt, 40.0, pbl_max, s->t0);
+    else vent_init_pcv(v, &s->set, pbl_max, s->t0);
 }
 
 int main(int argc, char **argv)
@@ -130,15 +150,10 @@ int main(int argc, char **argv)
             return 1;
         }
     }
-    /* Argumentos con que se lanza (y relanza) breath_ctrl. */
-    snprintf(ctrl_args[n_ctrl_args++], 32, "-m");
-    snprintf(ctrl_args[n_ctrl_args++], 32, "%s", vcv ? "vcv" : "pcv");
-    snprintf(ctrl_args[n_ctrl_args++], 32, "%s", vcv ? "-V" : "-P");
-    snprintf(ctrl_args[n_ctrl_args++], 32, "%.1f", vcv ? vt_ml : set.p_insp);
-    snprintf(ctrl_args[n_ctrl_args++], 32, "-e");
-    snprintf(ctrl_args[n_ctrl_args++], 32, "%.1f", set.peep);
-    snprintf(ctrl_args[n_ctrl_args++], 32, "-r");
-    snprintf(ctrl_args[n_ctrl_args++], 32, "%.1f", set.rr);
+    /* Ajustes vigentes (cur) y, si el operador pidio un cambio, los programados (next, desde next.t0). */
+    bg_settings_t cur = { .seq = 0, .vcv = vcv, .set = set, .vt = vt_ml / 1e3 }, next = cur;
+    int pending = 0;
+    uint32_t breath_base = 0; /* respiraciones completas con calendarios anteriores */
 
     signal(SIGCHLD, SIG_IGN); /* los hijos muertos no quedan como zombis */
 
@@ -157,14 +172,12 @@ int main(int argc, char **argv)
     timer_t tm = rt_periodic_pulse(PROG, att->chid, prio, PULSE_TICK, 1000000);
 
     t_start = rt_now_s();
-    const double period = 60.0 / set.rr, ti = period / (1.0 + set.ie);
-    const double t0_breath = t_start + 0.5; /* inicio del ciclo respiratorio, común a todos */
+    cur.t0 = t_start + 0.5; /* inicio del ciclo respiratorio, común a todos */
 
     /* Respaldo: el mismo modo y ajustes, con el mismo inicio de ciclo. */
     vent_t backup;
     double pbl_max = plant_default_params().pbl_max;
-    if (vcv) vent_init_vcv(&backup, &set, vt_ml / 1e3, 40.0, pbl_max, t0_breath);
-    else vent_init_pcv(&backup, &set, pbl_max, t0_breath);
+    init_vent(&backup, &cur, pbl_max);
 
     alarm_cfg_t acfg = alarms_default_cfg(set.peep);
     alarms_t al;
@@ -174,7 +187,7 @@ int main(int argc, char **argv)
     uint32_t vtm_breaths_seen = 0;
 
     watchdog_t wd;
-    pid_t ctrl_pid = spawn_ctrl(t0_breath, secs - 0.5);
+    pid_t ctrl_pid = spawn_ctrl(&cur, secs - 0.5);
     wd_arm(&wd, (uint64_t)(rt_now_s() * 1e9), (uint64_t)(WD_TIMEOUT_S * 1e9), (uint64_t)(WD_STARTUP_S * 1e9));
     char buf[64];
     int ctrl_scoid = -1;
@@ -218,7 +231,33 @@ int main(int argc, char **argv)
                                           .hmi_restarts = hmi_restarts, .n_events = (uint32_t)n_events };
                 if (n_events)
                     snprintf(st.last_event, sizeof st.last_event, "%s", events[n_events - 1].what);
+                st.set = pending ? next : cur;
+                st.pending = pending;
                 MsgReply(rcvid, EOK, &st, sizeof st);
+            }
+            else if (m.hdr.type == BG_MSG_SETTINGS_GET) { /* breath_ctrl: lo más reciente, con su t0 */
+                MsgReply(rcvid, EOK, pending ? &next : &cur, sizeof cur);
+            }
+            else if (m.hdr.type == BG_MSG_SETTINGS_SET) { /* operador, vía HMI: validar y programar */
+                const bg_settings_t *base = pending ? &next : &cur;
+                bg_settings_t req = m.sset.req;
+                bg_settings_reply_t r = { 0 };
+                req.set.rise_s = cur.set.rise_s;
+                r.ok = settings_validate(base, &req, r.why, sizeof r.why);
+                if (r.ok) {
+                    req.seq = base->seq + 1;
+                    req.t0 = pending ? next.t0 : settings_next_breath(&cur, now);
+                    next = req;
+                    pending = 1;
+                    snprintf(buf, sizeof buf, "#%u %s %.1f/%.1f %.0f rpm 1:%.1f Vt %.0f desde t=%.3f", next.seq,
+                             next.vcv ? "VCV" : "PCV", next.set.p_insp, next.set.peep, next.set.rr, next.set.ie,
+                             next.vt * 1e3, next.t0 - t_start);
+                    event(now, "AJUSTE_ACEPTADO", buf);
+                } else {
+                    event(now, "AJUSTE_RECHAZADO", r.why);
+                }
+                r.now = pending ? next : cur;
+                MsgReply(rcvid, EOK, &r, sizeof r);
             }
             else MsgError(rcvid, ENOSYS);
             continue;
@@ -293,15 +332,24 @@ int main(int argc, char **argv)
         sensors_t s;
         if (MsgSend(plant, &rd, sizeof rd, &s, sizeof s) == -1) break; /* la planta terminó */
 
-        double since = now - t0_breath;
-        uint32_t breath = since >= 0 ? (uint32_t)(since / period) : 0;
-        int insp = since >= 0 && since - breath * period < ti;
+        if (pending && now >= next.t0) { /* empieza la respiración desde la que valen los ajustes nuevos */
+            breath_base += settings_breath(&cur, next.t0 - 1e-6, NULL, NULL) + 1;
+            cur = next;
+            pending = 0;
+            init_vent(&backup, &cur, pbl_max);
+            al.cfg = alarms_default_cfg(cur.set.peep); /* umbrales que dependen de la PEEP */
+            snprintf(buf, sizeof buf, "#%u", cur.seq);
+            event(now, "AJUSTE_APLICADO", buf);
+        }
+        double into;
+        int insp;
+        uint32_t breath = breath_base + settings_breath(&cur, now, &insp, &into);
 
         uint32_t up = alarms_update(&al, now, s.paw, s.flow);
         vtm_update(&vtm, now, s.flow, insp);
         if (vtm.breaths != vtm_breaths_seen) { /* respiración completa medida (tarea 2) */
             vtm_breaths_seen = vtm.breaths;
-            double lo = vcv ? 0.8 * vt_ml / 1e3 : 0.2, hi = vcv ? 1.2 * vt_ml / 1e3 : 1.0;
+            double lo = cur.vcv ? 0.8 * cur.vt : 0.2, hi = cur.vcv ? 1.2 * cur.vt : 1.0;
             uint32_t vt_al = 0;
             if (vtm.vti < lo) vt_al |= ALARM_LOW_VT;
             if (vtm.vti > hi) vt_al |= ALARM_HIGH_VT;
@@ -337,7 +385,7 @@ int main(int argc, char **argv)
         if (relief && breath != relief_breath) relief = 0;
 
         /* ¿Devolver el mando? Controlador nuevo latiendo, al empezar una respiración. */
-        if (backup_mode && beats_since_spawn >= HANDBACK_BEATS && insp && since - breath * period < 0.005) {
+        if (backup_mode && beats_since_spawn >= HANDBACK_BEATS && insp && into < 0.005) {
             backup_mode = 0;
             snprintf(buf, sizeof buf, "%u latidos del nuevo controlador", beats_since_spawn);
             event(now, "DEVUELVE_MANDO", buf);
@@ -347,9 +395,9 @@ int main(int argc, char **argv)
         vent_step(&backup, now, now - last_tick, &s, &act); /* siempre corre: así su integral está listo */
         last_tick = now;
         if (relief) {
-            act.blower = set.peep / pbl_max;
+            act.blower = cur.set.peep / pbl_max;
             act.exh_open = 1.0;
-            act.peep_cmd = set.peep;
+            act.peep_cmd = cur.set.peep;
         }
         int want = backup_mode || relief;
         if (want || overriding) {
@@ -361,7 +409,7 @@ int main(int argc, char **argv)
         if (need_spawn) { /* el respaldo ya manda: ahora sí, lo lento (cargar el binario desde disco) */
             need_spawn = 0;
             double t_ov = rt_now_s();
-            ctrl_pid = spawn_ctrl(t0_breath, secs - (t_ov - t_start));
+            ctrl_pid = spawn_ctrl(&cur, secs - (t_ov - t_start));
             wd_arm(&wd, (uint64_t)(rt_now_s() * 1e9), (uint64_t)(WD_TIMEOUT_S * 1e9), (uint64_t)(WD_STARTUP_S * 1e9));
             beats_since_spawn = 0;
             watching = 1;

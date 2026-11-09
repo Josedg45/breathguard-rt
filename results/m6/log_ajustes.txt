@@ -1,0 +1,27 @@
+bg_fault: marca t_abs=1203.189022
+patient: ./states/BreathGuard_StandardMale_PCV.json cargado en 0.1 s
+patient: 4600 ventanas, pasos > 20 ms 4, paso máx 63.9 ms, atraso máx 2 ventanas, perdidas 0; final: SpO2 98.1 %, EtCO2 33.0 mmHg, FC 72
+power_mgr: batería 100 %, escala de tiempo x60, prio 30
+power_mgr: final SoC 100.0 %, 29.40 V, potencia media 59.0 W
+breath_ctrl: pid 6541340, PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 90 s
+breath_ctrl: pid 6570012, PCV 25/8 cmH2O, 15 rpm, I:E 1:2, prio 50, 35 s
+hmi: 8950 muestras, 8950 enviadas a 172.31.1.1:5005, 5 comandos
+safety_mon: t=0.000 LANZA_HMI pid 6541341
+safety_mon: t=0.000 LANZA_CONTROL pid 6541340
+safety_mon: t=16.903 AJUSTE_ACEPTADO #1 PCV 25.0/5.0 12 rpm 1:2.0 Vt 500 desde t=20.500
+safety_mon: t=20.501 AJUSTE_APLICADO #1
+safety_mon: t=26.963 AJUSTE_RECHAZADO p_insp 50.0 fuera de 5-35 cmH2O
+safety_mon: t=35.023 AJUSTE_ACEPTADO #2 PCV 25.0/8.0 15 rpm 1:2.0 Vt 500 desde t=35.500
+safety_mon: t=35.501 AJUSTE_APLICADO #2
+safety_mon: t=55.016 CONTROL_MUERTO respaldo activo
+safety_mon: t=55.017 RELANZA_CONTROL pid 6570012; override enviado 0.09 ms tras detectar; spawn 0.6 
+safety_mon: t=59.501 DEVUELVE_MANDO 447 latidos del nuevo controlador
+safety_mon: t=62.133 AJUSTE_ACEPTADO #3 VCV 25.0/8.0 15 rpm 1:2.0 Vt 450 desde t=63.500
+safety_mon: t=63.501 AJUSTE_APLICADO #3
+safety_mon: 89778 ticks, 1 fallas del controlador, 12 eventos; vt_meter: 0 respiraciones, Vti 0, Vte 0 mL
+breath_ctrl: 34908 ciclos, 106 con periodo > 1.5 ms, periodo máx 5.79 ms; cómputo p50 12.5 us, p99 190.2 us, máx 2951.2 us
+breath_ctrl: ajustes aplicados 2 (último #3), consultas sin respuesta 0
+pneumatic_sim: listo como 'breathguard_pneumatic', prio 60, 94 s
+pneumatic_sim: 93780 ticks, 87 > 1.5 ms, dt máx 5.75 ms, huecos recortados 0, lecturas 197467, comandos 89764
+pneumatic_sim: ventanas 4700, paciente conectado, ventanas perdidas 0, resultados descartados 0
+pneumatic_sim: mensajes de override 4474

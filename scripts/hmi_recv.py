@@ -7,7 +7,7 @@ import sys
 import time
 
 COLS = ("t,paw,flow,spo2,etco2,hr,vit_age,src,alarms,backup,failovers,hmi_restarts,last_event,"
-        "pwr_bits,soc,autonomy_min,hmi_pid,r,c_ml")
+        "pwr_bits,soc,autonomy_min,hmi_pid,r,c_ml,vcv,p_insp,peep,rr,ie,vt_ml,set_seq,set_pending")
 
 
 def main():

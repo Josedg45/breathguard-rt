@@ -9,8 +9,13 @@
  *   SIGUSR1  -> bug que la hace caer (acceso a un puntero nulo)
  *   SIGUSR2  -> bug que la deja en un bucle infinito, sin bloquearse nunca
  *
- * Uso: hmi -h ip_host [-u puerto] [-s seg] [-p prio]
+ * Comandos del operador: escucha en UDP (puerto -c, 5006) lineas como "p_insp=25 peep=8" (claves: mode=pcv|vcv,
+ * p_insp, peep, rr, ie, vt en mL). NO valida ni aplica nada: arma el pedido sobre los ajustes actuales y lo
+ * reenvia a safety_mon, que decide. Al remitente le contesta "ACK ..." o "NAK motivo".
+ *
+ * Uso: hmi -h ip_host [-u puerto] [-c puerto_comandos] [-s seg] [-p prio]
  */
+#include <fcntl.h>
 #include <arpa/inet.h>
 #include <getopt.h>
 #include <netinet/in.h>
@@ -34,6 +39,35 @@ static void on_sig(int sig)
     if (sig == SIGTERM) stop = 1;
 }
 
+/* Un comando de texto -> pedido de ajustes, partiendo de los actuales. Devuelve 0 si se entendio. */
+static int parse_cmd(char *txt, const bg_settings_t *base, bg_settings_t *req, char *err, size_t n)
+{
+    *req = *base;
+    int any = 0;
+    for (char *tok = strtok(txt, " \t\r\n,;"); tok; tok = strtok(NULL, " \t\r\n,;")) {
+        char *eq = strchr(tok, '=');
+        if (!eq) { snprintf(err, n, "falta '=' en '%.20s'", tok); return -1; }
+        *eq = 0;
+        const char *k = tok, *v = eq + 1;
+        char *end;
+        double x = strtod(v, &end);
+        if (!strcmp(k, "mode")) {
+            if (!strcmp(v, "pcv")) req->vcv = 0;
+            else if (!strcmp(v, "vcv")) req->vcv = 1;
+            else { snprintf(err, n, "modo '%.8s' desconocido", v); return -1; }
+        } else if (end == v || *end) { snprintf(err, n, "valor '%.12s' no numerico", v); return -1; }
+        else if (!strcmp(k, "p_insp")) req->set.p_insp = x;
+        else if (!strcmp(k, "peep")) req->set.peep = x;
+        else if (!strcmp(k, "rr")) req->set.rr = x;
+        else if (!strcmp(k, "ie")) req->set.ie = x;
+        else if (!strcmp(k, "vt")) req->vt = x / 1e3;
+        else { snprintf(err, n, "clave '%.12s' desconocida", k); return -1; }
+        any = 1;
+    }
+    if (!any) { snprintf(err, n, "comando vacio"); return -1; }
+    return 0;
+}
+
 static int try_open(const char *name)
 {
     return name_open(name, 0);
@@ -42,16 +76,17 @@ static int try_open(const char *name)
 int main(int argc, char **argv)
 {
     const char *host = NULL;
-    int port = 5005, prio = 10, opt;
+    int port = 5005, cmd_port = 5006, prio = 10, opt;
     double secs = 3600;
-    while ((opt = getopt(argc, argv, "h:u:s:p:")) != -1) {
+    while ((opt = getopt(argc, argv, "h:u:c:s:p:")) != -1) {
         switch (opt) {
         case 'h': host = optarg; break;
         case 'u': port = atoi(optarg); break;
+        case 'c': cmd_port = atoi(optarg); break;
         case 's': secs = atof(optarg); break;
         case 'p': prio = atoi(optarg); break;
         default:
-            fprintf(stderr, "uso: %s -h ip_host [-u puerto] [-s seg] [-p prio]\n", PROG);
+            fprintf(stderr, "uso: %s -h ip_host [-u puerto] [-c puerto_comandos] [-s seg] [-p prio]\n", PROG);
             return 1;
         }
     }
@@ -72,6 +107,16 @@ int main(int argc, char **argv)
     if (sock == -1) rt_die(PROG, "socket");
     struct sockaddr_in dst = { .sin_family = AF_INET, .sin_port = htons((uint16_t)port) };
     if (inet_pton(AF_INET, host, &dst.sin_addr) != 1) { fprintf(stderr, "%s: ip inválida\n", PROG); return 1; }
+
+    /* Socket de comandos: no bloqueante, se revisa en cada tick. */
+    int csock = socket(AF_INET, SOCK_DGRAM, 0);
+    struct sockaddr_in me = { .sin_family = AF_INET, .sin_port = htons((uint16_t)cmd_port),
+                              .sin_addr.s_addr = htonl(INADDR_ANY) };
+    int one = 1;
+    if (csock != -1) setsockopt(csock, SOL_SOCKET, SO_REUSEADDR, &one, sizeof one);
+    if (csock == -1 || bind(csock, (struct sockaddr *)&me, sizeof me) == -1) rt_die(PROG, "bind(comandos)");
+    fcntl(csock, F_SETFL, fcntl(csock, F_GETFL) | O_NONBLOCK);
+    unsigned long cmds = 0;
 
     rt_setup(PROG, prio);
     int chid = ChannelCreate(_NTO_CHF_PRIVATE);
@@ -118,15 +163,45 @@ int main(int argc, char **argv)
             }
         }
         n++;
+
+        /* Comandos del operador pendientes en el socket. */
+        struct sockaddr_in from;
+        socklen_t flen = sizeof from;
+        char cbuf[256], ans[160];
+        ssize_t cl;
+        while ((cl = recvfrom(csock, cbuf, sizeof cbuf - 1, 0, (struct sockaddr *)&from, &flen)) > 0) {
+            cbuf[cl] = 0;
+            cmds++;
+            bg_settings_msg_t sm = { .hdr = { .type = BG_MSG_SETTINGS_SET } };
+            bg_settings_reply_t rep;
+            char err[64];
+            if (safety == -1) snprintf(ans, sizeof ans, "NAK safety_mon no disponible\n");
+            else if (parse_cmd(cbuf, &ss.set, &sm.req, err, sizeof err) == -1) snprintf(ans, sizeof ans, "NAK %s\n", err);
+            else if (MsgSend(safety, &sm, sizeof sm, &rep, sizeof rep) == -1) snprintf(ans, sizeof ans, "NAK MsgSend\n");
+            else if (!rep.ok) snprintf(ans, sizeof ans, "NAK %s\n", rep.why);
+            else {
+                ss.set = rep.now; /* para que un segundo comando seguido parta de este */
+                snprintf(ans, sizeof ans, "ACK #%u %s p_insp %.1f peep %.1f rr %.1f ie %.1f vt %.0f desde t=%.3f\n",
+                         rep.now.seq, rep.now.vcv ? "VCV" : "PCV", rep.now.set.p_insp, rep.now.set.peep,
+                         rep.now.set.rr, rep.now.set.ie, rep.now.vt * 1e3, rep.now.t0);
+            }
+            sendto(csock, ans, strlen(ans), 0, (struct sockaddr *)&from, flen);
+            flen = sizeof from;
+        }
+
+        const bg_settings_t *st = &ss.set;
         int len = snprintf(line, sizeof line,
-                           "%.4f,%.3f,%.4f,%.4f,%.2f,%.1f,%.2f,%d,%u,%d,%u,%u,%s,%u,%.4f,%.1f,%d,%.2f,%.4f\n",
+                           "%.4f,%.3f,%.4f,%.4f,%.2f,%.1f,%.2f,%d,%u,%d,%u,%u,%s,%u,%.4f,%.1f,%d,%.2f,%.4f,"
+                           "%d,%.1f,%.1f,%.1f,%.1f,%.0f,%u,%d\n",
                            rt_now_s(), s.paw, s.flow, vt.have ? vt.spo2 : -1.0, vt.etco2, vt.hr, vt.age_s, vt.src,
                            ss.alarms, ss.backup, ss.failovers, ss.hmi_restarts, ss.last_event[0] ? ss.last_event : "-",
-                           ps.bits, ps.soc, ps.autonomy_s / 60, (int)getpid(), vt.r, vt.c * 1e3);
+                           ps.bits, ps.soc, ps.autonomy_s / 60, (int)getpid(), vt.r, vt.c * 1e3,
+                           st->vcv, st->set.p_insp, st->set.peep, st->set.rr, st->set.ie, st->vt * 1e3, st->seq,
+                           ss.pending);
         if (sendto(sock, line, (size_t)len, 0, (struct sockaddr *)&dst, sizeof dst) > 0) sent++;
     }
     timer_delete(tm);
     rt_relax();
-    printf("%s: %lu muestras, %lu enviadas a %s:%d\n", PROG, n, sent, host, port);
+    printf("%s: %lu muestras, %lu enviadas a %s:%d, %lu comandos\n", PROG, n, sent, host, port, cmds);
     return 0;
 }

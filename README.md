@@ -27,7 +27,7 @@ us within milliseconds and a separate safety process takes over.
 | `breath_ctrl` | 50 | Breathing control loop at 1 kHz: PCV and VCV, PEEP, rate, I:E. |
 | `power_mgr` | 30 | Mains/battery (Thevenin battery model), load shedding, autonomy estimate. |
 | `patient` | 20 | Virtual patient: Pulse Physiology Engine (lung mechanics, SpO2, EtCO2, heart rate). |
-| `hmi` | 10 | Operator display and telemetry over UDP to the host. Deliberately expendable. |
+| `hmi` | 10 | Operator display, telemetry over UDP to the host, operator commands. Deliberately expendable. |
 
 A by-product: a **virtual-patient test bench** (Pulse + real-time controller) for testing respiratory device
 firmware without patients.
@@ -44,6 +44,24 @@ firmware without patients.
 | Controller hang (`SIGSTOP`) | Detected by the apnea alarm after 9 s (heartbeat watchdog in progress, target 0.2 s) |
 | Mains power loss | Detected in ~2 ms; load shedding raises autonomy from 160 to 524 min; low/critical battery alarms |
 | HMI killed, crashed (NULL pointer) or hung (infinite loop) | Ventilation unchanged; HMI relaunched in 0.1–2 s |
+| Operator changes settings while ventilating | Applied exactly at the next breath start by controller and backup alike; invalid values rejected with a reason |
+
+## Same bug, two architectures
+
+The same display bug (NULL pointer dereference, or an infinite loop) injected into BreathGuard RT and into a
+**monolithic** build of the same controller (`src/mono_vent.c`: control and display in one loop, like a typical
+microcontroller "superloop", no supervisor). Pulse virtual patient, 90 s, bug at 31 s:
+
+![Same display bug in BreathGuard RT and in a monolithic build](results/m6/contrast.png)
+
+| Build | Ventilation after the bug | SpO2 60 s later | Heart rate |
+|---|---|---|---|
+| BreathGuard RT (crash or hang) | unchanged; display relaunched in 0.1 s (crash) or 2 s (hang) | 98.0 % | 72 |
+| Monolithic, crash | stops: valves stay at the last command, lung held at ~11 cmH2O | 90.6 % | rises to 86 |
+| Monolithic, hang | stops | 89.6 % | rises to 90 |
+
+A real monolithic design might add a hardware watchdog; it would reboot the whole device (seconds, lost breaths and
+lost state) instead of only the display.
 
 Honesty notes: all timings come from a virtualized target, so they include host noise and are an upper bound
 (about 0.2–0.3 % late cycles at idle and 7–10 % under load in this VM; late cycles did not change ventilation).
@@ -63,6 +81,7 @@ They do not prove what real hardware would achieve. Details and raw data: `PROGR
 | `ClockCycles()` time base shared by all processes | `src/rt_util.h`: `rt_now_s()` |
 | `mlockall()` to avoid page faults in loops | `src/rt_util.h` |
 | `posix_spawn()` to relaunch processes | `src/safety_mon.c` |
+| `TimerTimeout()` bounding a blocking `MsgSend` (the controller never waits more than 2 ms for the supervisor) | `src/breath_ctrl.c`: `fetch_settings()` |
 | Pulse ported to QNX (libc++, protobuf 21.12) | `port/build_pulse_qnx.sh`, `port/qnx-x86_64.cmake` |
 
 ## Build and run
@@ -86,7 +105,21 @@ scripts/m4_run.sh kill 75 matar               # kill breath_ctrl at 40 s
 scripts/m4_run.sh disc 75 desconectar         # tube disconnection at 40 s
 scripts/m5_run.sh power 100 60 1.0            # mains loss (battery time x60)
 scripts/m6_run.sh hmi 60 hmi_colgar           # HMI hangs in an infinite loop
+scripts/m6_run.sh mono 90 mono_bug            # same display bug in the monolithic build
+scripts/m6_run.sh set 90 ajustes              # operator settings changes + controller kill
 ```
+
+Live dashboard and operator commands (host side, while a scenario runs):
+
+```bash
+python3 scripts/dashboard.py                  # live curves, vitals, alarms, power (UDP 5005)
+python3 scripts/bg_cmd.py p_insp=25 peep=8    # also rr=, ie=, vt= (mL), mode=pcv|vcv -> ACK or NAK + reason
+python3 scripts/dashboard.py --replay results/m6/hmi_ajustes.csv.gz   # replay a recorded run
+```
+
+Operator commands go host → `hmi` (UDP 5006) → `safety_mon`, which owns the settings: it validates the
+ranges (`src/settings.c`) and schedules the change for the next breath start, a time shared by the controller and the
+backup ventilator. The HMI only forwards; it never validates or applies anything.
 
 Offline (Linux, no QNX) checks of the control and alarm logic: `make build/m3_offline build/m4_offline
 build/m5_offline`.
@@ -97,12 +130,12 @@ pressure sensor), `-m 0|1` (mains off/on).
 ## Repository layout
 
 ```text
-src/        QNX processes and pure-C models (plant.c, vent.c, alarms.c, battery.c)
+src/        QNX processes and pure-C models (plant.c, vent.c, alarms.c, battery.c, settings.c)
 tools/      offline test harnesses and the Pulse probe
 port/       recipe to build Pulse for QNX 8.0
 scripts/    run scripts (host + target) and analysis
 results/    raw data and summaries of every measurement
-tareas/     learning exercises (watchdog, tidal-volume meter)
+tareas/     learning exercises (watchdog, tidal-volume meter, settings rate limit)
 ```
 
 ## License

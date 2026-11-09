@@ -13,7 +13,7 @@ Cambio de enfoque (2026-11-06): el proyecto pasó de MedPower (continuidad eléc
 | M3 | `pneumatic_sim` + `breath_ctrl` (PCV, VCV) | Completado (falta la tarea 2 del usuario) |
 | M4 | `safety_mon` | En curso (escenas en la VM hechas; falta la tarea 1 del usuario) |
 | M5 | `power_mgr` | Completado |
-| M6 | HMI, dashboard, CLI de fallos, versión monolítica | En curso (HMI y escenas hechas; faltan dashboard gráfico y versión monolítica) |
+| M6 | HMI, dashboard, comandos del operador, versión monolítica | Completado (contraste medido; tarea 3 del usuario pendiente) |
 | M7 | Entrega | Pendiente |
 
 ## M1 — Prueba de latencia (completado)
@@ -349,29 +349,58 @@ En la VM, con el sistema completo y Pulse:
 - El ventilador simulado no se apaga al agotarse la batería: `power_mgr` no corta la planta.
 - La escala de tiempo acelera solo la batería; la ventilación y las alarmas siguen en tiempo real.
 
-## M6 — HMI y telemetría (en curso)
+## M6 — HMI, dashboard, comandos del operador y contraste monolítico (completado)
 
 ### Qué se hizo
 - `src/hmi.c` (prio 10): cada 10 ms lee la planta y cada 100 ms los signos vitales (`BG_MSG_VITALS`), el estado de
-  `safety_mon` (`BG_MSG_SAFETY_STATUS`) y el de `power_mgr`; manda una línea CSV por UDP al host (172.31.1.1:5005).
-  Bugs de demo: SIGUSR1 (puntero nulo), SIGUSR2 (bucle infinito).
+  `safety_mon` (`BG_MSG_SAFETY_STATUS`, ahora con los ajustes vigentes) y el de `power_mgr`; manda una línea CSV por UDP
+  al host (172.31.1.1:5005). Bugs de demo: SIGUSR1 (puntero nulo), SIGUSR2 (bucle infinito).
 - `safety_mon -H ip`: lanza la HMI, la relanza si muere (`_PULSE_CODE_DISCONNECT`) y la mata si deja de consultar
-  2 s (cuelgue). `scripts/hmi_recv.py` (receptor a CSV), `m6_run.sh`, `m6_target.sh`.
+  2 s (cuelgue).
+- **Dashboard** `scripts/dashboard.py`: curvas de Paw, flujo y volumen (15 s), SpO2/EtCO2/FC, Vt, Ppico/PEEP, quién
+  controla, alarmas, energía, ajustes y "NO DATA" si la HMI calla. Modos: en vivo (UDP), `--replay`, `--snapshot`.
+  Vt y PEEP comprobados contra la planta (572 vs 569 mL; 5.1 vs 5.1 cmH2O; VCV 455 vs 454 mL).
+- **Comandos del operador**: `scripts/bg_cmd.py p_insp=25 peep=8 rr=15 ie=2 vt=450 mode=pcv|vcv` → UDP 5006 a la HMI
+  → `BG_MSG_SETTINGS_SET` a `safety_mon`, que valida (`src/settings.c`) y programa el cambio para el inicio de la
+  próxima respiración (`t0` común). `breath_ctrl` consulta cada 100 ms (`BG_MSG_SETTINGS_GET`) con `TimerTimeout` de
+  2 ms y aplica en `t0`; el respaldo cambia en el mismo instante; el relanzado arranca con los ajustes vigentes.
+- **Versión monolítica** `src/mono_vent.c`: control + pantalla en un solo lazo, sin supervisor, con los mismos bugs.
+- Tarea 3 del usuario: `tareas/03_rate_limit` (límite de cambio por comando; el esqueleto acepta todo).
 
-### Escenas en la VM (con Pulse; señal a los 30 s; 60 s)
+### Escenas de la HMI en la VM (con Pulse; señal a los 30 s; 60 s)
 | Escena | Qué hace safety_mon | Hueco en la telemetría | Ventilación |
 |---|---|---|---|
 | Matar la HMI (KILL) | relanza a los ~0.1 s | < 0.1 s | Vt 568–569, SpO2 98 % sin cambio |
 | Bug: puntero nulo (SIGUSR1) | relanza a los 0.1 s | 99 ms | sin cambio |
 | Bug: bucle infinito (SIGUSR2) | HMI_COLGADA a los 2.0 s, la mata y relanza | 1996 ms | sin cambio |
 
-Telemetría UDP sin pérdidas (1945/1945 en la prueba de humo).
+### Contraste: el mismo bug de pantalla en dos arquitecturas (90 s, bug a los 31 s; `results/m6/contrast.*`)
+| Escena | Edad máx. del último comando (25 s tras el bug) | SpO2 mín | FC máx |
+|---|---|---|---|
+| BreathGuard, puntero nulo | 0.01 s | 97.9 % | 72 |
+| BreathGuard, bucle infinito | 0.00 s | 97.9 % | 72 |
+| Monolito, puntero nulo | 24.98 s (no vuelve a mandar) | 90.6 % | 86 |
+| Monolito, bucle infinito | 24.98 s | 89.6 % | 90 |
 
-### Error corregido
-- Una señal con manejador interrumpe `MsgReceivePulse` con `EINTR`; se trataba como fatal y la HMI salía limpia en vez
-  de ejecutar el bug. Corregido en `hmi` y `breath_ctrl`.
+En el monolito la planta queda con el último comando (soplador 16–19 %, válvula espiratoria cerrada): pulmón inflado a
+~10–11 cmH2O sin ventilar. Ambas corridas cayeron al inicio de una inspiración (el bug llega 30 s después de arrancar
+el control, múltiplo del periodo de 5 s).
 
-### Pendiente en M6
-- Dashboard gráfico en vivo (Python) sobre `hmi_recv.py`.
-- Versión monolítica (control + HMI en un proceso) para el contraste.
-- Comandos del operador desde la HMI.
+### Escena de ajustes (90 s; `results/m6/ajustes_respiraciones.txt`, `cmd_ajustes.txt`)
+- p_insp 20→25: ACK a los 16.9 s; aplicado en la respiración de 20.5 s (Ppico 25.6, Vt 569→767 mL).
+- p_insp=50 → NAK "fuera de 5-35 cmH2O"; `foo=3` → NAK "clave desconocida".
+- 25/8 a 15 rpm: aplicado en 35.5 s; periodo 5→4 s, PEEP 8.2.
+- `kill -9` a breath_ctrl a los 55 s: respaldo con 25/8 a 15 rpm sin salto; relanzado con los mismos ajustes; mando
+  devuelto en 59.5 s.
+- VCV 450 mL: aplicado en 63.5 s; Vt 454 mL. breath_ctrl: 0 consultas sin respuesta.
+
+### Errores corregidos
+- Una señal con manejador interrumpe `MsgReceivePulse` con `EINTR`; se trataba como fatal. Corregido en `hmi` y
+  `breath_ctrl`.
+- `MsgSend` devuelve el estado de `MsgReply` (0), no los bytes: todas las consultas de ajustes parecían fallar.
+- Detector de respiraciones del dashboard sin histéresis correcta; PEEP mal definida (mínimo con ruido).
+
+### Límites
+- Cambios de ajustes solo al inicio de una respiración; no hay confirmación de cambios grandes (tarea 3: límite por
+  comando).
+- El monolito no tiene watchdog de hardware; con uno se reiniciaría en segundos (respiraciones perdidas igualmente).

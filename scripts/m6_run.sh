@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 L=$1; S=$2; ESC=$3
 VM=root@172.31.1.2; HOST=172.31.1.1; DIR=/tmp/medpower; SSH="ssh -o LogLevel=ERROR"; SCP="scp -o LogLevel=ERROR -q"
-BINS="pneumatic_sim breath_ctrl safety_mon bg_fault power_mgr hmi patient"
+BINS="pneumatic_sim breath_ctrl safety_mon bg_fault power_mgr hmi mono_vent patient"
 make $(for b in $BINS; do echo build/$b; done)
 $SSH $VM "mkdir -p $DIR"; mkdir -p results/m6
 for b in $BINS; do
@@ -15,6 +15,11 @@ done
 $SCP scripts/m6_target.sh $VM:$DIR/
 python3 scripts/hmi_recv.py results/m6/hmi_$L.csv $((S + 8)) &
 RECV=$!
+if [ "$ESC" = ajustes ]; then  # comandos del operador desde el host (t aprox. desde que arranca safety_mon)
+  ( c() { sleep "$1"; shift; echo "$(date +%s.%N) $*: $(python3 scripts/bg_cmd.py "$@")"; }
+    c 20 p_insp=25; c 10 p_insp=50; c 8 p_insp=25 peep=8 rr=15; c 10 foo=3; c 17 mode=vcv vt=450
+  ) > results/m6/cmd_$L.txt 2>&1 &
+fi
 $SSH $VM "sh $DIR/m6_target.sh $L $S $ESC $HOST" | tee results/m6/log_$L.txt
 wait $RECV
 $SCP $VM:$DIR/sim_$L.csv $VM:$DIR/pat_$L.csv $VM:$DIR/ev_$L.csv results/m6/

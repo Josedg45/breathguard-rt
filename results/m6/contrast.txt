@@ -1,0 +1,5 @@
+hmi_bug_90   SpO2 98.0 -> min 97.9 %  HR max 72  edad máx del último comando en los 25 s tras el bug 0.01 s
+hmi_colgar_90 SpO2 98.0 -> min 97.9 %  HR max 72  edad máx del último comando en los 25 s tras el bug 0.00 s
+mono_bug     SpO2 98.0 -> min 90.6 %  HR max 86  edad máx del último comando en los 25 s tras el bug 24.98 s
+mono_colgar  SpO2 98.0 -> min 89.6 %  HR max 90  edad máx del último comando en los 25 s tras el bug 24.98 s
+m6_compare: results/m6/contrast.png

@@ -12,6 +12,7 @@
 #include <sys/neutrino.h>
 
 #include "bg_types.h"
+#include "settings.h"
 
 #define BG_PNEUMATIC_NAME "breathguard_pneumatic"
 #define BG_SAFETY_NAME "breathguard_safety"
@@ -29,6 +30,8 @@ enum {
     BG_MSG_OVERRIDE,      /* carga: bg_override_msg_t; respuesta vacía (solo safety_mon) */
     BG_MSG_VITALS,        /* respuesta: bg_vitals_t (a pneumatic_sim) */
     BG_MSG_SAFETY_STATUS, /* respuesta: bg_safety_status_t (a safety_mon) */
+    BG_MSG_SETTINGS_SET,  /* carga: bg_settings_msg_t (hmi -> safety_mon); respuesta: bg_settings_reply_t */
+    BG_MSG_SETTINGS_GET,  /* respuesta: bg_settings_t (breath_ctrl -> safety_mon) */
 };
 
 /* Acople con Pulse (proceso patient). La planta corta su tiempo en ventanas de BG_WINDOW_S.
@@ -82,7 +85,21 @@ typedef struct {
     uint32_t hmi_restarts; /* veces que se relanzó la HMI */
     uint32_t n_events;
     char last_event[48];
+    bg_settings_t set;     /* ajustes mas recientes (vigentes o programados) */
+    int32_t pending;       /* 1 = set aun no rige: empieza en set.t0 */
 } bg_safety_status_t;
+
+/* Pedido de cambio de ajustes del operador (la HMI lo reenvia). seq y t0 los pone safety_mon. */
+typedef struct {
+    bg_hdr_t hdr;
+    bg_settings_t req;
+} bg_settings_msg_t;
+
+typedef struct {
+    int32_t ok;            /* 1 aceptado */
+    char why[64];          /* motivo del rechazo, u "ok" */
+    bg_settings_t now;     /* ajustes resultantes */
+} bg_settings_reply_t;
 
 /* safety_mon toma (on = 1) o devuelve (on = 0) el mando de los actuadores. Mientras lo tiene, la
  * planta ignora los WRITE de breath_ctrl. */

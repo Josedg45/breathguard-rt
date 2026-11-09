@@ -1,0 +1,8 @@
+bg_fault: marca t_abs=291.705029
+mono_vent: pid 2240537, PCV 20/5 cmH2O, 12 rpm, prio 50, un solo proceso (control + pantalla)
+patient: ./states/BreathGuard_StandardMale_PCV.json cargado en 0.1 s
+patient: 4601 ventanas, pasos > 20 ms 6, paso máx 163.4 ms, atraso máx 9 ventanas, perdidas 0; final: SpO2 89.6 %, EtCO2 0.0 mmHg, FC 90
+pneumatic_sim: listo como 'breathguard_pneumatic', prio 60, 94 s
+pneumatic_sim: 93609 ticks, 232 > 1.5 ms, dt máx 34.96 ms, huecos recortados 0, lecturas 29951, comandos 29951
+pneumatic_sim: ventanas 4700, paciente conectado, ventanas perdidas 0, resultados descartados 0
+pneumatic_sim: mensajes de override 0

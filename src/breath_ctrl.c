@@ -6,6 +6,10 @@
  *   3. MsgSend(WRITE) a pneumatic_sim
  *   4. Cada HEARTBEAT_EVERY ciclos, con -S: MsgSendPulse a safety_mon con un contador (latido). Un
  *      pulso no bloquea: el control nunca espera a safety_mon.
+ *   5. Cada SETTINGS_EVERY ciclos, con -S: pide los ajustes a safety_mon (los cambia el operador). Esa
+ *      consulta SI bloquea, asi que va acotada con TimerTimeout(): si safety_mon no contesta en
+ *      SETTINGS_TIMEOUT_NS, se sigue con los ajustes que hay. Los nuevos se aplican en su t0 (inicio de
+ *      una respiracion), el mismo instante en que cambia el respaldo de safety_mon.
  * Se registra el periodo real y el tiempo de cómputo de cada ciclo; el CSV se escribe al final.
  *
  * Uso: breath_ctrl [-s seg] [-p prio] [-m pcv|vcv] [-P p_insp] [-V vt_ml] [-e peep] [-r rr]
@@ -26,6 +30,8 @@
 #define PROG "breath_ctrl"
 #define PULSE_TICK (_PULSE_CODE_MINAVAIL + 0)
 #define HEARTBEAT_EVERY 10 /* ciclos entre latidos (~10 ms) */
+#define SETTINGS_EVERY 100 /* ciclos entre consultas de ajustes (~100 ms) */
+#define SETTINGS_TIMEOUT_NS 2000000ULL /* 2 ms como maximo esperando a safety_mon */
 
 static volatile sig_atomic_t stop; /* SIGTERM: terminar y escribir resultados */
 static void on_term(int sig) { (void)sig; stop = 1; }
@@ -35,6 +41,23 @@ typedef struct {
     float period_ms, exec_us, paw, flow, target, blower, exh;
     uint8_t phase;
 } logrec_t;
+
+static void init_vent(vent_t *v, const bg_settings_t *s, double pbl_max)
+{
+    if (s->vcv) vent_init_vcv(v, &s->set, s->vt, 40.0, pbl_max, s->t0);
+    else vent_init_pcv(v, &s->set, pbl_max, s->t0);
+}
+
+/* Pide los ajustes a safety_mon sin arriesgar el lazo: TimerTimeout() arma un limite de tiempo para la
+ * PROXIMA llamada bloqueante del kernel (aqui MsgSend). Si vence, MsgSend devuelve -1 con ETIMEDOUT. */
+static int fetch_settings(int safety, bg_settings_t *out)
+{
+    bg_hdr_t q = { .type = BG_MSG_SETTINGS_GET };
+    uint64_t ns = SETTINGS_TIMEOUT_NS;
+    TimerTimeout(CLOCK_MONOTONIC, _NTO_TIMEOUT_SEND | _NTO_TIMEOUT_REPLY, NULL, &ns, NULL);
+    /* MsgSend devuelve el estado que puso MsgReply (EOK = 0), no los bytes recibidos. */
+    return MsgSend(safety, &q, sizeof q, out, sizeof *out) == -1 ? -1 : 0;
+}
 
 static int cmp_float(const void *a, const void *b)
 {
@@ -48,7 +71,7 @@ int main(int argc, char **argv)
     int prio = 50, opt, vcv = 0, heartbeat = 0;
     const char *out_path = NULL;
     vent_settings_t set = { .rr = 12, .ie = 2.0, .p_insp = 20, .peep = 5, .rise_s = 0.1 };
-    while ((opt = getopt(argc, argv, "s:p:m:P:V:e:r:T:So:")) != -1) {
+    while ((opt = getopt(argc, argv, "s:p:m:P:V:e:r:i:T:So:")) != -1) {
         switch (opt) {
         case 's': secs = atof(optarg); break;
         case 'p': prio = atoi(optarg); break;
@@ -57,12 +80,13 @@ int main(int argc, char **argv)
         case 'V': vt_ml = atof(optarg); break;
         case 'e': set.peep = atof(optarg); break;
         case 'r': set.rr = atof(optarg); break;
+        case 'i': set.ie = atof(optarg); break;
         case 'T': t0 = atof(optarg); break;
         case 'S': heartbeat = 1; break;
         case 'o': out_path = optarg; break;
         default:
             fprintf(stderr, "uso: %s [-s seg] [-p prio] [-m pcv|vcv] [-P p_insp] [-V vt_ml] [-e peep] [-r rr] "
-                            "[-T inicio_ciclo] [-S] [-o salida.csv]\n", PROG);
+                            "[-i ie] [-T inicio_ciclo] [-S] [-o salida.csv]\n", PROG);
             return 1;
         }
     }
@@ -102,8 +126,10 @@ int main(int argc, char **argv)
     double t_start = rt_now_s(), last = t_start;
     if (t0 < 0) t0 = t_start;
     double pbl_max = plant_default_params().pbl_max;
-    if (vcv) vent_init_vcv(&vent, &set, vt_ml / 1e3, 40.0, pbl_max, t0);
-    else vent_init_pcv(&vent, &set, pbl_max, t0);
+    bg_settings_t cur = { .seq = 0, .vcv = vcv, .set = set, .vt = vt_ml / 1e3, .t0 = t0 }, got, next;
+    int pending = 0;
+    unsigned changes = 0, fetch_fail = 0;
+    init_vent(&vent, &cur, pbl_max);
     if (vcv)
         printf("%s: pid %d, VCV %.0f mL, PEEP %.0f, %.0f rpm, I:E 1:%.0f, prio %d, %.0f s\n", PROG, getpid(), vt_ml,
                set.peep, set.rr, set.ie, prio, secs);
@@ -128,6 +154,17 @@ int main(int argc, char **argv)
         double now = rt_now_s();
         double dt = now - last;
         last = now;
+
+        if (safety != -1 && i % SETTINGS_EVERY == 0) {
+            if (fetch_settings(safety, &got) == -1) fetch_fail++;
+            else if (got.seq != cur.seq && (!pending || got.seq != next.seq)) { next = got; pending = 1; }
+        }
+        if (pending && now >= next.t0) { /* empieza la respiración desde la que valen */
+            cur = next;
+            pending = 0;
+            init_vent(&vent, &cur, pbl_max);
+            changes++;
+        }
 
         sensors_t s;
         /* MsgSend bloquea hasta que pneumatic_sim responde con MsgReply. */
@@ -170,6 +207,9 @@ int main(int argc, char **argv)
     qsort(tmp, n, sizeof *tmp, cmp_float);
     printf("%s: %zu ciclos, %zu con periodo > 1.5 ms, periodo máx %.2f ms; cómputo p50 %.1f us, "
            "p99 %.1f us, máx %.1f us\n", PROG, n, late, pmax, tmp[n / 2], tmp[(size_t)(n * 0.99)], tmp[n - 1]);
+    if (safety != -1 || changes)
+        printf("%s: ajustes aplicados %u (último #%u), consultas sin respuesta %u\n", PROG, changes, cur.seq,
+               fetch_fail);
 
     if (out_path) {
         FILE *f = fopen(out_path, "w");

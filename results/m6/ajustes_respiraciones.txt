@@ -1,0 +1,33 @@
+  t_ini periodo  Ppico  PEEP  Vt mL  manda
+        >>   0.000 LANZA_HMI pid 6541341
+        >>   0.000 LANZA_CONTROL pid 6541340
+  0.012   5.490   20.5   5.1    593  breath_ctrl
+  5.502   5.000   20.5   5.1    570  breath_ctrl
+ 10.502   5.000   20.5   5.1    569  breath_ctrl
+ 15.502   5.000   20.5   5.1    569  breath_ctrl
+        >>  16.903 AJUSTE_ACEPTADO #1 PCV 25.0/5.0 12 rpm 1:2.0 Vt 500 desde t=20.500
+        >>  20.501 AJUSTE_APLICADO #1
+ 20.502   5.000   25.6   5.1    782  breath_ctrl
+ 25.502   5.000   25.6   5.1    767  breath_ctrl
+        >>  26.963 AJUSTE_RECHAZADO p_insp 50.0 fuera de 5-35 cmH2O
+ 30.502   5.000   25.6   5.1    767  breath_ctrl
+        >>  35.023 AJUSTE_ACEPTADO #2 PCV 25.0/8.0 15 rpm 1:2.0 Vt 500 desde t=35.500
+        >>  35.501 AJUSTE_APLICADO #2
+ 35.502   4.000   25.6   8.1    671  breath_ctrl
+ 39.502   4.000   25.5   8.2    562  breath_ctrl
+ 43.502   4.000   25.5   8.2    554  breath_ctrl
+ 47.502   4.000   25.5   8.2    554  breath_ctrl
+ 51.502   4.000   25.5   8.2    554  breath_ctrl (12 % respaldo)
+        >>  55.016 CONTROL_MUERTO respaldo activo
+        >>  55.017 RELANZA_CONTROL pid 6570012; override enviado 0.09 ms tras detectar; spawn 0.6 
+ 55.502   4.000   25.5   8.2    554  respaldo
+        >>  59.501 DEVUELVE_MANDO 447 latidos del nuevo controlador
+ 59.502   4.000   25.5   8.2    553  breath_ctrl
+        >>  62.133 AJUSTE_ACEPTADO #3 VCV 25.0/8.0 15 rpm 1:2.0 Vt 450 desde t=63.500
+        >>  63.501 AJUSTE_APLICADO #3
+ 63.502   4.000   27.2   8.1    454  breath_ctrl
+ 67.502   4.000   26.9   8.1    455  breath_ctrl
+ 71.502   4.000   26.9   8.1    454  breath_ctrl
+ 75.502   4.000   26.9   8.1    454  breath_ctrl
+ 79.502   4.000   26.9   8.1    454  breath_ctrl
+ 83.502   4.000   26.8   8.1    454  breath_ctrl
