@@ -1,0 +1,39 @@
+Copilot decision tree (class weights balanced; value = class fractions). Classes: ['normal', 'leak', 'high_r', 'low_c']
+
+|--- leak_frac <= 0.1088
+|   |--- qei_rel <= 0.4860
+|   |   |--- cdyn_ml <= 29.1286
+|   |   |   |--- tau_exp <= 0.7236
+|   |   |   |   |--- qei_rel <= 0.2736
+|   |   |   |   |   |--- class: 3
+|   |   |   |   |--- qei_rel >  0.2736
+|   |   |   |   |   |--- class: 3
+|   |   |   |--- tau_exp >  0.7236
+|   |   |   |   |--- g_insp <= 0.0258
+|   |   |   |   |   |--- class: 2
+|   |   |   |   |--- g_insp >  0.0258
+|   |   |   |   |   |--- class: 0
+|   |   |--- cdyn_ml >  29.1286
+|   |   |   |--- g_insp <= 0.0193
+|   |   |   |   |--- class: 2
+|   |   |   |--- g_insp >  0.0193
+|   |   |   |   |--- tau_exp <= 0.4563
+|   |   |   |   |   |--- class: 3
+|   |   |   |   |--- tau_exp >  0.4563
+|   |   |   |   |   |--- class: 0
+|   |--- qei_rel >  0.4860
+|   |   |--- g_insp <= 0.0274
+|   |   |   |--- class: 2
+|   |   |--- g_insp >  0.0274
+|   |   |   |--- q_ee <= -0.1685
+|   |   |   |   |--- class: 0
+|   |   |   |--- q_ee >  -0.1685
+|   |   |   |   |--- class: 0
+|--- leak_frac >  0.1088
+|   |--- g_insp <= 0.0209
+|   |   |--- class: 2
+|   |--- g_insp >  0.0209
+|   |   |--- vcv <= 0.5000
+|   |   |   |--- class: 1
+|   |   |--- vcv >  0.5000
+|   |   |   |--- class: 1

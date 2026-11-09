@@ -15,6 +15,7 @@ TAREA1 := tareas/01_watchdog
 TAREA2 := tareas/02_vt_meter
 TAREA3 := tareas/03_rate_limit
 TAREA4 := tareas/04_plant_auth
+TAREA5 := tareas/05_tree
 
 # M3: procesos del ventilador (varios fuentes cada uno)
 M3_BINS := $(BUILD)/pneumatic_sim $(BUILD)/breath_ctrl
@@ -26,7 +27,7 @@ SEC_BINS := $(BUILD)/evil_hmi
 VENTD_BINS := $(BUILD)/ventd
 COMMON_H := src/bg_types.h src/bg_proto.h src/rt_util.h src/settings.h
 
-.PHONY: all clean deploy check-env tarea1 tarea2 tarea3 tarea4 m3 m4 m5 m6 patient
+.PHONY: all clean deploy check-env tarea1 tarea2 tarea3 tarea4 tarea5 tarea5-host m3 m4 m5 m6 patient
 
 patient: check-env $(BUILD)/patient
 
@@ -53,6 +54,18 @@ tarea4: check-env | $(BUILD)
 	ssh -o LogLevel=ERROR $(QNX_HOST_SSH) "mkdir -p $(QNX_DIR)"
 	scp -o LogLevel=ERROR -q $(BUILD)/test_plant_auth $(QNX_HOST_SSH):$(QNX_DIR)/
 	ssh -o LogLevel=ERROR $(QNX_HOST_SSH) "$(QNX_DIR)/test_plant_auth"
+
+# Tarea 5: recorrer el árbol del copiloto. En la VM (make tarea5) o en Ubuntu (make tarea5-host).
+TAREA5_SRC := $(TAREA5)/tree_predict.c $(TAREA5)/test_tree_predict.c
+tarea5: check-env | $(BUILD)
+	$(CC) $(CFLAGS) -Isrc -I$(TAREA5) $(TAREA5_SRC) -lm -o $(BUILD)/test_tree_predict
+	ssh -o LogLevel=ERROR $(QNX_HOST_SSH) "mkdir -p $(QNX_DIR)"
+	scp -o LogLevel=ERROR -q $(BUILD)/test_tree_predict $(QNX_HOST_SSH):$(QNX_DIR)/
+	ssh -o LogLevel=ERROR $(QNX_HOST_SSH) "$(QNX_DIR)/test_tree_predict"
+
+tarea5-host: | $(BUILD)
+	gcc -std=c11 -O2 -Wall -Wextra -Isrc -I$(TAREA5) $(TAREA5_SRC) -lm -o $(BUILD)/test_tree_predict_host
+	$(BUILD)/test_tree_predict_host
 
 all: check-env $(BINS) $(M3_BINS) $(M4_BINS) $(M5_BINS) $(M6_BINS) $(DESIGN_BINS) $(SEC_BINS) $(VENTD_BINS)
 
@@ -131,6 +144,10 @@ $(BUILD)/settings_schedule_test: tools/settings_schedule_test.c src/settings.c s
 
 # Prueba en el host del estimador de auto-PEEP contra la presión alveolar verdadera de la planta.
 $(BUILD)/lung_mon_test: tools/lung_mon_test.c src/lung_mon.c src/plant.c src/vent.c src/settings.c $(TAREA3)/rate_limit.c src/lung_mon.h | $(BUILD)
+	gcc -O2 -Wall -Wextra -Isrc $(filter %.c,$^) -lm -o $@
+
+# Copiloto (punto 5): datos de entrenamiento del banco offline (misma planta, ventilador y features que en QNX).
+$(BUILD)/copilot_gen: tools/copilot_gen.c src/breath_feat.c src/plant.c src/vent.c src/settings.c $(TAREA3)/rate_limit.c src/breath_feat.h | $(BUILD)
 	gcc -O2 -Wall -Wextra -Isrc $(filter %.c,$^) -lm -o $@
 
 check-env:

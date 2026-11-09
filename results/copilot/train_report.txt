@@ -1,0 +1,53 @@
+Copilot decision tree - training report (2026-11-09, scikit-learn 1.9.1)
+
+Data (offline test bench, tools/copilot_gen.c): one row = one breath; one scenario = one patient.
+  train: 19377 breaths, 1944 patients (seed 1); test: 6532 breaths, 656 patients (seed 2, never seen in training)
+  dropped 'leak' breaths with true leak < 8 % of Vt: 0 train, 10 test
+  normal  train  5967   test  1977
+  leak    train  5869   test  1980
+  high_r  train  3021   test  1069
+  low_c   train  4520   test  1506
+
+Depth chosen by 5-fold cross-validation grouped by patient (a patient is never in train and validation):
+  depth 2: balanced accuracy 73.08 % +- 0.67
+  depth 3: balanced accuracy 95.22 % +- 1.22
+  depth 4: balanced accuracy 98.27 % +- 0.91
+  depth 5: balanced accuracy 99.58 % +- 0.31
+  depth 6: balanced accuracy 99.39 % +- 0.32
+  depth 8: balanced accuracy 99.39 % +- 0.32
+  -> depth 5 (the smallest within 0.5 points of the best: a tree a person can audit)
+
+Final tree: depth 5, 25 nodes, 13 leaves, min 20 breaths per leaf, class_weight=balanced
+
+Test set (656 new patients), per breath: accuracy 98.99 %, balanced accuracy 98.97 %
+true \ predicted  normal    leak  high_r   low_c   recall
+normal            1965       0       0      12    99.4 %
+leak                 8    1972       0       0    99.6 %
+high_r               0       0    1067       2    99.8 %
+low_c               35       0       9    1462    97.1 %
+precision       97.9 % 100.0 %  99.2 %  99.1 %
+
+Per patient with the persistence rule safety_mon uses (same class in >= 3 of the last 5 breaths):
+  656 patients, 1 without a persistent class (no suggestion)
+true \ predicted  normal    leak  high_r   low_c   recall
+normal             197       0       0       1    99.5 %
+leak                 1     197       0       0    99.5 %
+high_r               0       0     108       0   100.0 %
+low_c                4       0       1     146    96.7 %
+precision       97.5 % 100.0 %  99.1 %  99.3 %
+
+Feature importances (how much each feature reduces impurity in the tree):
+  leak_frac  0.328
+  qei_rel    0.274
+  cdyn_ml    0.257
+  g_insp     0.086
+  tau_exp    0.056
+  q_ee       0.000
+  vcv        0.000
+  p_res      0.000
+
+Limits of this evaluation: train and test come from the same simulator (different patients and noise), so
+this is an upper bound. The external test is in QNX against Pulse (results/copilot/qnx_*), a different
+patient model the tree never saw. Breaths cut by the VCV pressure limit are not classified (see copilot_gen.c).
+
+Exported: src/copilot_tree.h, tareas/05_tree/test_vectors.h (1512 vectors), results/copilot/tree_rules.txt

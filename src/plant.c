@@ -71,6 +71,7 @@ static void substep(plant_t *pl, const actuators_t *a, double h)
     if (f->disconnected) {
         q_y = pl->paw / p->r_disc; /* el circuito se vacía al aire por la Y */
         q_lung = -palv / r_pat;    /* el pulmón exhala al aire */
+        q_leak = 0;
     } else {
         q_y = (pl->paw - palv) / r_pat;
         q_lung = q_y;
@@ -81,7 +82,9 @@ static void substep(plant_t *pl, const actuators_t *a, double h)
     pl->v += q_lung * h;
     pl->t += h;
 
-    pl->q_in = q_in; pl->q_ex = q_ex; pl->q_y = q_y; pl->q_lung = q_lung;
+    /* La fuga es del lado del paciente (manguito o mascarilla): sale entre el sensor de la Y y el pulmón, así que
+     * el sensor de flujo la cuenta como flujo hacia el paciente. Por eso Vte < Vti cuando hay fuga. */
+    pl->q_in = q_in; pl->q_ex = q_ex; pl->q_y = q_y + q_leak; pl->q_lung = q_lung;
 }
 
 void plant_advance(plant_t *pl, const actuators_t *a, double dt)
