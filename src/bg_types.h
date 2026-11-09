@@ -27,6 +27,8 @@ typedef struct {
     double obstruction; /* multiplica la resistencia del paciente (1 = normal) */
     double g_leak;      /* conductancia de fuga (L/s por cmH2O); 0 = sin fuga */
     int paw_stuck;      /* 1 = el sensor de presión se congela en su último valor */
+    double stiff;       /* divide la compliance del paciente (pulmón rígido); <= 1 = normal. Solo con la planta
+                         * RC: con Pulse, la compliance la manda Pulse en cada ventana */
 } plant_faults_t;
 
 /* Ajustes del ventilador en PCV. */

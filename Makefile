@@ -27,7 +27,7 @@ SEC_BINS := $(BUILD)/evil_hmi
 VENTD_BINS := $(BUILD)/ventd
 COMMON_H := src/bg_types.h src/bg_proto.h src/rt_util.h src/settings.h
 
-.PHONY: all clean deploy check-env tarea1 tarea2 tarea3 tarea4 tarea5 tarea5-host m3 m4 m5 m6 patient
+.PHONY: all clean deploy check-env tarea1 tarea2 tarea3 tarea4 tarea5 tarea5-host copilot-logic-test m3 m4 m5 m6 patient
 
 patient: check-env $(BUILD)/patient
 
@@ -149,6 +149,13 @@ $(BUILD)/lung_mon_test: tools/lung_mon_test.c src/lung_mon.c src/plant.c src/ven
 # Copiloto (punto 5): datos de entrenamiento del banco offline (misma planta, ventilador y features que en QNX).
 $(BUILD)/copilot_gen: tools/copilot_gen.c src/breath_feat.c src/plant.c src/vent.c src/settings.c $(TAREA3)/rate_limit.c src/breath_feat.h | $(BUILD)
 	gcc -O2 -Wall -Wextra -Isrc $(filter %.c,$^) -lm -o $@
+
+# Prueba en el host de las reglas fijas del copiloto y de la validación de safety_mon.
+$(BUILD)/copilot_logic_test: tools/copilot_logic_test.c src/copilot_logic.c src/settings.c $(TAREA3)/rate_limit.c src/copilot_logic.h src/breath_feat.h | $(BUILD)
+	gcc -std=c11 -O2 -Wall -Wextra -Isrc $(filter %.c,$^) -lm -o $@
+
+copilot-logic-test: $(BUILD)/copilot_logic_test
+	$(BUILD)/copilot_logic_test
 
 check-env:
 	@command -v $(CC) >/dev/null || { echo "Falta qcc: source ~/qnx800/qnxsdp-env.sh"; exit 1; }

@@ -1,11 +1,12 @@
 /* bg_fault.c - inyecta fallas en pneumatic_sim (CLI de pruebas). Imprime el instante de la inyección
  * con el mismo reloj (ClockCycles) que usan los demás procesos, para medir la latencia de las alarmas.
  *
- * Uso: bg_fault [-d 0|1] [-o factor] [-l conductancia] [-k 0|1] [-w segundos]
+ * Uso: bg_fault [-d 0|1] [-o factor] [-l conductancia] [-k 0|1] [-c factor] [-w segundos]
  *   -d  tubo desconectado (1) o conectado (0)
  *   -o  obstrucción: multiplica la resistencia del paciente (1 = normal)
  *   -l  fuga: conductancia en L/s por cmH2O (0 = sin fuga)
  *   -k  sensor de presión congelado (1) o normal (0)
+ *   -c  pulmón rígido: divide la compliance del paciente (1 = normal; solo con la planta RC, sin Pulse)
  *   -w  espera estos segundos antes de inyectar
  *   -n  no inyecta nada: solo imprime la marca de tiempo (para medir desde un slay, por ejemplo)
  *   -m  red eléctrica: 0 = corte, 1 = restablecida (se manda a power_mgr)
@@ -27,7 +28,7 @@ int main(int argc, char **argv)
     bg_fault_msg_t m = { .hdr = { .type = BG_MSG_FAULT }, .faults = { .obstruction = 1.0 } };
     double wait = 0;
     int opt, mark_only = 0, mains = -1;
-    while ((opt = getopt(argc, argv, "d:o:l:k:w:nm:")) != -1) {
+    while ((opt = getopt(argc, argv, "d:o:l:k:c:w:nm:")) != -1) {
         switch (opt) {
         case 'n': mark_only = 1; break;
         case 'm': mains = atoi(optarg); break;
@@ -35,9 +36,10 @@ int main(int argc, char **argv)
         case 'o': m.faults.obstruction = atof(optarg); break;
         case 'l': m.faults.g_leak = atof(optarg); break;
         case 'k': m.faults.paw_stuck = atoi(optarg); break;
+        case 'c': m.faults.stiff = atof(optarg); break;
         case 'w': wait = atof(optarg); break;
         default:
-            fprintf(stderr, "uso: %s [-d 0|1] [-o factor] [-l conductancia] [-k 0|1] [-w segundos] [-n] [-m 0|1]\n",
+            fprintf(stderr, "uso: %s [-d 0|1] [-o factor] [-l conductancia] [-k 0|1] [-c factor] [-w segundos] [-n] [-m 0|1]\n",
                     PROG);
             return 1;
         }
@@ -62,8 +64,8 @@ int main(int argc, char **argv)
 
     double t = rt_now_s();
     if (MsgSend(coid, &m, sizeof m, NULL, 0) == -1) rt_die(PROG, "MsgSend(FAULT)");
-    printf("%s: t_abs=%.6f desconectado=%d obstruccion=%.1f fuga=%.3f sensor_congelado=%d\n", PROG, t,
-           m.faults.disconnected, m.faults.obstruction, m.faults.g_leak, m.faults.paw_stuck);
+    printf("%s: t_abs=%.6f desconectado=%d obstruccion=%.1f fuga=%.4f sensor_congelado=%d rigidez=%.1f\n", PROG, t,
+           m.faults.disconnected, m.faults.obstruction, m.faults.g_leak, m.faults.paw_stuck, m.faults.stiff);
     name_close(coid);
     return 0;
 }

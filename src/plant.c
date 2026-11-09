@@ -45,7 +45,11 @@ void plant_init(plant_t *pl, const plant_params_t *p, double peep)
     pl->rng = 0x9E3779B97F4A7C15ULL;
 }
 
-double plant_palv(const plant_t *pl) { return (pl->v - pl->p.v0) / pl->p.c_pat; }
+double plant_palv(const plant_t *pl)
+{
+    double c = pl->p.c_pat / (pl->f.stiff > 1.0 ? pl->f.stiff : 1.0);
+    return (pl->v - pl->p.v0) / c;
+}
 
 static void substep(plant_t *pl, const actuators_t *a, double h)
 {
@@ -77,7 +81,10 @@ static void substep(plant_t *pl, const actuators_t *a, double h)
         q_lung = q_y;
     }
 
-    pl->paw_int += (f->disconnected ? 0.0 : pl->paw) * h; /* lo que "ve" la vía aérea del paciente */
+    /* Lo que "ve" la boca del paciente (para Pulse): Paw menos la caída en la resistencia extra de la obstrucción
+     * (un tubo acodado está entre la Y y el paciente). Sin esto, Pulse se llenaba como si no hubiera obstrucción. */
+    double p_mouth = pl->paw - q_lung * (r_pat - p->r_pat);
+    pl->paw_int += (f->disconnected ? 0.0 : p_mouth) * h;
     pl->paw += (q_in - q_ex - q_leak - q_y) * h / p->c_tube;
     pl->v += q_lung * h;
     pl->t += h;

@@ -331,9 +331,9 @@ int main(int argc, char **argv)
             break;
         case BG_MSG_FAULT:
             sync_to_now();
-            printf("%s: falla t_abs=%.6f desconectado=%d obstruccion=%.1f fuga=%.3f sensor=%d\n", PROG,
+            printf("%s: falla t_abs=%.6f desconectado=%d obstruccion=%.1f fuga=%.4f sensor=%d rigidez=%.1f\n", PROG,
                    rt_now_s(), m.fault.faults.disconnected, m.fault.faults.obstruction, m.fault.faults.g_leak,
-                   m.fault.faults.paw_stuck);
+                   m.fault.faults.paw_stuck, m.fault.faults.stiff);
             fflush(stdout);
             pl.f = m.fault.faults;
             MsgReply(rcvid, EOK, NULL, 0);
