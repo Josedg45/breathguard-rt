@@ -185,7 +185,7 @@ int main(int argc, char **argv)
     double pbl_max = plant_default_params().pbl_max;
     bg_settings_t cur = { .seq = 0, .vcv = vcv, .set = set, .vt = vt_ml / 1e3, .t0 = t0 }, got, next;
     int pending = 0;
-    unsigned changes = 0, fetch_fail = 0;
+    unsigned changes = 0, fetch_fail = 0, late_changes = 0;
     init_vent(&vent, &cur, pbl_max);
     if (vcv)
         printf("%s: pid %d, VCV %.0f mL, PEEP %.0f, %.0f rpm, I:E 1:%.0f, prio %d, %.0f s\n", PROG, getpid(), vt_ml,
@@ -214,7 +214,14 @@ int main(int argc, char **argv)
 
         if (safety != -1 && i % SETTINGS_EVERY == 0) {
             if (fetch_settings(safety, &got) == -1) fetch_fail++;
-            else if (got.seq != cur.seq && (!pending || got.seq != next.seq)) { next = got; pending = 1; }
+            else if (got.seq != cur.seq && (!pending || got.seq != next.seq)) {
+                /* Learned of a change only after its start: the backup switched at t0 and this loop did not.
+                 * safety_mon's SET_LEAD_S rule should keep this at 0. The first poll (i == 0) is not counted: a
+                 * relaunched controller is not in control yet and simply catches up with the current settings. */
+                if (i > 0 && got.t0 < now) late_changes++;
+                next = got;
+                pending = 1;
+            }
         }
         if (pending && now >= next.t0) { /* empieza la respiración desde la que valen */
             cur = next;
@@ -268,6 +275,8 @@ int main(int argc, char **argv)
     if (safety != -1 || changes)
         printf("%s: ajustes aplicados %u (último #%u), consultas sin respuesta %u\n", PROG, changes, cur.seq,
                fetch_fail);
+    if (safety != -1)
+        printf("%s: settings changes received after their start time: %u (expected 0)\n", PROG, late_changes);
 
     if (out_path) {
         FILE *f = fopen(out_path, "w");
