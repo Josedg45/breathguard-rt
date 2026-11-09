@@ -167,6 +167,7 @@ int main(int argc, char** argv)
     st.spo2 = pe->GetBloodChemistrySystem()->GetOxygenSaturation();
     st.etco2 = resp->GetEndTidalCarbonDioxidePressure(PressureUnit::mmHg);
     st.hr = pe->GetCardiovascularSystem()->GetHeartRate(FrequencyUnit::Per_min);
+    st.fio2 = kFiO2;  // la mezcla que le damos a Pulse (aire ambiente; no hay mezclador de O2 en el modelo)
     msg.have_result = 1;
     msg.k = w.k;
 

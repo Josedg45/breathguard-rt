@@ -1,0 +1,48 @@
+  t_ini periodo  Ppico  PEEP  Vt mL cmd_max  manda
+        >>   0.000 LANZA_HMI pid 17301533
+        >>   0.000 LANZA_CONTROL pid 17301531
+  0.042   5.459   20.5   5.1    594     4.8  breath_ctrl
+  5.502   5.000   20.5   5.1    570     3.9  breath_ctrl
+ 10.501   5.000   20.5   5.1    569     2.5  breath_ctrl
+ 15.502   5.000   20.5   5.1    569    28.7  breath_ctrl
+        >>  19.118 HMI_MUERTA_RELANZADA pid 17330208
+ 20.501   5.000   20.5   5.1    569   179.2  breath_ctrl
+ 25.501   5.000   20.5   5.1    569     3.6  breath_ctrl
+ 30.502   5.000   20.4   5.1    569     3.1  breath_ctrl
+ 35.501   5.000   20.4   5.1    569     3.7  breath_ctrl
+ 40.501   5.000   20.4   5.1    569     4.6  breath_ctrl
+ 45.501   5.000   20.5   5.1    569    11.7  breath_ctrl
+ 50.502   5.000   20.4   5.1    569     9.4  breath_ctrl
+ 55.502   5.000   20.5   0.7    569     3.8  breath_ctrl
+        >>  59.046 DESCONEXION Paw 0.49 flujo 1.429 Vti 0 Vte 0
+ 60.501   5.000    4.0   0.7      0     2.2  breath_ctrl
+ 65.501   5.000    4.0   0.7      0     3.9  breath_ctrl
+        >>  67.549 APNEA Paw 0.96 flujo 1.428 Vti 0 Vte 0
+ 70.501   5.000   23.3   5.1    639     8.5  breath_ctrl
+ 75.502   5.000   20.5   5.1    584    33.6  breath_ctrl
+ 80.501   5.000   20.4   5.1    569     8.0  breath_ctrl (9 % respaldo)
+        >>  85.050 CONTROL_MUERTO respaldo activo
+        >>  85.050 RELANZA_CONTROL pid 17494043; override enviado 0.04 ms tras detectar; spawn 0.6
+ 85.502   5.000   20.5   5.1    569     3.9  respaldo
+        >>  90.500 DEVUELVE_MANDO 544 latidos del nuevo controlador
+ 90.501   5.000   20.5   5.1    569     2.8  breath_ctrl
+ 95.501   5.000   20.4   5.1    569     3.2  breath_ctrl
+100.501   5.000   20.5   5.1    569     3.1  breath_ctrl
+        >> 104.935 AJUSTE_ACEPTADO #1 PCV 23.0/8.0 12 rpm 1:2.0 Vt 500 desde t=105.500
+        >> 105.500 AJUSTE_APLICADO #1
+105.501   5.000   23.5   8.1    699     2.0  breath_ctrl
+110.502   5.000   23.4   8.1    584     2.2  breath_ctrl
+115.501   5.000   23.5   8.1    580    10.6  breath_ctrl
+120.502   5.000   23.5   8.1    579    11.6  breath_ctrl
+        >> 122.008 ENERGIA_CORTE en batería; consumos no esenciales recortados
+125.502   5.000   23.5   8.1    580    12.3  breath_ctrl
+130.502   5.000   23.5   8.1    579     4.9  breath_ctrl
+135.502   5.000   23.5   8.1    580     6.1  breath_ctrl
+140.502   5.000   23.5   8.1    579    47.6  breath_ctrl
+145.501   5.000   23.5   8.1    579    12.9  breath_ctrl
+150.502   5.000   23.4   8.1    580     3.8  breath_ctrl
+155.502   5.000   23.4   8.1    580     8.7  breath_ctrl
+        >> 157.023 ENERGIA_RED red restablecida
+160.502   5.000   23.4   8.1    579     2.3  breath_ctrl
+165.501   5.000   23.5   8.1    579     5.8  breath_ctrl
+170.501   5.000   23.5   8.1    579    36.5  breath_ctrl

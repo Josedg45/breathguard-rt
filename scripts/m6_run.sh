@@ -24,6 +24,11 @@ if [ "$ESC" = ajustes ]; then  # comandos del operador desde el host (t aprox. d
     c 20 p_insp=25; c 10 p_insp=50; c 8 p_insp=25 peep=8 rr=15; c 10 foo=3; c 17 mode=vcv vt=450
   ) > results/m6/cmd_$L.txt 2>&1 &
 fi
+if [ "$ESC" = autopeep ]; then  # espiracion demasiado corta: auto-PEEP y su alarma; luego se corrige
+  ( c() { sleep "$1"; shift; echo "$(date +%s.%N) $*: $(python3 scripts/bg_cmd.py "$@")"; }
+    c 20 rr=30 ie=1; c 30 rr=12 ie=2
+  ) > results/m6/cmd_$L.txt 2>&1 &
+fi
 $SSH $VM "sh $DIR/m6_target.sh $L $S $ESC $HOST" | tee results/m6/log_$L.txt
 [ "${GUI:-0}" = 1 ] || wait $RECV
 $SCP $VM:$DIR/sim_$L.csv $VM:$DIR/pat_$L.csv $VM:$DIR/ev_$L.csv results/m6/

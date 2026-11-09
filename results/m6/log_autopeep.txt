@@ -1,0 +1,22 @@
+patient: ./states/BreathGuard_StandardMale_PCV.json cargado en 0.2 s
+patient: 3850 ventanas, pasos > 20 ms 3, paso máx 22.1 ms, atraso máx 0 ventanas, perdidas 0; final: SpO2 97.9 %, EtCO2 34.2 mmHg, FC 72
+power_mgr: batería 100 %, escala de tiempo x60, prio 30
+power_mgr: final SoC 100.0 %, 29.40 V, potencia media 58.9 W
+breath_ctrl: pid 16285723, PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 75 s
+hmi: 7450 muestras, 7450 enviadas a 172.31.1.1:5005, 2 comandos
+breath_ctrl: 74293 ciclos, 230 con periodo > 1.5 ms, periodo máx 6.65 ms; cómputo p50 10.8 us, p99 155.4 us, máx 1696.8 us
+breath_ctrl: ajustes aplicados 2 (último #2), consultas sin respuesta 0
+safety_mon: t=0.000 LANZA_HMI pid 16285725
+safety_mon: t=0.000 LANZA_CONTROL pid 16285723
+safety_mon: t=16.887 AJUSTE_ACEPTADO #1 PCV 20.0/5.0 30 rpm 1:1.0 Vt 500 desde t=20.500
+safety_mon: t=20.501 AJUSTE_APLICADO #1
+safety_mon: t=24.501 AUTO_PEEP auto-PEEP 5.1 cmH2O, flujo final -12.3 L/min, tau 1.52 s
+safety_mon: t=46.947 AJUSTE_ACEPTADO #2 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 desde t=48.500
+safety_mon: t=48.500 AJUSTE_APLICADO #2
+safety_mon: t=74.522 CONTROL_TERMINA despedida
+safety_mon: 74790 ticks, 0 fallas del controlador, 8 eventos; vt_meter: 0 respiraciones, Vti 0, Vte 0 mL
+safety_mon: peso ideal 75.4 kg (talla 180.3 cm); última respiración: auto-PEEP 1.01 cmH2O, flujo final -2.55 L/min, tau 1.41 s, R 23.9, C 59.3 mL/cmH2O
+pneumatic_sim: listo como 'breathguard_pneumatic', prio 60, 79 s
+pneumatic_sim: 78791 ticks, 42 > 1.5 ms, dt máx 3.85 ms, huecos recortados 0, lecturas 164011, comandos 74293
+pneumatic_sim: ventanas 3950, paciente conectado, ventanas perdidas 0, resultados descartados 0
+pneumatic_sim: mensajes de override 0

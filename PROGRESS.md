@@ -424,6 +424,55 @@ el control, múltiplo del periodo de 5 s).
   Offline: 44.1 → 23.5 cmH2O; Vt normal igual (576 mL); solo pulmones irreales (C 100, R 5) pierden hasta 3 % de Vt.
   En QNX: 23.3 cmH2O, sin alarma.
 
+
+### Revisión del dashboard (2026-11-09): métricas honestas, ventilación protectora, auto-PEEP, paquete MATLAB
+- **Métricas de tiempo real en vivo.**
+  - `breath_ctrl` lleva histogramas del periodo (clases de 10 µs) y del cómputo (1 µs). Cada 100 ms manda p50, p99,
+    p99.9, máximo, plazos incumplidos (> 1.5 ms), periodos perdidos y un histograma log de 28 clases
+    (`bg_loop_stats_t`), dentro de la consulta de ajustes que ya existía (acotada con `TimerTimeout`).
+  - `pneumatic_sim` lleva el histograma de la antigüedad del comando desde el primer comando (p99 y máximo).
+  - La HMI manda una línea `RT,...` a 1 Hz.
+  - El dashboard tiene un panel con colores por umbral (verde ≤ 1.5 ms, ámbar ≤ 20 ms, rojo), un histograma
+    log-log y la nota de la VM.
+- **Ventilación protectora.**
+  - `safety_mon -h talla -g m|f` calcula el peso ideal (ARDSNet): 75.4 kg para StandardMale.
+  - El límite de Vt alto es 8 mL/kg (603 mL) en PCV; en VCV, el menor entre +20 % y 8 mL/kg. Este límite depende de la
+    tarea 2.
+  - El dashboard muestra Vt en mL/kg con colores.
+  - La escena del operador de la demo pasó de p_insp 25 (10.2 mL/kg) a PEEP 8 / p_insp 23 (misma presión de
+    distensión, 7.6 mL/kg).
+- **Auto-PEEP** (`src/lung_mon.c`, en `safety_mon`).
+  - Ajuste exponencial del flujo espiratorio, R_circ medida y continuidad de la presión alveolar.
+  - auto-PEEP = |Q_fin_esp| × R_total.
+  - Alarma `AUTO_PEEP` (bit 9) si supera `-A` (3 cmH2O) en 2 respiraciones seguidas.
+  - Prueba en el host contra la presión alveolar verdadera (`tools/lung_mon_test.c`): 7 casos, error ≤ 0.17 cmH2O.
+- **Datos clínicos.**
+  - FiO2 (Pulse → planta → HMI).
+  - FR, I:E y ventilación minuto medidas (dashboard).
+  - Límites de alarma activos (`safety_mon` → HMI).
+- **Marcadores** verticales en las tres curvas: falla del controlador, HMI relanzada, desconexión y reconexión, corte
+  y vuelta de red, ajustes aplicados.
+- **Paquete para MATLAB** (`design/`).
+  - `plant_model.md` y `controller.md`: ecuaciones, parámetros, discretización, saturaciones, anti-windup y fases.
+  - CSV de PCV 20/5 12 rpm 60 s a 1 kHz (QNX y host con reloj ideal) y de escalones en lazo abierto (QNX con
+    `src/step_test.c`, y host).
+  - Se regeneran con `scripts/design_run.sh` (`tools/design_ref.c`, `scripts/design_export.py`).
+  - QNX contra ideal: 0.09 cmH2O y 0.4 mL RMS; las diferencias grandes solo aparecen en el cambio de inspiración a
+    espiración.
+
+Resultados en QNX:
+- Escena `autopeep` (`scripts/m6_run.sh ap 75 autopeep`, con Pulse):
+  - a 30 rpm 1:1, estimado 5.1–5.4 cmH2O (verdad del modelo RC fijo: 5.08) y flujo final −12.3 L/min;
+  - alarma 4 s después del cambio; se apaga en la primera respiración a 12 rpm;
+  - Vt 293 mL (3.9 mL/kg);
+  - R 23.9 y C 59.3 estimadas (Pulse ~22.4 y 58–63).
+- Ajustes por defecto: auto-PEEP ~1.0–1.2 cmH2O (τ del paciente 1.4 s; espiración de 3.3 s). Es real; ahora se ve.
+- Ruido de la VM ese día: 0.3–3 % de ciclos > 1.5 ms y máximos de 7–82 ms, con y sin carga (300 ticks tardíos en los
+  primeros 10 s, sin carga).
+
+Error corregido: la antigüedad del comando contaba desde el arranque de la planta, antes del primer comando (máximo
+1000 ms, p99 200 ms). Ahora cuenta desde el primer WRITE u OVERRIDE.
+
 ### Pendiente
 - Grabar el video (< 3 min) con `scripts/demo_run.sh` y el contraste monolítico; subirlo a YouTube.
 - Repetir la escena "congelar" cuando el watchdog (tarea 1) funcione.

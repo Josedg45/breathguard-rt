@@ -22,6 +22,11 @@
 /* Despedida: breath_ctrl termina a propósito; su desconexión no es una falla. */
 #define BG_PULSE_BYE (_PULSE_CODE_MINAVAIL + 2)
 
+typedef struct {
+    uint16_t type;
+    uint16_t pad;
+} bg_hdr_t;
+
 enum {
     BG_MSG_READ = 0x4000, /* respuesta: sensors_t */
     BG_MSG_WRITE,         /* carga: actuators_t; respuesta vacía */
@@ -31,8 +36,32 @@ enum {
     BG_MSG_VITALS,        /* respuesta: bg_vitals_t (a pneumatic_sim) */
     BG_MSG_SAFETY_STATUS, /* respuesta: bg_safety_status_t (a safety_mon) */
     BG_MSG_SETTINGS_SET,  /* carga: bg_settings_msg_t (hmi -> safety_mon); respuesta: bg_settings_reply_t */
-    BG_MSG_SETTINGS_GET,  /* respuesta: bg_settings_t (breath_ctrl -> safety_mon) */
+    BG_MSG_SETTINGS_GET,  /* carga: bg_settings_get_t (con las metricas del lazo); respuesta: bg_settings_t */
 };
+
+/* Metricas de tiempo real del lazo de breath_ctrl, desde que arranco esa instancia. Viajan en la consulta de
+ * ajustes (cada 100 ms), asi no hace falta otro mensaje. Histograma del periodo en BG_HIST_BINS clases
+ * logaritmicas (4 por octava) centradas en 1 ms: la clase i va de bg_hist_edge(i) a bg_hist_edge(i + 1); la
+ * primera y la ultima recogen todo lo que queda fuera. */
+#define BG_HIST_BINS 28
+#define BG_HIST_CENTER 8 /* clase que contiene 1 ms */
+#define BG_LATE_MS 1.5   /* un ciclo que empieza mas de 0.5 ms tarde cuenta como plazo incumplido */
+static inline double bg_hist_edge(int i) { return 0.25 * __builtin_exp2((i - 0.5) / 4.0); }
+
+typedef struct {
+    int32_t pid;
+    uint32_t cycles;      /* ciclos ejecutados */
+    uint32_t late;        /* ciclos con periodo > BG_LATE_MS (plazo incumplido) */
+    uint32_t lost;        /* periodos de 1 ms perdidos: suma de round(periodo) - 1 */
+    float p50_ms, p99_ms, p999_ms, max_ms; /* periodo */
+    float exec_p99_us, exec_max_us;        /* computo de un ciclo (leer + calcular + escribir) */
+    uint32_t hist[BG_HIST_BINS];
+} bg_loop_stats_t;
+
+typedef struct {
+    bg_hdr_t hdr;
+    bg_loop_stats_t loop;
+} bg_settings_get_t;
 
 /* Acople con Pulse (proceso patient). La planta corta su tiempo en ventanas de BG_WINDOW_S.
  * patient manda el resultado de la ventana k y pide la k+1; si aún no se cerró, la planta
@@ -51,12 +80,8 @@ typedef struct {
 typedef struct {
     double v, q, r, c;           /* estado de Pulse: L, L/s, cmH2O/(L/s), L/cmH2O */
     double spo2, etco2, hr;      /* fracción 0-1, mmHg, lpm */
+    double fio2;                 /* fracción de O2 del gas que respira el paciente en Pulse */
 } bg_patient_state_t;
-
-typedef struct {
-    uint16_t type;
-    uint16_t pad;
-} bg_hdr_t;
 
 typedef struct {
     bg_hdr_t hdr;
@@ -76,6 +101,8 @@ typedef struct {
     double r, c;         /* R (cmH2O/(L/s)) y C (L/cmH2O) actuales del pulmón */
     int32_t src;         /* quién manda los actuadores: 0 breath_ctrl, 1 safety_mon */
     double cmd_age_max;  /* s: antigüedad máxima del último comando aplicado desde la consulta anterior */
+    double cmd_age_p99_all, cmd_age_max_all; /* s: p99 y máximo de la antigüedad desde el arranque (cada 1 ms) */
+    double fio2;
 } bg_vitals_t;
 
 /* Estado de safety_mon para la HMI. */
@@ -88,6 +115,14 @@ typedef struct {
     char last_event[48];
     bg_settings_t set;     /* ajustes mas recientes (vigentes o programados) */
     int32_t pending;       /* 1 = set aun no rige: empieza en set.t0 */
+    bg_loop_stats_t loop;  /* ultimas metricas del lazo de breath_ctrl */
+    double loop_age_s;     /* antigüedad de esas metricas (crece si el controlador no consulta) */
+    double ibw_kg;         /* peso ideal del paciente */
+    /* Limites de alarma activos */
+    double lim_p_high, lim_p_low, lim_apnea_s, lim_vt_lo, lim_vt_hi, lim_auto_peep;
+    /* Mecanica por respiracion (lung_mon): auto-PEEP estimado, flujo al final de la espiracion, tau espiratoria */
+    double auto_peep, q_ee, tau_exp;
+    int32_t eef;           /* 1 = el flujo no vuelve a cero al final de la espiracion */
 } bg_safety_status_t;
 
 /* Pedido de cambio de ajustes del operador (la HMI lo reenvia). seq y t0 los pone safety_mon. */

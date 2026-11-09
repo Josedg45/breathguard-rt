@@ -5,7 +5,7 @@
 #
 # Linea de tiempo (s desde el arranque):
 #   5 PCV estable | 22 matar la HMI | 38 CPU saturada 20 s | 62 tubo desconectado 12 s | 88 kill -9 breath_ctrl
-#   108 comando del operador p_insp 25 | 125 corte de red | 160 vuelve la red
+#   108 comando del operador PEEP 8 / p_insp 23 (Vt protector: 6-8 mL/kg) | 125 corte de red | 160 vuelve la red
 set -euo pipefail
 cd "$(dirname "$0")/.."
 GUI=1
@@ -53,8 +53,8 @@ at 74;  vm "./bg_fault > /dev/null"
         cap "     Tube reconnected"
 at 88;  cap "5/6  kill -9 breath_ctrl: safety_mon takes over in ~2 ms and relaunches it"
         vm "slay -s KILL breath_ctrl"
-at 108; cap "     Operator command: Pinsp 20 -> 25 cmH2O (validated by safety_mon, applied at next breath)"
-        (python3 scripts/bg_cmd.py p_insp=25 || true) | tee -a $OUTD/captions_$STAMP.txt
+at 108; cap "     Operator: PEEP 5 -> 8, Pinsp 20 -> 23 (same driving pressure; validated by safety_mon, applied at next breath)"
+        (python3 scripts/bg_cmd.py peep=8 p_insp=23 || true) | tee -a $OUTD/captions_$STAMP.txt
 at 125; cap "6/6  Mains power lost: on battery, non-essential loads shed, autonomy estimate (battery time x60)"
         vm "./bg_fault -m 0 > /dev/null"
 at 160; vm "./bg_fault -m 1 > /dev/null"

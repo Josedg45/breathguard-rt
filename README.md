@@ -32,7 +32,7 @@ us within milliseconds and a separate safety process takes over.
 A by-product: a **virtual-patient test bench** (Pulse + real-time controller) for testing respiratory device
 firmware without patients.
 
-![Live dashboard during the demo: on battery, load shedding, autonomy estimate](results/demo/dash_140s.png)
+![Live dashboard during the demo: on battery with load shedding; tidal volume in mL/kg of ideal body weight, auto-PEEP estimate, alarm limits, live loop-timing metrics and period histogram, event marker on the waveforms](results/demo/dash_20261109_111220_132s.png)
 
 ## Key results (measured in a QEMU/KVM VM on Windows + WSL2)
 
@@ -48,6 +48,32 @@ firmware without patients.
 | HMI killed, crashed (NULL pointer) or hung (infinite loop) | Ventilation unchanged; HMI relaunched in 0.1–2 s |
 | Tube reconnected in mid-inspiration | Peak 23.3 cmH2O after a fix found by this test bench (was 44 cmH2O; see `docs/demo.md`) |
 | Operator changes settings while ventilating | Applied exactly at the next breath start by controller and backup alike; invalid values rejected with a reason |
+| Auto-PEEP (gas trapping) at 30 bpm, I:E 1:1 | Estimated 5.1–5.4 cmH2O from Y-piece sensors alone (true value 5.1 in the fixed-RC model); AUTO-PEEP alarm after 2 breaths, cleared when the rate is lowered |
+| Loop timing, live | Period p50/p99/p99.9/max, deadline misses and a period histogram on the dashboard. VM noise varies by run: 0.3 % to 3 % of cycles later than 1.5 ms, worst case 7–82 ms. The gaps appear with and without CPU load, and M1 measured gaps of 1–18 ms even for a priority-200 thread that never blocks: they come from the host (Windows + WSL2 + QEMU), so treat them as an upper bound |
+
+## Clinical monitoring
+
+- **Protective ventilation.** Tidal volume is shown in mL/kg of ideal body weight. The ARDSNet formula gives 75.4 kg
+  for the Pulse StandardMale patient (180 cm). The demo runs at 7.6 mL/kg. The high-Vt alarm limit is 8 mL/kg
+  (`safety_mon -h height_cm -g m|f`).
+- **Auto-PEEP.** `src/lung_mon.c` uses only the Y-piece sensors. It fits the expiratory flow decay and estimates the
+  trapped pressure with a single-compartment model; no expiratory-hold maneuver is needed. Validated offline against
+  the true alveolar pressure (`tools/lung_mon_test.c`, 7 cases, error ≤ 0.17 cmH2O). The alarm threshold is
+  configurable (`-A`, default 3 cmH2O). The normal demo settings have about 1 cmH2O of auto-PEEP, because this
+  patient's time constant is 1.4 s.
+- Also on the dashboard:
+  - measured respiratory rate, I:E and minute ventilation;
+  - FiO2;
+  - the active alarm limits;
+  - vertical event markers on the waveforms (controller failover, HMI restart, disconnection, mains loss, settings
+    applied).
+
+## Reference model data for MATLAB/Simulink
+
+[`design/`](design/README.md) documents the exact plant equations and parameter values ([plant_model.md](design/plant_model.md))
+and the control law as implemented ([controller.md](design/controller.md)). It also holds 1 kHz reference data
+(PCV 20/5 cmH2O at 12 bpm, and open-loop steps for system identification), recorded on QNX and generated offline
+with an ideal clock. In the reference run, QNX and the ideal model differ by 0.09 cmH2O RMS and 0.4 mL RMS.
 
 ## Same bug, two architectures
 
@@ -85,6 +111,7 @@ They do not prove what real hardware would achieve. Details and raw data: `PROGR
 | `mlockall()` to avoid page faults in loops | `src/rt_util.h` |
 | `posix_spawn()` to relaunch processes | `src/safety_mon.c` |
 | `TimerTimeout()` bounding a blocking `MsgSend` (the controller never waits more than 2 ms for the supervisor) | `src/breath_ctrl.c`: `fetch_settings()` |
+| Loop metrics carried in the same bounded `MsgSend` (no extra message on the critical path) | `src/breath_ctrl.c`: `stats_add()`; `src/bg_proto.h`: `bg_loop_stats_t` |
 | Pulse ported to QNX (libc++, protobuf 21.12) | `port/build_pulse_qnx.sh`, `port/qnx-x86_64.cmake` |
 
 ## Build and run
@@ -110,6 +137,8 @@ scripts/m5_run.sh power 100 60 1.0            # mains loss (battery time x60)
 scripts/m6_run.sh hmi 60 hmi_colgar           # HMI hangs in an infinite loop
 GUI=1 scripts/m6_run.sh mono 90 mono_bug      # same display bug in the monolithic build (live dashboard)
 scripts/m6_run.sh set 90 ajustes              # operator settings changes + controller kill
+scripts/m6_run.sh ap 75 autopeep              # 30 bpm, I:E 1:1 -> auto-PEEP alarm, then back to 12 bpm
+scripts/design_run.sh                         # reference data for design/ (QNX + ideal offline)
 ```
 
 The whole demo (six scenes in 3 minutes, with captions for the video) is one command; details and measured results
@@ -123,7 +152,7 @@ Live dashboard and operator commands (host side, while a scenario runs):
 
 ```bash
 python3 scripts/dashboard.py                  # live curves, vitals, alarms, power (UDP 5005)
-python3 scripts/bg_cmd.py p_insp=25 peep=8    # also rr=, ie=, vt= (mL), mode=pcv|vcv -> ACK or NAK + reason
+python3 scripts/bg_cmd.py p_insp=23 peep=8    # also rr=, ie=, vt= (mL), mode=pcv|vcv -> ACK or NAK + reason
 python3 scripts/dashboard.py --replay results/m6/hmi_ajustes.csv.gz   # replay a recorded run
 ```
 
@@ -132,7 +161,7 @@ ranges (`src/settings.c`) and schedules the change for the next breath start, a 
 backup ventilator. The HMI only forwards; it never validates or applies anything.
 
 Offline (Linux, no QNX) checks of the control and alarm logic: `make build/m3_offline build/m4_offline
-build/m5_offline`.
+build/m5_offline build/lung_mon_test`.
 
 Fault injection on the target: `bg_fault -d 1` (disconnect), `-o 8` (obstruction), `-l` (leak), `-k 1` (stuck
 pressure sensor), `-m 0|1` (mains off/on).
@@ -140,11 +169,12 @@ pressure sensor), `-m 0|1` (mains off/on).
 ## Repository layout
 
 ```text
-src/        QNX processes and pure-C models (plant.c, vent.c, alarms.c, battery.c, settings.c)
+src/        QNX processes and pure-C models (plant.c, vent.c, alarms.c, lung_mon.c, battery.c, settings.c)
 tools/      offline test harnesses and the Pulse probe
 port/       recipe to build Pulse for QNX 8.0
 scripts/    run scripts (host + target) and analysis
 results/    raw data and summaries of every measurement
+design/     plant and controller equations + 1 kHz reference data for an independent (Simulink) model
 tareas/     learning exercises (watchdog, tidal-volume meter, settings rate limit)
 ```
 

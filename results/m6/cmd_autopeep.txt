@@ -1,0 +1,2 @@
+1794240641.680042956 rr=30 ie=1: ACK #1 PCV p_insp 20.0 peep 5.0 rr 30.0 ie 1.0 vt 500 desde t=9439.350
+1794240671.741749926 rr=12 ie=2: ACK #2 PCV p_insp 20.0 peep 5.0 rr 12.0 ie 2.0 vt 500 desde t=9467.350

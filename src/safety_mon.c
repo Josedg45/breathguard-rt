@@ -18,8 +18,12 @@
  * HMI: con -H <ip_host>, lanza también el proceso hmi (prio 10) y lo relanza si muere. Una HMI caída no
  * cambia nada de la ventilación: solo se la vuelve a lanzar.
  *
+ * Mecanica (lung_mon.c): auto-PEEP estimado en cada respiracion, con alarma (-A cmH2O). Volumen corriente
+ * protector: el limite de Vt alto es 8 mL/kg de peso ideal, calculado con la talla (-h cm) y el sexo (-g m|f).
+ * Metricas de tiempo real: breath_ctrl las manda en cada consulta de ajustes; se reenvian a la HMI.
+ *
  * Uso: safety_mon [-s seg] [-p prio] [-m pcv|vcv] [-P p_insp] [-V vt_ml] [-e peep] [-r rr]
- *                 [-c ruta_breath_ctrl] [-H ip_host] [-o eventos.csv]
+ *                 [-h talla_cm] [-g m|f] [-A auto_peep_max] [-c ruta_breath_ctrl] [-H ip_host] [-o eventos.csv]
  */
 #include <getopt.h>
 #include <signal.h>
@@ -28,6 +32,7 @@
 #include <unistd.h>
 
 #include "alarms.h"
+#include "lung_mon.h"
 #include "bg_power.h"
 #include "bg_proto.h"
 #include "plant.h"
@@ -46,6 +51,7 @@ typedef union {
     bg_hdr_t hdr;
     struct _pulse pulse;
     bg_settings_msg_t sset;
+    bg_settings_get_t sget;
 } safety_msg_t;
 
 typedef struct {
@@ -120,6 +126,15 @@ static pid_t spawn_ctrl(const bg_settings_t *cur, double secs_left)
     return pid;
 }
 
+/* Limites de Vt (L): en PCV, de 200 mL a 8 mL/kg de peso ideal (ventilacion protectora); en VCV, +-20 % del
+ * Vt puesto, y nunca por encima de 8 mL/kg. */
+static void vt_limits(const bg_settings_t *cur, double ibw, double *lo, double *hi)
+{
+    double prot = VT_PROTECT_HI_ML_KG * ibw / 1e3;
+    *lo = cur->vcv ? 0.8 * cur->vt : 0.2;
+    *hi = cur->vcv && 1.2 * cur->vt < prot ? 1.2 * cur->vt : prot;
+}
+
 static void init_vent(vent_t *v, const bg_settings_t *s, double pbl_max)
 {
     if (s->vcv) vent_init_vcv(v, &s->set, s->vt, 40.0, pbl_max, s->t0);
@@ -132,7 +147,10 @@ int main(int argc, char **argv)
     int prio = 55, opt, vcv = 0;
     const char *out_path = NULL;
     vent_settings_t set = { .rr = 12, .ie = 2.0, .p_insp = 20, .peep = 5, .rise_s = 0.1 };
-    while ((opt = getopt(argc, argv, "s:p:m:P:V:e:r:c:H:o:")) != -1) {
+    double height_cm = 180.3; /* paciente StandardMale de Pulse: 71 in */
+    int male = 1;
+    lung_cfg_t lcfg = lung_default_cfg();
+    while ((opt = getopt(argc, argv, "s:p:m:P:V:e:r:h:g:A:c:H:o:")) != -1) {
         switch (opt) {
         case 's': secs = atof(optarg); break;
         case 'p': prio = atoi(optarg); break;
@@ -141,12 +159,15 @@ int main(int argc, char **argv)
         case 'V': vt_ml = atof(optarg); break;
         case 'e': set.peep = atof(optarg); break;
         case 'r': set.rr = atof(optarg); break;
+        case 'h': height_cm = atof(optarg); break;
+        case 'g': male = optarg[0] != 'f'; break;
+        case 'A': lcfg.auto_peep_max = atof(optarg); break;
         case 'c': ctrl_path = optarg; break;
         case 'H': hmi_host = optarg; break;
         case 'o': out_path = optarg; break;
         default:
             fprintf(stderr, "uso: %s [-s seg] [-p prio] [-m pcv|vcv] [-P p_insp] [-V vt_ml] [-e peep] [-r rr] "
-                            "[-c breath_ctrl] [-o eventos.csv]\n", PROG);
+                            "[-h talla_cm] [-g m|f] [-A auto_peep_max] [-c breath_ctrl] [-H ip_host] [-o eventos.csv]\n", PROG);
             return 1;
         }
     }
@@ -184,6 +205,11 @@ int main(int argc, char **argv)
     alarms_init(&al, &acfg, t_start);
     vt_meter_t vtm;
     vtm_init(&vtm);
+    lung_mon_t lm;
+    lung_init(&lm, &lcfg);
+    const double ibw = ibw_kg(height_cm, male);
+    bg_loop_stats_t loop = { 0 };
+    double loop_t = -1; /* cuando llegaron las ultimas metricas del lazo */
     uint32_t vtm_breaths_seen = 0;
 
     watchdog_t wd;
@@ -233,9 +259,25 @@ int main(int argc, char **argv)
                     snprintf(st.last_event, sizeof st.last_event, "%s", events[n_events - 1].what);
                 st.set = pending ? next : cur;
                 st.pending = pending;
+                st.loop = loop;
+                st.loop_age_s = loop_t < 0 ? -1 : now - loop_t;
+                st.ibw_kg = ibw;
+                double vlo, vhi;
+                vt_limits(&cur, ibw, &vlo, &vhi);
+                st.lim_p_high = al.cfg.p_alarm;
+                st.lim_p_low = al.cfg.p_low;
+                st.lim_apnea_s = al.cfg.apnea_s;
+                st.lim_vt_lo = vlo;
+                st.lim_vt_hi = vhi;
+                st.lim_auto_peep = lcfg.auto_peep_max;
+                st.auto_peep = lm.valid ? lm.auto_peep : -1;
+                st.q_ee = lm.q_ee;
+                st.tau_exp = lm.valid ? lm.tau : -1;
+                st.eef = lm.eef;
                 MsgReply(rcvid, EOK, &st, sizeof st);
             }
             else if (m.hdr.type == BG_MSG_SETTINGS_GET) { /* breath_ctrl: lo más reciente, con su t0 */
+                if (info.srcmsglen >= (ssize_t)sizeof m.sget) { loop = m.sget.loop; loop_t = now; } /* sus metricas */
                 MsgReply(rcvid, EOK, pending ? &next : &cur, sizeof cur);
             }
             else if (m.hdr.type == BG_MSG_SETTINGS_SET) { /* operador, vía HMI: validar y programar */
@@ -346,10 +388,18 @@ int main(int argc, char **argv)
         uint32_t breath = breath_base + settings_breath(&cur, now, &insp, &into);
 
         uint32_t up = alarms_update(&al, now, s.paw, s.flow);
+        if (lung_update(&lm, now, s.paw, s.flow, insp, cur.set.peep)) { /* respiración cerrada: auto-PEEP */
+            /* Con el tubo desconectado o en alivio de presión la espiración no es la de un pulmón R-C. */
+            int ok = !(al.active & ALARM_DISCONNECT) && !relief;
+            uint32_t ap = ok && lm.alarm ? ALARM_AUTO_PEEP : 0;
+            up |= ap & ~al.active;
+            al.active = (al.active & ~ALARM_AUTO_PEEP) | ap;
+        }
         vtm_update(&vtm, now, s.flow, insp);
         if (vtm.breaths != vtm_breaths_seen) { /* respiración completa medida (tarea 2) */
             vtm_breaths_seen = vtm.breaths;
-            double lo = cur.vcv ? 0.8 * cur.vt : 0.2, hi = cur.vcv ? 1.2 * cur.vt : 1.0;
+            double lo, hi;
+            vt_limits(&cur, ibw, &lo, &hi);
             uint32_t vt_al = 0;
             if (vtm.vti < lo) vt_al |= ALARM_LOW_VT;
             if (vtm.vti > hi) vt_al |= ALARM_HIGH_VT;
@@ -360,8 +410,12 @@ int main(int argc, char **argv)
         }
         for (int b = 0; b < ALARM_COUNT; b++) {
             if (up & (1u << b)) {
-                snprintf(buf, sizeof buf, "Paw %.2f flujo %.3f Vti %.0f Vte %.0f", s.paw, s.flow,
-                         vtm.vti * 1e3, vtm.vte * 1e3);
+                if ((1u << b) == ALARM_AUTO_PEEP)
+                    snprintf(buf, sizeof buf, "auto-PEEP %.1f cmH2O, flujo final %.1f L/min, tau %.2f s",
+                             lm.auto_peep, lm.q_ee * 60, lm.tau);
+                else
+                    snprintf(buf, sizeof buf, "Paw %.2f flujo %.3f Vti %.0f Vte %.0f", s.paw, s.flow,
+                             vtm.vti * 1e3, vtm.vte * 1e3);
                 event(now, alarm_name(1u << b), buf);
             }
         }
@@ -428,6 +482,9 @@ int main(int argc, char **argv)
         printf("%s: t=%.3f %s %s\n", PROG, events[i].t - t_start, events[i].what, events[i].detail);
     printf("%s: %lu ticks, %u fallas del controlador, %zu eventos; vt_meter: %u respiraciones, Vti %.0f, "
            "Vte %.0f mL\n", PROG, ticks, failovers, n_events, vtm.breaths, vtm.vti * 1e3, vtm.vte * 1e3);
+    printf("%s: peso ideal %.1f kg (talla %.1f cm); última respiración: auto-PEEP %.2f cmH2O, flujo final %.2f L/min, "
+           "tau %.2f s, R %.1f, C %.1f mL/cmH2O\n", PROG, ibw, height_cm, lm.auto_peep, lm.q_ee * 60, lm.tau, lm.r_tot,
+           lm.c * 1e3);
     if (out_path) {
         FILE *f = fopen(out_path, "w");
         if (!f) rt_die(PROG, out_path);

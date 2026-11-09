@@ -3,6 +3,7 @@
 # uso: m6_target.sh etiqueta segundos escena ip_host
 # Escenas (a los 30 s): normal | hmi_matar (KILL) | hmi_bug (SIGUSR1: puntero nulo) | hmi_colgar (SIGUSR2: bucle)
 # ajustes: el host cambia los ajustes por UDP (m6_run.sh) y a los 55 s se mata breath_ctrl
+# autopeep: el host pone 30 rpm con I:E 1:1 (espiracion de 1 s) y luego vuelve a 12 rpm 1:2
 # Contraste con la version monolitica (mono_vent, sin safety_mon): mono_normal | mono_bug | mono_colgar
 cd "$(dirname "$0")" || exit 1
 D=$(pwd)

@@ -13,6 +13,10 @@
  * p_insp, peep, rr, ie, vt en mL). NO valida ni aplica nada: arma el pedido sobre los ajustes actuales y lo
  * reenvia a safety_mon, que decide. Al remitente le contesta "ACK ..." o "NAK motivo".
  *
+ * Una vez por segundo manda ademas una linea "RT,clave=valor,..." con las metricas de tiempo real del lazo
+ * (periodo p50/p99/max, plazos incumplidos, histograma), la antigüedad del comando en la planta, el peso ideal,
+ * la FiO2, el auto-PEEP estimado y los limites de alarma activos.
+ *
  * Uso: hmi -h ip_host [-u puerto] [-c puerto_comandos] [-s seg] [-p prio]
  */
 #include <fcntl.h>
@@ -199,6 +203,25 @@ int main(int argc, char **argv)
                            st->vcv, st->set.p_insp, st->set.peep, st->set.rr, st->set.ie, st->vt * 1e3, st->seq,
                            ss.pending, vt.cmd_age_max * 1e3);
         if (sendto(sock, line, (size_t)len, 0, (struct sockaddr *)&dst, sizeof dst) > 0) sent++;
+
+        if (n % 100 == 1) { /* 1 Hz: metricas y limites (cambian despacio) */
+            const bg_loop_stats_t *L = &ss.loop;
+            char rt[1024];
+            int k = snprintf(rt, sizeof rt,
+                             "RT,t=%.3f,pid=%d,cyc=%u,late=%u,lost=%u,p50=%.3f,p99=%.3f,p999=%.3f,max=%.3f,"
+                             "ex99=%.1f,exmax=%.1f,loop_age=%.2f,age99=%.2f,agemax=%.2f,fio2=%.2f,ibw=%.1f,"
+                             "ap=%.2f,qee=%.4f,tau=%.3f,eef=%d,lim_phi=%.1f,lim_plo=%.1f,lim_apnea=%.1f,"
+                             "lim_vtlo=%.0f,lim_vthi=%.0f,lim_ap=%.1f,hist=",
+                             rt_now_s(), L->pid, L->cycles, L->late, L->lost, L->p50_ms, L->p99_ms, L->p999_ms,
+                             L->max_ms, L->exec_p99_us, L->exec_max_us, ss.loop_age_s, vt.cmd_age_p99_all * 1e3,
+                             vt.cmd_age_max_all * 1e3, vt.fio2, ss.ibw_kg, ss.auto_peep, ss.q_ee, ss.tau_exp,
+                             ss.eef, ss.lim_p_high, ss.lim_p_low, ss.lim_apnea_s, ss.lim_vt_lo * 1e3,
+                             ss.lim_vt_hi * 1e3, ss.lim_auto_peep);
+            for (int h = 0; h < BG_HIST_BINS && k < (int)sizeof rt - 16; h++)
+                k += snprintf(rt + k, sizeof rt - k, h ? "|%u" : "%u", L->hist[h]);
+            k += snprintf(rt + k, sizeof rt - k, "\n");
+            sendto(sock, rt, (size_t)k, 0, (struct sockaddr *)&dst, sizeof dst);
+        }
     }
     timer_delete(tm);
     rt_relax();

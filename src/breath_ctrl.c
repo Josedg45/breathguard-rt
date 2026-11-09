@@ -10,7 +10,9 @@
  *      consulta SI bloquea, asi que va acotada con TimerTimeout(): si safety_mon no contesta en
  *      SETTINGS_TIMEOUT_NS, se sigue con los ajustes que hay. Los nuevos se aplican en su t0 (inicio de
  *      una respiracion), el mismo instante en que cambia el respaldo de safety_mon.
- * Se registra el periodo real y el tiempo de cómputo de cada ciclo; el CSV se escribe al final.
+ * Se registra el periodo real y el tiempo de cómputo de cada ciclo; el CSV se escribe al final. Además se
+ * llevan histogramas del periodo y del cómputo, y sus percentiles viajan a safety_mon en cada consulta de
+ * ajustes (bg_loop_stats_t): así el panel muestra p50/p99/máx y plazos incumplidos en vivo.
  *
  * Uso: breath_ctrl [-s seg] [-p prio] [-m pcv|vcv] [-P p_insp] [-V vt_ml] [-e peep] [-r rr]
  *                  [-T inicio_ciclo] [-S] [-o salida.csv]
@@ -18,6 +20,7 @@
  *       lo pasa al relanzarlo para que siga en fase con la ventilación de respaldo.
  */
 #include <getopt.h>
+#include <math.h>
 #include <signal.h>
 #include <sys/dispatch.h>
 #include <unistd.h>
@@ -48,11 +51,64 @@ static void init_vent(vent_t *v, const bg_settings_t *s, double pbl_max)
     else vent_init_pcv(v, &s->set, pbl_max, s->t0);
 }
 
+/* Histogramas finos para los percentiles: periodo en clases de 10 us hasta 50 ms, cómputo en clases de 1 us
+ * hasta 2 ms (lo que pase del final cae en la última clase; el máximo se guarda aparte, exacto). */
+#define PER_BINS 5000
+#define PER_RES_MS 0.01
+#define EXE_BINS 2000
+static uint32_t per_hist[PER_BINS], exe_hist[EXE_BINS];
+static bg_loop_stats_t loop_stats;
+
+static void stats_add(double period_ms, double exec_us)
+{
+    bg_loop_stats_t *L = &loop_stats;
+    L->cycles++;
+    int b = (int)(exec_us + 0.5);
+    exe_hist[b < 0 ? 0 : b >= EXE_BINS ? EXE_BINS - 1 : b]++;
+    if (exec_us > L->exec_max_us) L->exec_max_us = (float)exec_us;
+    if (period_ms <= 0) return; /* primer ciclo: no hay periodo */
+    b = (int)(period_ms / PER_RES_MS);
+    per_hist[b >= PER_BINS ? PER_BINS - 1 : b]++;
+    if (period_ms > L->max_ms) L->max_ms = (float)period_ms;
+    if (period_ms > BG_LATE_MS) {
+        L->late++;
+        L->lost += (uint32_t)(period_ms + 0.5) - 1; /* ticks de 1 ms que no tuvieron su ciclo */
+    }
+    int h = 0;
+    while (h < BG_HIST_BINS - 1 && period_ms >= bg_hist_edge(h + 1)) h++;
+    L->hist[h]++;
+}
+
+static float pct(const uint32_t *hist, int bins, double res, double q)
+{
+    uint64_t tot = 0, acc = 0;
+    for (int i = 0; i < bins; i++) tot += hist[i];
+    if (!tot) return 0;
+    uint64_t want = (uint64_t)ceil(q * (double)tot - 1e-9);
+    for (int i = 0; i < bins; i++) {
+        acc += hist[i];
+        if (acc >= want) return (float)((i + 0.5) * res); /* centro de la clase */
+    }
+    return (float)(bins * res);
+}
+
+static void stats_finish(void)
+{
+    bg_loop_stats_t *L = &loop_stats;
+    L->p50_ms = pct(per_hist, PER_BINS, PER_RES_MS, 0.50);
+    L->p99_ms = pct(per_hist, PER_BINS, PER_RES_MS, 0.99);
+    L->p999_ms = pct(per_hist, PER_BINS, PER_RES_MS, 0.999);
+    L->exec_p99_us = pct(exe_hist, EXE_BINS, 1.0, 0.99);
+}
+
 /* Pide los ajustes a safety_mon sin arriesgar el lazo: TimerTimeout() arma un limite de tiempo para la
- * PROXIMA llamada bloqueante del kernel (aqui MsgSend). Si vence, MsgSend devuelve -1 con ETIMEDOUT. */
+ * PROXIMA llamada bloqueante del kernel (aqui MsgSend). Si vence, MsgSend devuelve -1 con ETIMEDOUT.
+ * La consulta lleva las metricas del lazo: safety_mon las guarda para la HMI. */
 static int fetch_settings(int safety, bg_settings_t *out)
 {
-    bg_hdr_t q = { .type = BG_MSG_SETTINGS_GET };
+    static bg_settings_get_t q = { .hdr = { .type = BG_MSG_SETTINGS_GET } };
+    stats_finish();
+    q.loop = loop_stats;
     uint64_t ns = SETTINGS_TIMEOUT_NS;
     TimerTimeout(CLOCK_MONOTONIC, _NTO_TIMEOUT_SEND | _NTO_TIMEOUT_REPLY, NULL, &ns, NULL);
     /* MsgSend devuelve el estado que puso MsgReply (EOK = 0), no los bytes recibidos. */
@@ -91,6 +147,7 @@ int main(int argc, char **argv)
         }
     }
     signal(SIGTERM, on_term);
+    loop_stats.pid = getpid();
 
     /* Termina por tiempo de reloj, no por número de ciclos: en la VM se pierden pulsos del timer
      * (M1), y contar ciclos alargaba la corrida más allá de lo pedido. */
@@ -184,6 +241,7 @@ int main(int argc, char **argv)
         r->blower = (float)wr.act.blower;
         r->exh = (float)wr.act.exh_open;
         r->phase = (uint8_t)vent.phase;
+        stats_add(i ? dt * 1e3 : 0, r->exec_us);
         n = i + 1;
         if (now - t_start >= secs || stop) break;
     }

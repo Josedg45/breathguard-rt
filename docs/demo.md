@@ -24,10 +24,27 @@ start of `safety_mon`; the dashboard caption appears about 3 s earlier.
 | 59 | Tube disconnected | DISCONNECTION alarm 21.1 ms after the fault; SpO2 dips to 96.3 % over 12 s |
 | 71 | Tube reconnected (during an inspiration) | Peak 23.3 cmH2O, no overshoot (see below) |
 | 85 | `kill -9 breath_ctrl` | Backup ventilator in control 0.18 ms after detection; new controller takes back at the next breath start |
-| 105 | Operator: Pinsp 20 → 25 | Validated by `safety_mon`, applied exactly at the 105.5 s breath; Vt 767 mL |
+| 105 | Operator: PEEP 5 → 8, Pinsp 20 → 23 | Validated by `safety_mon`, applied exactly at the 105.5 s breath; Vt 580 mL = 7.7 mL/kg ideal body weight (run `111220`; the reference run used Pinsp 25, which gave 767 mL = 10.2 mL/kg, not protective) |
 | 122–157 | Mains power lost (battery time ×60) | Detected in 1.9 ms; load shedding; autonomy shown; ventilation unchanged |
 
 End of run: SpO2 98.5 %, 0 Pulse windows lost.
+
+## Run after the dashboard review (`results/demo/*_20261109_111220*`)
+
+The same six scenes, with the new dashboard panels (loop-timing metrics, mL/kg, auto-PEEP, alarm limits, event
+markers) and the protective operator command.
+
+| t (s) | What was measured |
+|---|---|
+| 0–180 | Vt 569 mL = 7.6 mL/kg (75.4 kg ideal body weight) with auto-PEEP 1.0–1.2 cmH2O, because this patient's expiratory time constant (1.4–1.5 s) is long for a 3.3 s expiration. End SpO2 98.0 % |
+| 24.3 | `breath_ctrl` did not run for 179 ms while the plant, on the other vCPU, kept its 1 ms ticks. This is a host stall of one virtual CPU. It happened during an expiration with a steady command: that breath's Vt was 569 mL, like every other. It is shown in red as the maximum command age |
+| 85.05 | `kill -9 breath_ctrl`: override sent 0.04 ms after detection; the new controller took back control at the 90.5 s breath, the first breath start after 50 heartbeats |
+| 105.5 | PEEP 8 / Pinsp 23 applied: the first breath shows 699 mL while the lung settles at its higher end-expiratory volume, then 580 mL (7.7 mL/kg) and PEEP 8.1 |
+| whole run | Second controller: period p50 0.995 ms, p99 1.39 ms, 0.5 % of cycles over 1.5 ms, worst 48 ms (VM noise). Plant: 594 of 180 183 ticks over 1.5 ms |
+
+Auto-PEEP scene, run separately: `scripts/m6_run.sh ap 75 autopeep`. At 30 bpm and I:E 1:1 the estimate was
+5.1–5.4 cmH2O; the AUTO-PEEP alarm fired after 2 breaths and cleared once the rate returned to 12 bpm. Vt fell to
+293 mL (3.9 mL/kg).
 
 ## A bug the test bench found
 

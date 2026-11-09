@@ -50,6 +50,23 @@ static int override_on;       /* 1 = manda safety_mon */
 static double last_sync;
 static double last_cmd, cmd_age_max; /* último comando aplicado (de quien mande) y su antigüedad máxima */
 static unsigned long gaps_clamped;
+/* Antigüedad del último comando en cada tick de 1 ms, desde el arranque: clases de 0.1 ms hasta 200 ms. */
+#define AGE_BINS 2000
+#define AGE_RES_S 1e-4
+static uint32_t age_hist[AGE_BINS];
+static uint64_t age_n;
+static double age_max_all;
+static int have_cmd; /* 0 hasta el primer comando: el arranque (planta sola, ~1 s) no es antigüedad de un comando */
+
+static double age_p99(void)
+{
+    uint64_t want = (uint64_t)(0.99 * (double)age_n + 0.999), acc = 0;
+    for (int i = 0; i < AGE_BINS; i++) {
+        acc += age_hist[i];
+        if (acc >= want) return (i + 1) * AGE_RES_S; /* borde superior de la clase: cota conservadora */
+    }
+    return AGE_BINS * AGE_RES_S;
+}
 
 /* Ventanas de 20 ms para Pulse. Un anillo guarda las últimas para cuando patient va atrasado. */
 #define RING 256
@@ -192,7 +209,14 @@ int main(int argc, char **argv)
             if (m.pulse.code == PULSE_TICK) {
                 double prev = last_sync;
                 double now = sync_to_now();
-                if (now - last_cmd > cmd_age_max) cmd_age_max = now - last_cmd;
+                double age = now - last_cmd;
+                if (have_cmd) {
+                    if (age > cmd_age_max) cmd_age_max = age;
+                    if (age > age_max_all) age_max_all = age;
+                    int ab = (int)(age / AGE_RES_S);
+                    age_hist[ab < 0 ? 0 : ab >= AGE_BINS ? AGE_BINS - 1 : ab]++;
+                    age_n++;
+                }
                 if (n < cap) {
                     logrec_t *r = &log[n++];
                     r->t = now;
@@ -234,7 +258,7 @@ int main(int argc, char **argv)
         case BG_MSG_WRITE:
             last_write = sync_to_now(); /* lo anterior se integra con el comando viejo */
             act_ctrl = m.write.act;
-            if (!override_on) { act = act_ctrl; last_cmd = last_write; }
+            if (!override_on) { act = act_ctrl; last_cmd = last_write; have_cmd = 1; }
             writes++;
             MsgReply(rcvid, EOK, NULL, 0);
             break;
@@ -255,14 +279,16 @@ int main(int argc, char **argv)
             sync_to_now();
             override_on = m.ov.on;
             act = override_on ? m.ov.act : act_ctrl;
-            if (override_on) last_cmd = last_sync;
+            if (override_on) { last_cmd = last_sync; have_cmd = 1; }
             overrides++;
             MsgReply(rcvid, EOK, NULL, 0);
             break;
         case BG_MSG_VITALS: {
             bg_vitals_t vt = { .have = have_patient, .spo2 = vitals.spo2, .etco2 = vitals.etco2, .hr = vitals.hr,
                                .age_s = have_patient ? pl.t - last_patient_t : -1, .r = pl.p.r_pat,
-                               .c = pl.p.c_pat, .src = override_on, .cmd_age_max = cmd_age_max };
+                               .c = pl.p.c_pat, .src = override_on, .cmd_age_max = cmd_age_max,
+                               .cmd_age_p99_all = age_p99(), .cmd_age_max_all = age_max_all,
+                               .fio2 = have_patient ? vitals.fio2 : -1 };
             cmd_age_max = 0;
             MsgReply(rcvid, EOK, &vt, sizeof vt);
             break;

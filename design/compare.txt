@@ -1,0 +1,19 @@
+QNX run vs ideal 1 ms reference (same equations, same sensor-noise generator)
+
+PCV 20/5 QNX: 59825 cycles over 60.0 s; period p50 0.999 ms, p99 1.290 ms, max 8.90 ms, 182 cycles > 1.5 ms
+Difference over the whole 60 s (QNX - ideal):
+  PCV    paw_true   RMS   0.0906 cmH2O  max |diff|   5.6250
+  PCV    flow_true  RMS   0.0041 L/s    max |diff|   0.2509
+  PCV    volume_ml  RMS   0.4175 mL     max |diff|   1.1189
+
+Open-loop steps (blower 5 -> 20 cmH2O at 1 s, exhalation valve opens at 10 s):
+  steps  paw_true   RMS   0.0299 cmH2O  max |diff|   2.7826
+  steps  flow_true  RMS   0.0013 L/s    max |diff|   0.1206
+  steps  volume_ml  RMS   0.1563 mL     max |diff|   0.5352
+
+The large max |diff| values occur only at the inspiration -> expiration switch (t = 1.667 s into each
+breath), where Paw falls ~15 cmH2O within a few ms: a clock offset of one cycle gives that difference.
+
+Differences come from timing: the QNX loop runs on the measured clock (late cycles, VM noise), the
+ideal reference on an exact 1 ms grid. The sensor noise is generated with the same seed, but the number
+of reads differs (safety_mon and the HMI do not run here; the plant also samples once per READ).
