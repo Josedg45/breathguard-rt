@@ -532,7 +532,7 @@ la planta) y B2 (política secpol: el tipo de la HMI no tiene `channel_connect` 
 3. A — `/dev/ventilator` con `ventd`. **Hecho** (ver "A" abajo).
 4. C + B capa 2. Antes de regenerar: copia de `~/qnxvm`, empezar con `--secpol=open`, arranque automático con la IP
    172.31.1.2. **Hecho** (ver "C + B2" abajo).
-5. D — copiloto con ML real: modelo pequeño (p. ej. árbol de decisión) entrenado offline en Python con datos del
+5. D — copiloto con ML real (**hecho**, ver "D" abajo; falta la tarea 5 del usuario): modelo pequeño (p. ej. árbol de decisión) entrenado offline en Python con datos del
    banco de pruebas, exportado a C y ejecutado en QNX a baja prioridad. `safety_mon` valida y el operador confirma.
    Documentar qué es aprendido y qué son reglas de seguridad; nunca llamar IA a reglas fijas.
 6. Paquete `design/` para MATLAB: **ya hecho** en 9785f04. Mejoras, si hacen falta, quedan para después.
@@ -617,3 +617,61 @@ la planta) y B2 (política secpol: el tipo de la HMI no tiene `channel_connect` 
   ya no arrancan `io-usb-otg` ni el módulo USB de io-sock. Quedan 2 líneas de `dumper` una sola vez al arrancar
   (plantilla de QNX). Regenerar borró `/data`: Pulse y estados redesplegados. Arranque repetido (4 corridas):
   primera inspiración 5.10–5.83 s; más lento en todas las etapas, también la BIOS → host.
+
+### D — Copiloto con ML real (punto 5) (2026-11-09 y 2026-11-12; falta la tarea 5)
+- **Qué es aprendido y qué no:** el árbol de decisión (`src/copilot_tree.h`, generado) solo dice a qué patrón se
+  parece la respiración: `normal`, `leak`, `high_r` o `low_c`. Las features (`src/breath_feat.c`), la tabla clase →
+  acción (`cp_rules`), las comprobaciones de `safety_mon` (`cp_check`, `cp_ack`) y la confirmación del operador son
+  reglas fijas escritas a mano. En ningún documento se las llama IA.
+- **Datos y entrenamiento** (`tools/copilot_gen.c`, `scripts/copilot_train.py`, venv con scikit-learn 1.9.1):
+  - 19 377 respiraciones de 1 944 pacientes simulados (misma planta, controlador y features que en QNX). La etiqueta
+    es la condición que inyectamos.
+  - La profundidad se eligió con validación cruzada agrupada por paciente: profundidad 5, 13 hojas.
+  - Prueba con 656 pacientes nuevos: 98.99 % por respiración y 96.7–100 % por paciente con la persistencia 3 de 5
+    (`results/copilot/train_report.txt`).
+  - Cota superior: es el mismo simulador.
+- **Reglas fijas:**
+  - fuga → revisar el circuito, sin cambio de ajustes;
+  - resistencia alta → revisar la vía aérea, o FR − 2 si `safety_mon` midió auto-PEEP ≥ 2;
+  - compliance baja → revisar al paciente, o Pinsp + 2 solo en PCV con Vt < 6 mL/kg, driving ≤ 15 y Pinsp ≤ 30.
+  
+  Además: confianza ≥ 0.8, la misma clase en 3 de las 5 últimas respiraciones, un solo paso, `settings_validate`
+  y vencimiento a los 60 s.
+- **Proceso `copilot`** (prio 8, tipo `bg_safety_t__copilot`):
+  - Pide cada respiración con `MsgSend(COPILOT_GET)`, y `safety_mon` responde al cerrar la respiración (respuesta
+    diferida: sin sondeo).
+  - Recorre el árbol (`tree_predict`, la tarea 5), aplica `cp_rules` y manda `COPILOT_SUGGEST`.
+  - `safety_mon` (con `-K`) lo lanza, lo relanza y usa `_NTO_CHF_FIXED_PRIORITY` en su canal (sin él bajaba de 55
+    a 8 al atender al copiloto).
+- **Operador:** `/dev/ventilator/copilot` (`ventd`) o `bg_cmd.py copilot accept|reject <id>` (HMI). La HMI manda una
+  línea `CP,...` a 1 Hz y el dashboard tiene una franja del copiloto que separa lo aprendido de lo fijo.
+- **Agujero cerrado (2026-11-12):** `ventd` reenviaba el `accept` con su propio pid, así que la capa 1 no veía que
+  lo pedía el copiloto (salía `RESP_INVALIDA`, no `AUTOCONFIRMA`). Ahora `bg_copilot_ack_t.origin_pid` lleva
+  `ctp->info.pid` y `safety_mon` lo rechaza si es el copiloto (con la guarda `cps.pid > 0`).
+- **Pruebas en la VM (imagen final del 2026-11-12, con la solución de referencia privada de la tarea 5):**
+  - `c5_run.sh rc` (rc2, rc3, rc4): PASA.
+    - Fuga, obstrucción y pulmón rígido llegan a su propuesta en 15.2–15.5 s, con 100 % de respiraciones válidas
+      bien clasificadas.
+    - El copiloto matado se relanza; antigüedad del comando ±5 s alrededor del kill: p99 1.31–1.84 ms.
+    - El `accept` por `/dev/ventilator/copilot` aplica +2 cmH2O.
+  - `c5_run.sh pulse` (pulse1, pulse2): PASA. 34/34 respiraciones bien clasificadas (Pulse nunca se vio al entrenar)
+    y propuesta a los 15.4–15.5 s. Solo fuga y obstrucción (el pulmón rígido es solo de la planta RC).
+  - `c5_run.sh liar` (liar3): PASA. 0 propuestas y 34 autoconfirmaciones rechazadas, incluida la de `ventd`.
+  - `c5sec_run.sh` (c5sec3): PASA. El kernel niega al tipo del copiloto la planta y `ventd`.
+  - `c5hmi_run.py` (c5_hmi1): PASA. Propuesta en el dashboard ~16 s después del pulmón rígido; `accept` por la HMI
+    → Pinsp 16 → 18 en la respiración siguiente; repetir y comando mal formado → NAK.
+  - Regresiones: `b2_run.sh` PASA; `m6_run.sh c5_reg 60 hmi_matar` con Pulse: la HMI se relanza, SpO2 98.0 %,
+    0 fallas, `dt` máximo de la planta 3.27 ms.
+  - Árbol + reglas en QNX: mediana 0.6–22 µs y máximo 50 µs.
+- **Pico explicado:** en `c5_rc2` (9-nov), la antigüedad máxima del comando fue 776.86 ms. A los +120 s la propia
+  planta (prio 60, la más alta) pasó 484 ms y luego 96 ms sin correr → pausa de la vCPU por el host, como el caso
+  de 179 ms. No coincide con la muerte del copiloto (+105 s). En rc3, rc4 y pulse2 el máximo fue de 6–12 ms.
+- **Tarea 5 del usuario** (`tareas/05_tree/`): recorrer el árbol en C (`tree_predict`), con la trampa del float,
+  NaN/infinito y árbol dañado. `make tarea5` / `make tarea5-host`: con el esqueleto fallan 8 casos. Mientras no la
+  haga, el copiloto del repo y el de la imagen nunca sugieren nada (seguro). Al entregarla: `make tarea5`,
+  regenerar la imagen con `CLEAN=1` y repetir `c5_run.sh pulse` sin `COPILOT_BIN`.
+- **Límites:**
+  - Entrenado con simulación; la prueba externa con Pulse es pequeña (2 corridas, 68 respiraciones).
+  - Las clases son excluyentes: dos problemas a la vez no están en los datos.
+  - Las zonas grises (R 25–40, C 30–40) se dejaron fuera del entrenamiento a propósito.
+  - "Confianza" es la fracción de la hoja en el entrenamiento, no una probabilidad calibrada.

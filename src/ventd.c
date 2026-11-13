@@ -10,6 +10,9 @@
  *   echo "p_insp=22 peep=6" > /dev/ventilator/settings
  *                                    pedido de cambio. ventd NO valida ni aplica: lo reenvía a safety_mon, igual que
  *                                    la HMI. Si safety_mon lo rechaza, write() falla con EINVAL (EAGAIN si es "busy").
+ *   cat /dev/ventilator/copilot      copiloto (punto 5): última clase del árbol y la propuesta pendiente, con su id
+ *   echo "accept 3" > /dev/ventilator/copilot     el operador acepta (o "reject 3") la propuesta 3. ventd la reenvía
+ *                                    a safety_mon (COPILOT_ACK); un id viejo o ya respondido da EINVAL.
  *
  * ventd no tiene conexión con la planta: lee todo de safety_mon (BG_MSG_MONITOR, BG_MSG_SAFETY_STATUS) y de
  * power_mgr. Si ventd muere o se cuelga, la ventilación no se entera.
@@ -35,9 +38,10 @@
 #define PROG "ventd"
 #define DIR "/dev/ventilator"
 
-static iofunc_attr_t a_status, a_alarms, a_settings;
+static iofunc_attr_t a_status, a_alarms, a_settings, a_copilot;
 static int safety = -1, power = -1;
 static char last_result[160] = "none";
+static char last_cp_result[160] = "none";
 
 /* Copia del contenido que se está leyendo: se genera al empezar una lectura (offset 0), así un cat que lee en
  * varios trozos ve un solo instante. Un hilo: basta con una. */
@@ -50,6 +54,7 @@ static int ask(int *coid, const char *name, const void *q, size_t qn, void *r, s
     if (*coid == -1) *coid = name_open(name, 0);
     if (*coid == -1) return -1;
     if (MsgSend(*coid, q, qn, r, rn) == -1) {
+        if (errno == EPERM || errno == EINVAL) return -1; /* el servidor respondió con un error: la conexión sirve */
         name_close(*coid);
         *coid = -1;
         return -1;
@@ -93,6 +98,26 @@ static void build(const iofunc_attr_t *attr)
     }
     if (attr == &a_alarms) {
         snap_len = put_alarms(b, n, ss.alarms);
+        return;
+    }
+    if (attr == &a_copilot) {
+        const bg_copilot_status_t *c = &ss.cp;
+        if (!c->enabled) {
+            snap_len = (size_t)snprintf(b, n, "copilot=off\n");
+            return;
+        }
+        PUT("copilot=on pid=%d restarts=%u denied=%u\n", c->pid, c->restarts, c->denied);
+        PUT("learned: last_class=%s conf=%.2f breath=%u infer_us=%.1f infer_max_us=%.1f\n", cp_class_name(c->last_cls),
+            c->last_conf, c->last_breath, c->infer_ns_last / 1e3, c->infer_ns_max / 1e3);
+        PUT("proposal: id=%u state=%s class=%s action=%s age_s=%.1f\n", c->id, cp_state_name(c->state),
+            c->id ? cp_class_name(c->cls) : "-", c->id ? cp_action_name(c->action) : "-", c->age_s);
+        PUT("text=%s\n", c->id ? c->text : "-");
+        PUT("last_blocked=%s\n", c->why[0] ? c->why : "-");
+        PUT("counts: suggestions=%u blocked=%u proposed=%u accepted=%u rejected=%u expired=%u\n", c->n_suggest,
+            c->n_blocked, c->n_proposed, c->n_accepted, c->n_rejected, c->n_expired);
+        PUT("answer=%s\n", last_cp_result);
+        if (c->state == CP_ST_PENDING) PUT("to answer: echo \"accept %u\" (or \"reject %u\") > %s/copilot\n", c->id, c->id, DIR);
+        snap_len = k < n ? k : n - 1;
         return;
     }
     if (attr == &a_settings) {
@@ -147,7 +172,7 @@ static int io_write(resmgr_context_t *ctp, io_write_t *msg, RESMGR_OCB_T *ocb)
     int st = iofunc_write_verify(ctp, msg, ocb, NULL); /* ¿abierto para escritura? */
     if (st != EOK) return st;
     if ((msg->i.xtype & _IO_XTYPE_MASK) != _IO_XTYPE_NONE) return ENOSYS;
-    if (ocb->attr != &a_settings) return EROFS; /* root puede abrir para escribir un 0444: lo frenamos aquí */
+    if (ocb->attr != &a_settings && ocb->attr != &a_copilot) return EROFS; /* root puede abrir un 0444: se frena */
     char cmd[256];
     size_t nb = msg->i.nbytes;
     if (nb >= sizeof cmd) return E2BIG;
@@ -157,6 +182,39 @@ static int io_write(resmgr_context_t *ctp, io_write_t *msg, RESMGR_OCB_T *ocb)
     char *nl = strchr(cmd, '\n');
     char shown[64];
     snprintf(shown, sizeof shown, "%.*s", nl ? (int)(nl - cmd) : (int)nb, cmd);
+
+    if (ocb->attr == &a_copilot) { /* "accept <id>" o "reject <id>": la respuesta del operador a una propuesta */
+        char verb[16];
+        unsigned id;
+        int ret = EOK;
+        bg_copilot_ack_t ack = { .hdr = { .type = BG_MSG_COPILOT_ACK } };
+        bg_copilot_ack_reply_t ar;
+        if (sscanf(cmd, "%15s %u", verb, &id) != 2 || (strcmp(verb, "accept") && strcmp(verb, "reject"))) {
+            snprintf(last_cp_result, sizeof last_cp_result, "NAK usage: accept <id> | reject <id> (%s)", shown);
+            ret = EINVAL;
+        } else {
+            ack.id = id;
+            ack.accept = !strcmp(verb, "accept");
+            ack.origin_pid = ctp->info.pid; /* lo pone el kernel: quien escribió de verdad */
+            if (ask(&safety, BG_SAFETY_NAME, &ack, sizeof ack, &ar, sizeof ar) == -1) {
+                int e = errno;
+                snprintf(last_cp_result, sizeof last_cp_result, "NAK %s (%s)",
+                         e == EPERM ? "the copilot cannot answer its own proposal" : "safety_mon no disponible", shown);
+                ret = e == EPERM ? EPERM : EAGAIN;
+            } else if (!ar.ok) {
+                snprintf(last_cp_result, sizeof last_cp_result, "NAK %s (%s)", ar.why, shown);
+                ret = strncmp(ar.why, SET_BUSY_PREFIX, strlen(SET_BUSY_PREFIX)) ? EINVAL : EAGAIN;
+            } else {
+                snprintf(last_cp_result, sizeof last_cp_result, "ACK %s (%s)", ar.why, shown);
+            }
+        }
+        printf("%s: copiloto, escritura de pid %d: %s\n", PROG, ctp->info.pid, last_cp_result);
+        fflush(stdout);
+        if (ret != EOK) return ret;
+        _IO_SET_WRITE_NBYTES(ctp, nb);
+        ocb->attr->flags |= IOFUNC_ATTR_MTIME | IOFUNC_ATTR_CTIME;
+        return EOK;
+    }
 
     bg_safety_status_t ss;
     if (get_safety(&ss, NULL) == -1) return EAGAIN;
@@ -216,6 +274,7 @@ int main(int argc, char **argv)
         { &a_status, DIR "/status", S_IFREG | 0444 },
         { &a_alarms, DIR "/alarms", S_IFREG | 0444 },
         { &a_settings, DIR "/settings", S_IFREG | 0664 },
+        { &a_copilot, DIR "/copilot", S_IFREG | 0664 },
     };
     for (size_t i = 0; i < sizeof files / sizeof files[0]; i++) {
         /* attr: los "metadatos" del archivo (modo, dueño, tiempos), como un inodo. */
@@ -227,7 +286,7 @@ int main(int argc, char **argv)
     dispatch_context_t *ctp = dispatch_context_alloc(dpp);
     if (!ctp) rt_die(PROG, "dispatch_context_alloc");
     rt_setup(PROG, prio);
-    printf("%s: listo en %s/{status,alarms,settings}, prio %d\n", PROG, DIR, prio);
+    printf("%s: listo en %s/{status,alarms,settings,copilot}, prio %d\n", PROG, DIR, prio);
     fflush(stdout);
 
     double t0 = rt_now_s();

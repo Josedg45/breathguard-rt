@@ -12,6 +12,7 @@
 #include <sys/neutrino.h>
 
 #include "bg_types.h"
+#include "copilot_logic.h"
 #include "settings.h"
 
 #define BG_PNEUMATIC_NAME "breathguard_pneumatic"
@@ -39,7 +40,57 @@ enum {
     BG_MSG_SETTINGS_GET,  /* carga: bg_settings_get_t (con las metricas del lazo); respuesta: bg_settings_t */
     BG_MSG_AUTH,          /* carga: bg_auth_msg_t (safety_mon -> planta); respuesta vacía o EPERM */
     BG_MSG_MONITOR,       /* respuesta: bg_monitor_t (hmi -> safety_mon) */
+    BG_MSG_COPILOT_GET,     /* carga: bg_copilot_get_t (copilot -> safety_mon); respuesta DIFERIDA: cp_breath_t */
+    BG_MSG_COPILOT_SUGGEST, /* carga: bg_copilot_suggest_t (copilot -> safety_mon); respuesta vacía o EPERM/EINVAL */
+    BG_MSG_COPILOT_ACK,     /* carga: bg_copilot_ack_t (operador: hmi o ventd -> safety_mon); respuesta:
+                             * bg_copilot_ack_reply_t. EPERM si lo manda el copiloto */
 };
+
+/* Copiloto (punto 5). safety_mon retiene la respuesta a COPILOT_GET hasta que se cierra una respiración posterior a
+ * 'after': el copiloto queda bloqueado en MsgSend sin consumir CPU ni sondear. */
+typedef struct {
+    bg_hdr_t hdr;
+    uint32_t after;  /* última respiración que el copiloto ya recibió */
+} bg_copilot_get_t;
+
+typedef struct {
+    bg_hdr_t hdr;
+    cp_suggest_t s;
+} bg_copilot_suggest_t;
+
+typedef struct {
+    bg_hdr_t hdr;
+    uint32_t id;     /* propuesta que se responde */
+    int32_t accept;  /* 1 aceptar, 0 rechazar */
+    int32_t origin_pid; /* ventd: pid de quien escribió en /dev/ventilator/copilot (0 = HMI / red). safety_mon
+                         * rechaza la respuesta si es el pid del copiloto: que no se confirme a sí mismo a través
+                         * de ventd (capa 1; la capa 2, secpol, ni siquiera le deja abrir ventd) */
+} bg_copilot_ack_t;
+
+typedef struct {
+    int32_t ok;
+    char why[64];
+} bg_copilot_ack_reply_t;
+
+/* Estado del copiloto para la HMI y ventd. */
+typedef struct {
+    int32_t enabled;         /* safety_mon lanzó el copiloto (-K) */
+    int32_t pid;
+    uint32_t restarts;
+    int32_t last_cls;        /* última clase recibida (-1 = sin respuesta) */
+    float last_conf;
+    uint32_t last_breath;
+    uint32_t infer_ns_last, infer_ns_max; /* tiempo del árbol + reglas, medido por el copiloto */
+    uint32_t id;             /* propuesta actual */
+    int32_t state, cls, action;
+    float conf;
+    double age_s;            /* desde que se propuso o se respondió */
+    bg_settings_t req;
+    char text[64];
+    char why[64];            /* último bloqueo */
+    uint32_t n_suggest, n_blocked, n_proposed, n_accepted, n_rejected, n_expired;
+    uint32_t denied;         /* mensajes del copiloto rechazados por no venir del pid del copiloto, o ACK del copiloto */
+} bg_copilot_status_t;
 
 /* Autorización de actuadores en la planta (tarea 4, tareas/04_plant_auth). safety_mon le dice a pneumatic_sim
  * qué pid puede mandar WRITE: el del breath_ctrl que acaba de lanzar. La confianza no viene del pid escrito en
@@ -138,6 +189,7 @@ typedef struct {
     double auto_peep, q_ee, tau_exp;
     int32_t eef;           /* 1 = el flujo no vuelve a cero al final de la espiracion */
     uint32_t denied;       /* comandos rechazados por la planta (tarea 4) */
+    bg_copilot_status_t cp;
 } bg_safety_status_t;
 
 /* Lo que la HMI ve de la planta, a través de safety_mon: la HMI ya no abre conexión con pneumatic_sim. */

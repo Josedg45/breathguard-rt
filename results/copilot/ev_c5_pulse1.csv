@@ -1,0 +1,9 @@
+t_s,evento,detalle
+2692.127679,LANZA_COPILOTO,pid 5349406
+2692.127679,LANZA_CONTROL,pid 5349405
+2767.628084,COPILOTO_PROPONE,#1 leak 1.00: check_circuit (no settings change)
+2827.628775,COPILOTO_VENCIDO,#1 sin respuesta en 60 s
+2837.627769,COPILOTO_PROPONE,#2 high_resistance 1.00: RR 12.0 -> 10.0 /min
+2847.628005,AUTO_PEEP,auto-PEEP 3.3 cmH2O, flujo final -2.7 L/min, tau 4.14 s
+2897.627770,COPILOTO_VENCIDO,#2 sin respuesta en 60 s
+2911.648876,CONTROL_TERMINA,despedida

@@ -1,0 +1,39 @@
+Copilot scene 'c5_rc2' (rc): 37 breaths seen by the copilot, 13 events
+Phases: start@0s, leak@40s, clear@80s, obstruction@85s, kill_copilot@105s, clear@125s, stiff@130s
+
+Per breath (valid breaths, 6 s after each change excluded):
+  normal    6 breaths, 100.0 % right   predicted: normal 6
+  leak      6 breaths, 100.0 % right   predicted: leak 6
+  high_r    4 breaths, 100.0 % right   predicted: high_r 4
+  low_c     9 breaths, 100.0 % right   predicted: low_c 9
+  breaths marked not valid by safety_mon (alarm, backup, settings change, start): 2
+  tree + rules in the copilot: median 5.0 us, max 21.8 us
+
+Copilot events (t from the start of the scene):
+    55.50 COPILOTO_PROPONE             #1 leak 1.00: check_circuit (no settings change)
+   100.50 COPILOTO_PROPONE             #2 high_resistance 1.00: RR 12.0 -> 10.0 /min
+   105.12 COPILOTO_RELANZADO           pid 4235285
+   145.50 COPILOTO_PROPONE             #3 low_compliance 1.00: Pinsp 16.0 -> 18.0 cmH2O
+   155.34 AJUSTE_ACEPTADO              #1 copiloto #3: Pinsp 16.0 -> 18.0 cmH2O
+   155.34 COPILOTO_ACEPTADO            #3 acepta: accepted: Pinsp 16.0 -> 18.0 cmH2O
+   155.35 COPILOTO_RESP_INVALIDA       #3 acepta: proposal 3 is not pending (current 3
+   160.50 AJUSTE_APLICADO              #1
+   170.50 COPILOTO_PROPONE             #4 low_compliance 1.00: Pinsp 18.0 -> 20.0 cmH2O
+
+Criteria:
+  [OK] ventilation untouched: no controller failure - 0
+  [OK] no proposal while the patient is normal
+  [OK] leak -> proposal 'leak' within 30 s - after 15.5 s: #1 leak 1.00: check_circuit (no settings change)
+  [OK] obstruction -> proposal 'high_resistance' within 30 s - after 15.4 s: #2 high_resistance 1.00: RR 12.0 -> 10.0 /min
+  [OK] stiff -> proposal 'low_compliance' within 30 s - after 15.2 s: #3 low_compliance 1.00: Pinsp 16.0 -> 18.0 cmH2O
+  [OK] copilot killed -> relaunched
+  [info] plant around the copilot kill (+-5 s): command age p99 1.84 ms, max 11.61 ms
+  [OK] operator accept through /dev/ventilator/copilot: write() ok - {'RC_ACCEPT': '0', 'RC_ACCEPT_AGAIN': '1', 'RC_BAD': '1'}
+  [OK] accepting the same proposal again fails
+  [OK] a malformed command fails
+  [OK] the accepted change is applied at a breath start - 5.15 s after the answer
+  [OK] settings now Pinsp 18 (16 + the one allowed step) - mode=pcv p_insp=18.0
+  [info] plant, until the controller's goodbye: command age p50 0.91 ms, p99 2.24 ms, max 776.86 ms over 182322 ms
+  [info] safety_mon: copiloto: 37 respiraciones medidas, 37 sugerencias, 0 bloqueadas, 4 propuestas, 1 aceptadas, 0 rechazadas, 0 vencidas, 0 mensajes no autorizados, 1 relanzamientos, árbol+reglas máx 21.8 us
+
+COPILOT SCENE c5_rc2: PASS

@@ -13,7 +13,7 @@ LOG=/data/var/log/bg; mkdir -p $LOG
 secpolgenerate -C clear errors > /dev/null 2>&1
 on -T bg_plant_t ./pneumatic_sim -s 0 > $LOG/plant.txt 2>&1 &
 waitfor /dev/name/local/breathguard_pneumatic 5
-on -T bg_safety_t ./safety_mon -s 0 -H 172.31.1.1 -o $LOG/events.csv > $LOG/safety.txt 2>&1 &
+on -T bg_safety_t ./safety_mon -s 0 -H 172.31.1.1 -K -o $LOG/events.csv > $LOG/safety.txt 2>&1 &
 on -T bg_power_t ./power_mgr -s 0 > $LOG/power.txt 2>&1 &
 on -T bg_ventd_t ./ventd > $LOG/ventd.txt 2>&1 &
 cd /

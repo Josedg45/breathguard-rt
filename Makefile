@@ -25,7 +25,8 @@ M6_BINS := $(BUILD)/hmi $(BUILD)/mono_vent
 DESIGN_BINS := $(BUILD)/step_test
 SEC_BINS := $(BUILD)/evil_hmi
 VENTD_BINS := $(BUILD)/ventd
-COMMON_H := src/bg_types.h src/bg_proto.h src/rt_util.h src/settings.h
+COPILOT_BINS := $(BUILD)/copilot $(BUILD)/liar_copilot
+COMMON_H := src/bg_types.h src/bg_proto.h src/rt_util.h src/settings.h src/copilot_logic.h src/breath_feat.h
 
 .PHONY: all clean deploy check-env tarea1 tarea2 tarea3 tarea4 tarea5 tarea5-host copilot-logic-test m3 m4 m5 m6 patient
 
@@ -67,7 +68,7 @@ tarea5-host: | $(BUILD)
 	gcc -std=c11 -O2 -Wall -Wextra -Isrc -I$(TAREA5) $(TAREA5_SRC) -lm -o $(BUILD)/test_tree_predict_host
 	$(BUILD)/test_tree_predict_host
 
-all: check-env $(BINS) $(M3_BINS) $(M4_BINS) $(M5_BINS) $(M6_BINS) $(DESIGN_BINS) $(SEC_BINS) $(VENTD_BINS)
+all: check-env $(BINS) $(M3_BINS) $(M4_BINS) $(M5_BINS) $(M6_BINS) $(DESIGN_BINS) $(SEC_BINS) $(VENTD_BINS) $(COPILOT_BINS)
 
 m3: check-env $(M3_BINS)
 
@@ -85,8 +86,8 @@ m5: check-env $(M3_BINS) $(M4_BINS) $(M5_BINS)
 m6: check-env $(M3_BINS) $(M4_BINS) $(M5_BINS) $(M6_BINS)
 
 # En QNX los sockets están en libsocket.
-$(BUILD)/hmi: src/hmi.c src/settings.c $(TAREA3)/rate_limit.c src/bg_power.h $(COMMON_H) | $(BUILD)
-	$(CC) $(CFLAGS) -Isrc src/hmi.c src/settings.c $(TAREA3)/rate_limit.c -lsocket -lm -o $@
+$(BUILD)/hmi: src/hmi.c src/settings.c src/copilot_logic.c $(TAREA3)/rate_limit.c src/bg_power.h $(COMMON_H) | $(BUILD)
+	$(CC) $(CFLAGS) -Isrc src/hmi.c src/settings.c src/copilot_logic.c $(TAREA3)/rate_limit.c -lsocket -lm -o $@
 
 # Version monolitica (control + pantalla en un proceso) para el contraste de la demo.
 $(BUILD)/mono_vent: src/mono_vent.c src/vent.c src/vent.h src/plant.c $(COMMON_H) | $(BUILD)
@@ -99,13 +100,22 @@ $(BUILD)/m5_offline: tools/m5_offline.c src/battery.c src/plant.c src/vent.c | $
 	gcc -O2 -Wall -Wextra -Isrc $^ -lm -o $@
 
 # safety_mon enlaza el watchdog (tarea 1) y el medidor de Vt (tarea 2) del usuario.
-SAFETY_SRC := src/safety_mon.c src/alarms.c src/lung_mon.c src/vent.c src/plant.c src/settings.c $(TAREA3)/rate_limit.c $(TAREA1)/watchdog.c $(TAREA2)/vt_meter.c
+SAFETY_SRC := src/safety_mon.c src/alarms.c src/lung_mon.c src/breath_feat.c src/copilot_logic.c src/vent.c src/plant.c src/settings.c $(TAREA3)/rate_limit.c $(TAREA1)/watchdog.c $(TAREA2)/vt_meter.c
 $(BUILD)/safety_mon: $(SAFETY_SRC) src/bg_power.h src/alarms.h src/lung_mon.h src/vent.h $(TAREA1)/watchdog.h $(TAREA2)/vt_meter.h $(COMMON_H) | $(BUILD)
 	$(CC) $(CFLAGS) -Isrc -I$(TAREA1) -I$(TAREA2) $(SAFETY_SRC) -lm -lsecpol -o $@
 
 # /dev/ventilator: resource manager (punto A del plan QNX).
-$(BUILD)/ventd: src/ventd.c src/settings.c src/alarms.c $(TAREA3)/rate_limit.c src/alarms.h src/bg_power.h $(COMMON_H) | $(BUILD)
-	$(CC) $(CFLAGS) -Isrc src/ventd.c src/settings.c src/alarms.c $(TAREA3)/rate_limit.c -lm -o $@
+$(BUILD)/ventd: src/ventd.c src/settings.c src/alarms.c src/copilot_logic.c $(TAREA3)/rate_limit.c src/alarms.h src/bg_power.h $(COMMON_H) | $(BUILD)
+	$(CC) $(CFLAGS) -Isrc src/ventd.c src/settings.c src/alarms.c src/copilot_logic.c $(TAREA3)/rate_limit.c -lm -o $@
+
+# Copiloto (punto 5): árbol aprendido (src/copilot_tree.h) recorrido por la tarea 5 del usuario + reglas fijas.
+COPILOT_SRC := src/copilot.c src/copilot_logic.c src/breath_feat.c src/settings.c $(TAREA3)/rate_limit.c $(TAREA5)/tree_predict.c
+$(BUILD)/copilot: $(COPILOT_SRC) src/copilot_tree.h $(TAREA5)/tree_predict.h $(COMMON_H) | $(BUILD)
+	$(CC) $(CFLAGS) -Isrc -I$(TAREA5) $(COPILOT_SRC) -lm -o $@
+
+# Solo para pruebas (nunca en la imagen): un copiloto que miente y que intenta confirmarse y abrir la planta.
+$(BUILD)/liar_copilot: $(COPILOT_SRC) src/copilot_tree.h $(TAREA5)/tree_predict.h $(COMMON_H) | $(BUILD)
+	$(CC) $(CFLAGS) -DCOPILOT_LIAR -Isrc -I$(TAREA5) $(COPILOT_SRC) -lm -o $@
 
 # HMI comprometida para la prueba de la tarea 4.
 $(BUILD)/evil_hmi: src/evil_hmi.c $(COMMON_H) | $(BUILD)
@@ -168,7 +178,7 @@ $(BUILD):
 
 deploy: all
 	ssh $(QNX_HOST_SSH) "mkdir -p $(QNX_DIR)"
-	scp -q $(BINS) $(M3_BINS) $(M4_BINS) $(M5_BINS) $(M6_BINS) $(SEC_BINS) $(VENTD_BINS) $(QNX_HOST_SSH):$(QNX_DIR)/
+	scp -q $(BINS) $(M3_BINS) $(M4_BINS) $(M5_BINS) $(M6_BINS) $(SEC_BINS) $(VENTD_BINS) $(COPILOT_BINS) $(QNX_HOST_SSH):$(QNX_DIR)/
 
 clean:
 	rm -rf $(BUILD)

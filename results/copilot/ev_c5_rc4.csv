@@ -1,0 +1,13 @@
+t_s,evento,detalle
+51.563976,LANZA_COPILOTO,pid 1867792
+51.563976,LANZA_CONTROL,pid 1863695
+107.064808,COPILOTO_PROPONE,#1 leak 1.00: check_circuit (no settings change)
+152.064737,COPILOTO_PROPONE,#2 high_resistance 1.00: RR 12.0 -> 10.0 /min
+156.641876,COPILOTO_RELANZADO,pid 2023440
+197.064786,COPILOTO_PROPONE,#3 low_compliance 1.00: Pinsp 16.0 -> 18.0 cmH2O
+206.696014,AJUSTE_ACEPTADO,#1 copiloto #3: Pinsp 16.0 -> 18.0 cmH2O
+206.696014,COPILOTO_ACEPTADO,#3 acepta: accepted: Pinsp 16.0 -> 18.0 cmH2O
+206.696402,COPILOTO_RESP_INVALIDA,#3 acepta: proposal 3 is not pending (current 3, accepted)
+207.064967,AJUSTE_APLICADO,#1
+217.065068,COPILOTO_PROPONE,#4 low_compliance 1.00: Pinsp 18.0 -> 20.0 cmH2O
+241.068131,CONTROL_TERMINA,despedida

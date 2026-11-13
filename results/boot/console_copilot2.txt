@@ -1,0 +1,42 @@
+1.235 QEMU Command: qemu-system-x86_64 -smp 2 --enable-kvm --cpu host -m 1G -drive file=output/disk-qemu.vmdk,if=ide,id=drv0 -netdev bridge,br=br0,id=net0 -device virtio-net-pci,netdev=net0,mac=52:54:00:ca:c5:c7 -pidfile output/qemu.pid -nographic -kernel output/ifs.bin -serial mon:stdio -object rng-random,filename=/dev/urandom,id=rng0 -device virtio-rng-pci,rng=rng0 -nographic
+1.609 c[?7l[2J[0mSeaBIOS (version 1.17.0-debian-1.17.0-1ubuntu1)
+1.618 
+1.624 
+1.631 iPXE (https://ipxe.org) 00:03.0 CA00 PCI2.10 PnP PMM+3EFC7B50+3EF07B50 CA00
+1.652 Press Ctrl-B to configure iPXE (PCI 00:03.0)...                                                                               
+1.658 
+1.665 
+1.672 Booting from ROM..
+1.678 non UEFI or UEFI+CSM boot
+1.684 ACPI table not found (0x4746434d)
+1.725 overriding mask for controller 2, vector_base 0
+2.449 ---> Starting policy generator
+3.169 Path=0 - Intel 82371SB
+3.174  target=0 lun=0     Direct-Access(0) -          QEMU HARDDISK    Rev: 2.5+
+3.178 Path=1 - Intel 82371SB
+3.183  target=0 lun=0            CD-ROM(5) - QEMU     QEMU DVD-ROM     Rev: 2.5+
+3.215 ---> Loading security policy
+3.222 ---> Starting slogger2
+3.234 ---> Starting PCI Services
+3.608 ---> Starting fsevmgr# ---> Starting devb
+3.985 ---> Mounting file systems
+3.995 Path=0 - ---> Mounting file systems
+4.002 Intel 82371SB
+4.006  target=0 lun=0     Direct-Access(0) -          QEMU HARDDISK    Rev: 2.5+
+4.010 Path=1 - Intel 82371SB
+4.019  target=0 lun=0            CD-ROM(5) - QEMU     QEMU DVD-ROM     Rev: 2.5+
+4.028 ---> BreathGuard RT
+4.133 ---> Starting Networking
+4.142 secpolgenerate: dumper (pid:372756 uid:30 type:dumper_t) failed to access /dev/slog2/stderr
+4.148 secpolgenerate: dumper (pid:372756 uid:30 type:dumper_t) failed to access /dev/slog2/stdout
+5.287 ifconfig: WARNING: setting interface address without mask is deprecated,
+5.291 default mask may not be correct.
+5.312 ---> Starting sshd
+5.354 ---> Starting misc
+5.370 
+5.375 To exit QEMU, type <ctrl>a x
+5.384 
+5.392 [?7hProcess count:29
+5.402 Startup complete
+5.408 QNX noname 8.0.0 2026/06/05-16:26:03EDT x86pc x86_64
+894.300 qemu-system-x86_64: terminating on signal 15 from pid 9018 (/bin/bash)

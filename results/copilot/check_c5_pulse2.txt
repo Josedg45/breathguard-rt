@@ -1,0 +1,25 @@
+Copilot scene 'c5_pulse2' (pulse): 43 breaths seen by the copilot, 8 events
+Phases: start@0s, leak@60s, clear@120s, obstruction@130s, clear@190s
+
+Per breath (valid breaths, 6 s after each change excluded):
+  normal   14 breaths, 100.0 % right   predicted: normal 14
+  leak     10 breaths, 100.0 % right   predicted: leak 10
+  high_r   10 breaths, 100.0 % right   predicted: high_r 10
+  breaths marked not valid by safety_mon (alarm, backup, settings change, start): 1
+  tree + rules in the copilot: median 4.2 us, max 6.1 us
+
+Copilot events (t from the start of the scene):
+    75.49 COPILOTO_PROPONE             #1 leak 1.00: check_circuit (no settings change)
+   135.49 COPILOTO_VENCIDO             #1 sin respuesta en 60 s
+   145.49 COPILOTO_PROPONE             #2 high_resistance 1.00: RR 12.0 -> 10.0 /min
+   205.49 COPILOTO_RESUELTO            #2: 3 respiraciones normales
+
+Criteria:
+  [OK] ventilation untouched: no controller failure - 0
+  [OK] no proposal while the patient is normal
+  [OK] leak -> proposal 'leak' within 30 s - after 15.5 s: #1 leak 1.00: check_circuit (no settings change)
+  [OK] obstruction -> proposal 'high_resistance' within 30 s - after 15.4 s: #2 high_resistance 1.00: RR 12.0 -> 10.0 /min
+  [info] plant, until the controller's goodbye: command age p50 0.98 ms, p99 1.41 ms, max 10.66 ms over 216800 ms
+  [info] safety_mon: copiloto: 43 respiraciones medidas, 43 sugerencias, 0 bloqueadas, 2 propuestas, 0 aceptadas, 0 rechazadas, 1 vencidas, 0 mensajes no autorizados, 0 relanzamientos, árbol+reglas máx 6.1 us
+
+COPILOT SCENE c5_pulse2: PASS

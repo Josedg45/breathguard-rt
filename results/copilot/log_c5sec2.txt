@@ -1,0 +1,142 @@
+== types
+ 2281482 ./pneumatic_sim                                                                  pneumatic_sim      bg_plant_t       
+ 2297867 ./safety_mon                                                                     safety_mon         bg_safety_t      
+ 2297868 ./ventd                                                                          ventd              bg_ventd_t       
+ 2318351 ./breath_ctrl                                                                    breath_ctrl        bg_safety_t__ctr 
+ 2318360 ./liar_copilot                                                                   liar_copilot       bg_safety_t__cop 
+== copilot
+copilot=on pid=2318360 restarts=0 denied=12
+learned: last_class=low_compliance conf=0.99 breath=4 infer_us=2.2 infer_max_us=2.2
+proposal: id=0 state=none class=- action=- age_s=-1.0
+text=-
+last_blocked=proposed settings differ from the allowed step
+counts: suggestions=4 blocked=2 proposed=0 accepted=0 rejected=0 expired=0
+answer=none
+== a shell with the copilot type writes accept
+/proc/boot/ksh: cannot create /dev/ventilator/copilot: Operation not permitted
+RC_COPILOT_TYPE_WRITE 1
+== root (the operator's console) reads the copilot file
+RC_ROOT_READ 0
+== secpolgenerate errors (kernel denials)
+# This file represents errors that have been encountered.  These errors might be
+# expected.  Alternatively, some of these rules might need to be added to the
+# security policy.
+
+2026-11-10 00:12:21 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:21 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:21 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:21 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:23 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:23 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:23 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:23 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:25 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:25 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:25 liar_copilot (pid:2318360 type:bg_safety_t__copilot) failed to use ability channel_connect:bg_plant_t as root
+2026-11-10 00:12:25 liar_copilot (pid:2318360 type:bg_safety_t__copilot) failed to use ability channel_connect:bg_ventd_t as root
+2026-11-10 00:12:25 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:25 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:27 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:27 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:27 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:27 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:29 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:29 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:29 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:29 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:31 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:31 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:31 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:31 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:33 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:33 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:33 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:33 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:35 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:35 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:35 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:35 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:37 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:37 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:37 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:37 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:39 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:39 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:39 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:39 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:39 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:39 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:41 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:41 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:41 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:41 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:43 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:43 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:43 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:43 io-sock (pid:380949 uid:33 type:io_sock_t__run) failed to access /dev/usb/io-usb-otg
+2026-11-10 00:12:43 ksh (pid:2347024 type:bg_safety_t__copilot) failed to use ability channel_connect:bg_ventd_t as root
+
+# === Rules for type bg_safety_t__copilot ============
+allow bg_safety_t__copilot self:ability {
+    channel_connect:bg_plant_t,bg_ventd_t
+};
+
+== safety_mon log
+liar_copilot: prio 8, tree of 25 nodes (depth 5)
+breath_ctrl: pid 2318351, PCV 16/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 1000000000000000 s
+breath_ctrl: primera inspiración t=149.309 s del reloj del sistema
+liar_copilot: ACK 1 refused: Operation not permitted
+liar_copilot: ACK 2 refused: Operation not permitted
+liar_copilot: ACK 3 refused: Operation not permitted
+liar_copilot: name_open(plant) = -1 (Operation not permitted)
+liar_copilot: open(/dev/ventilator/copilot) = -1 (Operation not permitted)
+safety_mon: t=0.000 LANZA_COPILOTO pid 2318360
+safety_mon: t=0.000 LANZA_CONTROL pid 2318351
+safety_mon: t=5.501 COPILOTO_AUTOCONFIRMA pid 2318360 propuesta 1
+safety_mon: t=5.501 COPILOTO_AUTOCONFIRMA pid 2318360 propuesta 2
+safety_mon: t=5.501 COPILOTO_AUTOCONFIRMA pid 2318360 propuesta 3
+safety_mon: t=5.501 COPILOTO_BLOQUEADO breath not valid for the copilot
+safety_mon: t=10.501 COPILOTO_AUTOCONFIRMA pid 2318360 propuesta 1
+safety_mon: t=10.501 COPILOTO_AUTOCONFIRMA pid 2318360 propuesta 2
+safety_mon: t=10.501 COPILOTO_AUTOCONFIRMA pid 2318360 propuesta 3
+safety_mon: t=15.501 COPILOTO_AUTOCONFIRMA pid 2318360 propuesta 1
+safety_mon: t=15.501 COPILOTO_AUTOCONFIRMA pid 2318360 propuesta 2
+safety_mon: t=15.501 COPILOTO_AUTOCONFIRMA pid 2318360 propuesta 3
+safety_mon: t=20.501 COPILOTO_AUTOCONFIRMA pid 2318360 propuesta 1
+safety_mon: t=20.501 COPILOTO_AUTOCONFIRMA pid 2318360 propuesta 2
+safety_mon: t=20.501 COPILOTO_AUTOCONFIRMA pid 2318360 propuesta 3
+safety_mon: t=20.501 COPILOTO_BLOQUEADO proposed settings differ from the allowed step
+safety_mon: 24837 ticks, 0 fallas del controlador, 16 eventos; vt_meter: 0 respiraciones, Vti 0, Vte 0 mL
+safety_mon: peso ideal 75.4 kg (talla 180.3 cm); última respiración: auto-PEEP 0.75 cmH2O, flujo final -1.84 L/min, tau 1.46 s, R 24.5, C 59.3 mL/cmH2O
+safety_mon: copiloto: 4 respiraciones medidas, 4 sugerencias, 2 bloqueadas, 0 propuestas, 0 aceptadas, 0 rechazadas, 0 vencidas, 12 mensajes no autorizados, 0 relanzamientos, árbol+reglas máx 2.2 us
+breath_ctrl: 24805 ciclos, 178 con periodo > 1.5 ms, periodo máx 5.94 ms; cómputo p50 15.4 us, p99 206.1 us, máx 1674.5 us
+breath_ctrl: ajustes aplicados 0 (último #0), consultas sin respuesta 0
+breath_ctrl: settings changes received after their start time: 0 (expected 0)
+liar_copilot: 4 breaths (3 valid): normal 0, leak 0, high_r 0, low_c 0; tree+rules max 2.2 us
+== events
+t_s,evento,detalle
+148.808438,LANZA_COPILOTO,pid 2318360
+148.808438,LANZA_CONTROL,pid 2318351
+154.309188,COPILOTO_AUTOCONFIRMA,pid 2318360 propuesta 1
+154.309271,COPILOTO_AUTOCONFIRMA,pid 2318360 propuesta 2
+154.309297,COPILOTO_AUTOCONFIRMA,pid 2318360 propuesta 3
+154.309567,COPILOTO_BLOQUEADO,breath not valid for the copilot
+159.309296,COPILOTO_AUTOCONFIRMA,pid 2318360 propuesta 1
+159.309369,COPILOTO_AUTOCONFIRMA,pid 2318360 propuesta 2
+159.309372,COPILOTO_AUTOCONFIRMA,pid 2318360 propuesta 3
+164.309481,COPILOTO_AUTOCONFIRMA,pid 2318360 propuesta 1
+164.309569,COPILOTO_AUTOCONFIRMA,pid 2318360 propuesta 2
+164.309573,COPILOTO_AUTOCONFIRMA,pid 2318360 propuesta 3
+169.309238,COPILOTO_AUTOCONFIRMA,pid 2318360 propuesta 1
+169.309318,COPILOTO_AUTOCONFIRMA,pid 2318360 propuesta 2
+169.309321,COPILOTO_AUTOCONFIRMA,pid 2318360 propuesta 3
+169.309323,COPILOTO_BLOQUEADO,proposed settings differ from the allowed step
+== boot stack again
+ 2461706 ./pneumatic_sim                                                                  pneumatic_sim      bg_plant_t       
+ 2478091 ./safety_mon                                                                     safety_mon         bg_safety_t      
+ 2478092 ./power_mgr                                                                      power_mgr          bg_power_t       
+ 2478095 ./ventd                                                                          ventd              bg_ventd_t       
+ 2506768 ./breath_ctrl                                                                    breath_ctrl        bg_safety_t__ctr 
+ 2506776 ./hmi                                                                            hmi                bg_safety_t__hmi 
+ 2506780 ./copilot                                                                        copilot            bg_safety_t__cop 
+== end

@@ -1,0 +1,55 @@
+MARK start 2692.127863
+MARK leak 2752.150386
+bg_fault: t_abs=2752.158551 desconectado=0 obstruccion=1.0 fuga=0.0040 sensor_congelado=0 rigidez=0.0
+== copilot (leak)
+copilot=on pid=5349406 restarts=0 denied=0
+learned: last_class=leak conf=1.00 breath=22 infer_us=20.2 infer_max_us=49.7
+proposal: id=1 state=pending class=leak action=check_circuit age_s=39.5
+text=check_circuit (no settings change)
+last_blocked=-
+counts: suggestions=22 blocked=0 proposed=1 accepted=0 rejected=0 expired=0
+answer=none
+to answer: echo "accept 1" (or "reject 1") > /dev/ventilator/copilot
+MARK clear 2812.177326
+bg_fault: t_abs=2812.180415 desconectado=0 obstruccion=1.0 fuga=0.0000 sensor_congelado=0 rigidez=0.0
+MARK obstruction 2822.189006
+bg_fault: t_abs=2822.193800 desconectado=0 obstruccion=3.0 fuga=0.0000 sensor_congelado=0 rigidez=0.0
+== copilot (obstruction)
+copilot=on pid=5349406 restarts=0 denied=0
+learned: last_class=high_resistance conf=1.00 breath=36 infer_us=22.4 infer_max_us=49.7
+proposal: id=2 state=pending class=high_resistance action=lower_rr age_s=39.6
+text=RR 12.0 -> 10.0 /min
+last_blocked=-
+counts: suggestions=36 blocked=0 proposed=2 accepted=0 rejected=0 expired=1
+answer=none
+to answer: echo "accept 2" (or "reject 2") > /dev/ventilator/copilot
+MARK clear 2882.208215
+bg_fault: t_abs=2882.213491 desconectado=0 obstruccion=1.0 fuga=0.0000 sensor_congelado=0 rigidez=0.0
+== copilot (end)
+copilot=on pid=5349406 restarts=0 denied=0
+learned: last_class=normal conf=0.99 breath=42 infer_us=22.5 infer_max_us=49.7
+proposal: id=2 state=expired class=high_resistance action=lower_rr age_s=9.6
+text=RR 12.0 -> 10.0 /min
+last_blocked=-
+counts: suggestions=42 blocked=0 proposed=2 accepted=0 rejected=0 expired=2
+answer=none
+copilot: prio 8, tree of 25 nodes (depth 5)
+breath_ctrl: pid 5349405, PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 220 s
+breath_ctrl: primera inspiración t=2692.628 s del reloj del sistema
+breath_ctrl: 217195 ciclos, 1878 con periodo > 1.5 ms, periodo máx 20.05 ms; cómputo p50 25.5 us, p99 196.5 us, máx 5391.1 us
+breath_ctrl: ajustes aplicados 0 (último #0), consultas sin respuesta 1
+breath_ctrl: settings changes received after their start time: 0 (expected 0)
+copilot: 43 breaths (42 valid): normal 18, leak 12, high_r 12, low_c 0; tree+rules max 49.7 us
+safety_mon: t=0.000 LANZA_COPILOTO pid 5349406
+safety_mon: t=0.000 LANZA_CONTROL pid 5349405
+safety_mon: t=75.500 COPILOTO_PROPONE #1 leak 1.00: check_circuit (no settings change)
+safety_mon: t=135.501 COPILOTO_VENCIDO #1 sin respuesta en 60 s
+safety_mon: t=145.500 COPILOTO_PROPONE #2 high_resistance 1.00: RR 12.0 -> 10.0 /min
+safety_mon: t=155.500 AUTO_PEEP auto-PEEP 3.3 cmH2O, flujo final -2.7 L/min, tau 4.14 s
+safety_mon: t=205.500 COPILOTO_VENCIDO #2 sin respuesta en 60 s
+safety_mon: t=219.521 CONTROL_TERMINA despedida
+safety_mon: 217693 ticks, 0 fallas del controlador, 8 eventos; vt_meter: 0 respiraciones, Vti 0, Vte 0 mL
+safety_mon: peso ideal 75.4 kg (talla 180.3 cm); última respiración: auto-PEEP 1.05 cmH2O, flujo final -2.65 L/min, tau 1.42 s, R 23.8, C 59.7 mL/cmH2O
+safety_mon: copiloto: 43 respiraciones medidas, 43 sugerencias, 0 bloqueadas, 2 propuestas, 0 aceptadas, 0 rechazadas, 2 vencidas, 0 mensajes no autorizados, 0 relanzamientos, árbol+reglas máx 49.7 us
+ventd: listo en /dev/ventilator/{status,alarms,settings,copilot}, prio 10
+ventd: fin

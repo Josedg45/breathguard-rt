@@ -17,6 +17,9 @@
  * (periodo p50/p99/max, plazos incumplidos, histograma), la antigüedad del comando en la planta, el peso ideal,
  * la FiO2, el auto-PEEP estimado y los limites de alarma activos.
  *
+ * Copiloto (punto 5): una vez por segundo manda "CP,clave=valor,..." con su estado, y acepta el comando
+ * "copilot accept <id>" o "copilot reject <id>", que reenvía a safety_mon (COPILOT_ACK). Tampoco decide nada.
+ *
  * Uso: hmi -h ip_host [-u puerto] [-c puerto_comandos] [-s seg] [-p prio]
  */
 #include <fcntl.h>
@@ -46,6 +49,32 @@ static void on_sig(int sig)
 static int try_open(const char *name)
 {
     return name_open(name, 0);
+}
+
+/* Copia un texto para una línea CSV: sin comas ni saltos de línea. */
+static void csv_text(char *dst, size_t n, const char *src)
+{
+    size_t i = 0;
+    for (; src[i] && i + 1 < n; i++) dst[i] = (src[i] == ',' || src[i] == '\n') ? ';' : src[i];
+    dst[i] = 0;
+}
+
+/* Línea "CP,clave=valor,..." con el estado del copiloto (punto 5) para el dashboard. Lo aprendido (la clase del
+ * árbol y su confianza) va separado de lo que deciden las reglas fijas y safety_mon (acción, propuesta, bloqueo). */
+static void send_copilot(int sock, const struct sockaddr_in *dst, const bg_copilot_status_t *c)
+{
+    char line[512], text[64], why[64];
+    csv_text(text, sizeof text, c->text);
+    csv_text(why, sizeof why, c->why[0] ? c->why : "-");
+    int k = snprintf(line, sizeof line,
+                     "CP,on=%d,pid=%d,restarts=%u,cls=%s,conf=%.2f,breath=%u,infer_max_us=%.1f,id=%u,state=%s,"
+                     "pcls=%s,text=%s,why=%s,n_sug=%u,n_blk=%u,n_prop=%u,n_acc=%u,n_rej=%u,n_exp=%u,denied=%u\n",
+                     c->enabled, c->pid, c->restarts, c->last_cls < 0 ? "-" : cp_class_name(c->last_cls), c->last_conf,
+                     c->last_breath, c->infer_ns_max / 1e3, c->id, cp_state_name(c->state),
+                     c->id ? cp_class_name(c->cls) : "-", text[0] ? text : "-", why, c->n_suggest, c->n_blocked,
+                     c->n_proposed, c->n_accepted, c->n_rejected, c->n_expired, c->denied);
+    if (k > 0) sendto(sock, line, (size_t)(k < (int)sizeof line ? k : (int)sizeof line - 1), 0,
+                      (const struct sockaddr *)dst, sizeof *dst);
 }
 
 int main(int argc, char **argv)
@@ -161,8 +190,17 @@ int main(int argc, char **argv)
             cmds++;
             bg_settings_msg_t sm = { .hdr = { .type = BG_MSG_SETTINGS_SET } };
             bg_settings_reply_t rep;
-            char err[64];
-            if (safety == -1) snprintf(ans, sizeof ans, "NAK safety_mon no disponible\n");
+            char err[64], verb[8];
+            unsigned cid;
+            if (sscanf(cbuf, "copilot %7s %u", verb, &cid) == 2) { /* respuesta del operador a una propuesta */
+                bg_copilot_ack_t ack = { .hdr = { .type = BG_MSG_COPILOT_ACK }, .id = cid,
+                                         .accept = strcmp(verb, "accept") == 0 };
+                bg_copilot_ack_reply_t ar;
+                if (!ack.accept && strcmp(verb, "reject") != 0) snprintf(ans, sizeof ans, "NAK use: copilot accept|reject <id>\n");
+                else if (safety == -1) snprintf(ans, sizeof ans, "NAK safety_mon no disponible\n");
+                else if (MsgSend(safety, &ack, sizeof ack, &ar, sizeof ar) == -1) snprintf(ans, sizeof ans, "NAK MsgSend\n");
+                else snprintf(ans, sizeof ans, "%s %s\n", ar.ok ? "ACK" : "NAK", ar.why);
+            } else if (safety == -1) snprintf(ans, sizeof ans, "NAK safety_mon no disponible\n");
             else if (settings_parse_cmd(cbuf, &ss.set, &sm.req, err, sizeof err) == -1) snprintf(ans, sizeof ans, "NAK %s\n", err);
             else if (MsgSend(safety, &sm, sizeof sm, &rep, sizeof rep) == -1) snprintf(ans, sizeof ans, "NAK MsgSend\n");
             else if (!rep.ok) snprintf(ans, sizeof ans, "NAK %s\n", rep.why);
@@ -206,6 +244,7 @@ int main(int argc, char **argv)
             k += snprintf(rt + k, sizeof rt - k, "\n");
             sendto(sock, rt, (size_t)k, 0, (struct sockaddr *)&dst, sizeof dst);
         }
+        if (n % 100 == 51) send_copilot(sock, &dst, &ss.cp); /* 1 Hz, desfasada de la línea RT */
     }
     timer_delete(tm);
     rt_relax();

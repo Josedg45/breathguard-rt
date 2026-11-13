@@ -1,0 +1,4 @@
+  47.02 dashboard shows proposal #1: low_compliance - Pinsp 16.0 -> 18.0 cmH2O
+  49.09 operator: copilot accept 1 -> ACK accepted: Pinsp 16.0 -> 18.0 cmH2O
+  49.13 operator: copilot accept 1 again -> NAK proposal 1 is not pending (current 1, accepted)
+  49.18 operator: copilot approve 1 -> NAK use: copilot accept|reject <id>

@@ -95,7 +95,7 @@ static int block(cp_check_t *c, char *why, size_t n, const char *msg)
 int cp_check(cp_check_t *c, const cp_breath_t *mine, const cp_suggest_t *s, const bg_settings_t *cur,
              int settings_pending, double now, char *why, size_t n)
 {
-    char msg[96];
+    char msg[64];
     c->n_suggest++;
     snprintf(why, n, "ok");
     if (!mine || mine->breath != s->breath) {
@@ -154,7 +154,7 @@ int cp_check(cp_check_t *c, const cp_breath_t *mine, const cp_suggest_t *s, cons
             if (want.set.rr < CP_RR_MIN - 1e-9) return block(c, why, n, "RR would go below the minimum");
         }
         if (!same_settings(&s->req, &want)) return block(c, why, n, "proposed settings differ from the allowed step");
-        char w2[64];
+        char w2[44];
         if (!settings_validate(cur, &want, w2, sizeof w2)) {
             snprintf(msg, sizeof msg, "settings_validate: %s", w2);
             return block(c, why, n, msg);

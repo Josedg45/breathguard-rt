@@ -11,6 +11,7 @@ type bg_plant_t restricted
 type bg_safety_t restricted
 type bg_safety_t__ctrl restricted
 type bg_safety_t__hmi restricted
+type bg_safety_t__copilot restricted
 type bg_power_t restricted
 type bg_ventd_t restricted
 }

@@ -1,0 +1,86 @@
+MARK start 2938.985039
+MARK leak 2978.998500
+bg_fault: t_abs=2979.003975 desconectado=0 obstruccion=1.0 fuga=0.0040 sensor_congelado=0 rigidez=0.0
+== copilot (leak)
+copilot=on pid=6541338 restarts=0 denied=0
+learned: last_class=leak conf=1.00 breath=13 infer_us=0.7 infer_max_us=4.2
+proposal: id=1 state=pending class=leak action=check_circuit age_s=14.5
+text=check_circuit (no settings change)
+last_blocked=-
+counts: suggestions=13 blocked=0 proposed=1 accepted=0 rejected=0 expired=0
+answer=none
+to answer: echo "accept 1" (or "reject 1") > /dev/ventilator/copilot
+MARK clear 3019.021326
+bg_fault: t_abs=3019.025829 desconectado=0 obstruccion=1.0 fuga=0.0000 sensor_congelado=0 rigidez=0.0
+MARK obstruction 3024.033140
+bg_fault: t_abs=3024.039073 desconectado=0 obstruccion=3.0 fuga=0.0000 sensor_congelado=0 rigidez=0.0
+MARK kill_copilot 3044.048335
+== copilot (obstruction)
+copilot=on pid=6688789 restarts=1 denied=0
+learned: last_class=high_resistance conf=1.00 breath=23 infer_us=0.9 infer_max_us=4.2
+proposal: id=2 state=pending class=high_resistance action=lower_rr age_s=19.6
+text=RR 12.0 -> 10.0 /min
+last_blocked=-
+counts: suggestions=23 blocked=0 proposed=2 accepted=0 rejected=0 expired=0
+answer=none
+to answer: echo "accept 2" (or "reject 2") > /dev/ventilator/copilot
+MARK clear 3064.081603
+bg_fault: t_abs=3064.084833 desconectado=0 obstruccion=1.0 fuga=0.0000 sensor_congelado=0 rigidez=0.0
+MARK stiff 3069.094092
+bg_fault: t_abs=3069.098836 desconectado=0 obstruccion=1.0 fuga=0.0000 sensor_congelado=0 rigidez=2.5
+== copilot (stiff)
+copilot=on pid=6688789 restarts=1 denied=0
+learned: last_class=low_compliance conf=1.00 breath=30 infer_us=0.7 infer_max_us=4.2
+proposal: id=3 state=pending class=low_compliance action=raise_pinsp age_s=9.6
+text=Pinsp 16.0 -> 18.0 cmH2O
+last_blocked=-
+counts: suggestions=30 blocked=0 proposed=3 accepted=0 rejected=0 expired=0
+answer=none
+to answer: echo "accept 3" (or "reject 3") > /dev/ventilator/copilot
+== accept 3
+RC_ACCEPT 0
+== accept 3 again
+RC_ACCEPT_AGAIN 1
+== bad command
+RC_BAD 1
+== settings
+mode=pcv p_insp=18.0 peep=5.0 rr=12.0 ie=2.0 vt=500
+seq=1 pending=0
+last=none
+== copilot (end)
+copilot=on pid=6688789 restarts=1 denied=0
+learned: last_class=low_compliance conf=1.00 breath=36 infer_us=0.9 infer_max_us=4.2
+proposal: id=4 state=pending class=low_compliance action=raise_pinsp age_s=17.7
+text=Pinsp 18.0 -> 20.0 cmH2O
+last_blocked=-
+counts: suggestions=36 blocked=0 proposed=4 accepted=1 rejected=0 expired=0
+answer=NAK usage: accept <id> | reject <id> (approve all)
+to answer: echo "accept 4" (or "reject 4") > /dev/ventilator/copilot
+copilot: prio 8, tree of 25 nodes (depth 5)
+breath_ctrl: pid 6541334, PCV 16/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 190 s
+breath_ctrl: primera inspiración t=2939.480 s del reloj del sistema
+copilot: prio 8, tree of 25 nodes (depth 5)
+breath_ctrl: 187937 ciclos, 1186 con periodo > 1.5 ms, periodo máx 12.37 ms; cómputo p50 8.6 us, p99 209.4 us, máx 4148.0 us
+breath_ctrl: ajustes aplicados 1 (último #1), consultas sin respuesta 0
+breath_ctrl: settings changes received after their start time: 0 (expected 0)
+copilotsafety_mon: t=0.000 LANZA_COPILOTO pid 6541338
+safety_mon: t=0.000 LANZA_CONTROL pid 6541334
+safety_mon: t=55.500 COPILOTO_PROPONE #1 leak 1.00: check_circuit (no settings change)
+safety_mon: t=100.500 COPILOTO_PROPONE #2 high_resistance 1.00: RR 12.0 -> 10.0 /min
+safety_mon: t=105.077 COPILOTO_RELANZADO pid 6688789
+safety_mon: t=145.501 COPILOTO_PROPONE #3 low_compliance 1.00: Pinsp 16.0 -> 18.0 cmH2O
+safety_mon: t=155.135 AJUSTE_ACEPTADO #1 copiloto #3: Pinsp 16.0 -> 18.0 cmH2O
+safety_mon: t=155.135 COPILOTO_ACEPTADO #3 acepta: accepted: Pinsp 16.0 -> 18.0 cmH2O
+safety_mon: t=155.136 COPILOTO_RESP_INVALIDA #3 acepta: proposal 3 is not pending (current 3, accepted)
+safety_mon: t=155.500 AJUSTE_APLICADO #1
+safety_mon: t=165.500 COPILOTO_PROPONE #4 low_compliance 1.00: Pinsp 18.0 -> 20.0 cmH2O
+safety_mon: t=189.532 CONTROL_TERMINA despedida
+safety_mon: 188549 ticks, 0 fallas del controlador, 12 eventos; vt_meter: 0 respiraciones, Vti 0, Vte 0 mL
+safety_mon: peso ideal 75.4 kg (talla 180.3 cm); última respirac: MsgSend(COPILOT_GET): No such process
+ión: auto-PEEP 0.11 cmH2O, flujo final -0.26 L/min, tau 0.62 s, R 26.4, C 23.6 mL/cmH2O
+safety_mon: copiloto: 37 respiraciones medidas, 37 sugerencias, 0 bloqueadas, 4 propuestas, 1 aceptadas, 0 rechazadas, 0 vencidas, 0 mensajes no autorizados, 1 relanzamientos, árbol+reglas máx 4.2 us
+ventd: listo en /dev/ventilator/{status,alarms,settings,copilot}, prio 10
+ventd: copiloto, escritura de pid 6443020: ACK accepted: Pinsp 16.0 -> 18.0 cmH2O (accept 3)
+ventd: copiloto, escritura de pid 6443020: NAK proposal 3 is not pending (current 3, accepted) (accept 3)
+ventd: copiloto, escritura de pid 6443020: NAK usage: accept <id> | reject <id> (approve all)
+ventd: fin

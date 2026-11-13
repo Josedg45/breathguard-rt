@@ -36,10 +36,11 @@ that are not listed are denied, even to root.
 | `ventd` | `bg_ventd_t` | boot script |
 | `breath_ctrl` | `bg_safety_t__ctrl` | `safety_mon` at spawn: `secpol_posix_spawnattr_settypeid(..., "ctrl")` |
 | `hmi` | `bg_safety_t__hmi` | `safety_mon` at spawn: `secpol_posix_spawnattr_settypeid(..., "hmi")` |
+| `copilot` | `bg_safety_t__copilot` | `safety_mon` at spawn: `secpol_posix_spawnattr_settypeid(..., "copilot")` |
 
-The last two are *derived types* (`derive_type bg_safety_t ctrl bg_safety_t__ctrl`). `safety_mon` may only give
-its children those two types (`settypeid:bg_safety_t__ctrl,bg_safety_t__hmi`), so it cannot raise a child above
-them.
+The last three are *derived types* (`derive_type bg_safety_t ctrl bg_safety_t__ctrl`). `safety_mon` may only give
+its children those three types (`settypeid:bg_safety_t__ctrl,bg_safety_t__hmi,bg_safety_t__copilot`), so it cannot
+raise a child above them.
 
 ## Who may connect to whom
 
@@ -53,6 +54,7 @@ open. This is the core of layer 2:
 | `bg_power_t` | plant, `safety_mon` | |
 | `bg_ventd_t` | `safety_mon`, `power_mgr` | plant |
 | `bg_safety_t__hmi` | `safety_mon`, `power_mgr`, network stack | plant, `ventd` |
+| `bg_safety_t__copilot` | `safety_mon` | plant, `ventd`, `power_mgr`, network |
 
 The other abilities are what the processes need and nothing more. `mem_lock` is needed for `mlockall()`, and
 `public_channel` for `name_attach()`. Only `safety_mon` has `spawn` (to relaunch children). Only `ventd` has
@@ -67,6 +69,12 @@ The other abilities are what the processes need and nothing more. `mem_lock` is 
 3. Copy `/dev/secpolgenerate/policy` to `policy.txt` and rebuild with our types restricted.
 4. Check that `/dev/secpolgenerate/errors` shows no denial for a legitimate process. The only remaining denial in
    the image is the system's own (`dumper` at boot, unrelated to the ventilator).
+
+**Exception: the copilot's rules were written by hand** (point 5, after the policy above was learned). We modelled
+them on the controller's (`mem_lock`, `prot_exec`, `map_fixed`) and gave it a single `channel_connect`, to
+`safety_mon`. Then we checked them like the learned ones. With the type restricted, the normal copilot ran without
+any entry in `/dev/secpolgenerate/errors`. The test-only liar's attempts on the plant and on `ventd` were logged as
+denials (`scripts/c5sec_run.sh`, `results/copilot/log_c5sec3.txt`).
 
 Learning a policy from observation has a known weakness: it allows what was observed, including anything a bug did
 during the learning run. We read every `bg_` rule (above); none of them is surprising.

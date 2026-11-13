@@ -1,8 +1,10 @@
 # BreathGuard RT - security policy (layer 2). Source: what secpolgenerate observed with the whole system running in
 # open mode (--secpol=open): boot, ventilation, operator commands through the HMI and /dev/ventilator, and restarts of
-# the HMI and the controller. Nothing below was written by hand except this header. The rules for our types (bg_*)
-# come first in the rules section; image/README.md explains them. image/data_files.custom RESTRICTS our types to
-# these rules.
+# the HMI and the controller. Nothing below was written by hand except this header and the copilot (point 5):
+# bg_safety_t__copilot, its settypeid in bg_safety_t and /dev/ventilator/copilot in bg_ventd_t were added by hand,
+# modelled on the controller's rules, and checked against /dev/secpolgenerate/errors (scripts/c5sec_run.sh).
+# The rules for our types (bg_*) come first in the rules section; image/README.md explains them.
+# image/data_files.custom RESTRICTS our types to these rules.
 # This represents a policy that should allow a system to perform all the
 # same actions as have been observed since the policy generator has been
 # running.
@@ -18,6 +20,7 @@ allow default_rules self:ability {};
 type bg_plant_t;
 type bg_power_t;
 type bg_safety_t;
+type bg_safety_t__copilot;
 type bg_safety_t__ctrl;
 type bg_safety_t__hmi;
 type bg_ventd_t;
@@ -97,10 +100,21 @@ allow bg_safety_t self:ability {
     map_fixed
     public_channel
     channel_connect:bg_plant_t
-    settypeid:bg_safety_t__ctrl,bg_safety_t__hmi
+    settypeid:bg_safety_t__ctrl,bg_safety_t__hmi,bg_safety_t__copilot
 };
 derive_type bg_safety_t ctrl bg_safety_t__ctrl;
 derive_type bg_safety_t hmi bg_safety_t__hmi;
+derive_type bg_safety_t copilot bg_safety_t__copilot;
+
+# === Rules for type bg_safety_t__copilot (point 5; written by hand) ============
+# The advisory copilot may only talk to safety_mon: not to the plant, not to ventd (so it cannot answer its own
+# proposal through /dev/ventilator/copilot), no network, no spawn, no name of its own.
+allow bg_safety_t__copilot self:ability {
+    mem_lock
+    prot_exec
+    map_fixed
+    channel_connect:bg_safety_t
+};
 
 # === Rules for type bg_safety_t__ctrl ============
 allow bg_safety_t__ctrl self:ability {
@@ -124,6 +138,7 @@ allow_attach bg_ventd_t {
     /dev/ventilator/status
     /dev/ventilator/alarms
     /dev/ventilator/settings
+    /dev/ventilator/copilot
 };
 allow bg_ventd_t self:ability {
     pathspace

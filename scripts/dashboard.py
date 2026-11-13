@@ -13,6 +13,9 @@ Uso:
 Subtitulos para el video: una linea UDP "CAPTION,texto" al mismo puerto (la manda scripts/demo_run.sh).
 Metricas de tiempo real (1 Hz): lineas "RT,clave=valor,..." de la HMI (periodo del lazo, plazos incumplidos,
 histograma, antigüedad del comando, limites de alarma, auto-PEEP, peso ideal, FiO2).
+Copiloto (punto 5, 1 Hz): lineas "CP,clave=valor,..." de la HMI. Franja inferior: lo que dijo el arbol aprendido
+(clase y confianza) separado de lo que deciden las reglas fijas y safety_mon (propuesta, bloqueos). El operador
+responde con scripts/bg_cmd.py copilot accept|reject <id>.
 Marcadores: lineas verticales en las tres curvas cuando cambia algo (falla del controlador, HMI relanzada,
 desconexion, corte de red, ajustes aplicados).
 La interfaz va en ingles (la ve el jurado); los comentarios, en espanol como el resto del codigo.
@@ -51,7 +54,16 @@ EVENTS = {"ALIVIO_PRESION": "pressure relief", "APNEA_CON_CONTROL_VIVO": "apnea,
           "AJUSTE_APLICADO": "settings applied", "PRESION_ALTA": "high pressure alarm",
           "DESCONEXION": "disconnection alarm", "APNEA": "apnea alarm", "VT_BAJO": "low Vt alarm",
           "VT_ALTO": "high Vt alarm", "FUGA": "leak alarm", "AUTO_PEEP": "auto-PEEP alarm",
-          "COMANDO_NO_AUTORIZADO": "unauthorized command blocked"}
+          "COMANDO_NO_AUTORIZADO": "unauthorized command blocked",
+          "COPILOTO_PROPONE": "copilot proposal", "COPILOTO_ACEPTADO": "copilot proposal accepted",
+          "COPILOTO_RECHAZADO": "copilot proposal rejected", "COPILOTO_VENCIDO": "copilot proposal expired",
+          "COPILOTO_BLOQUEADO": "copilot suggestion blocked", "COPILOTO_RELANZADO": "copilot relaunched",
+          "COPILOTO_AUTOCONFIRMA": "copilot tried to accept itself", "COPILOTO_RESUELTO": "copilot condition cleared",
+          "COPILOTO_NO_AUTORIZADO": "copilot message refused", "COPILOTO_RESP_INVALIDA": "copilot answer refused"}
+# Clases del arbol del copiloto (cls_names en src/copilot_logic.c) -> texto para la pantalla.
+CP_CLASSES = {"normal": "normal", "leak": "LEAK", "high_resistance": "HIGH RESISTANCE",
+              "low_compliance": "LOW COMPLIANCE (stiff lung)", "-": "no answer"}
+CP_STALE_S = 3.0     # sin linea CP por mas de esto = dato viejo
 GAP_S = 0.3          # sin datos por mas de esto = la HMI no esta enviando
 # Colores: superficie oscura de monitor; una serie por panel; colores de estado reservados para estados.
 BG, PANEL, INK, MUTED, GRID = "#1a1a19", "#222220", "#ecebe7", "#9a9993", "#3a3a37"
@@ -63,6 +75,15 @@ def parse(line):
     """Una linea CSV de la HMI -> dict (o {"caption": texto}). Devuelve None si no se puede leer."""
     if line.startswith("CAPTION,"):
         return {"caption": line[8:].strip()}
+    if line.startswith("CP,"):
+        cp = {}
+        for kv in line.strip()[3:].split(","):
+            k, _, v = kv.partition("=")
+            try:
+                cp[k] = float(v)
+            except ValueError:
+                cp[k] = v
+        return {"cp": cp}
     if line.startswith("RT,"):
         rt = {}
         for kv in line.strip()[3:].split(","):
@@ -106,6 +127,7 @@ class State:
         self.caption = ("", 0.0)
         self.ages = collections.deque(maxlen=100)  # (t, antigüedad máx. del comando en ms) del último segundo
         self.rt = None                 # ultima linea RT
+        self.cp, self.cp_rx = None, 0.0  # ultima linea CP (copiloto) y cuando llego
         self.markers = []              # (t, etiqueta) para las lineas verticales
         self.t_start_breath = None     # inicio de la respiracion en curso (deteccion por flujo)
         self.ti = None                 # duracion de la inspiracion en curso (s), al empezar la espiracion
@@ -139,6 +161,9 @@ class State:
             return
         if "rt" in d:
             self.rt = d["rt"]
+            return
+        if "cp" in d:
+            self.cp, self.cp_rx = d["cp"], rx
             return
         self._markers(d)
         if self.last is not None:
@@ -325,12 +350,45 @@ def rt_lines(st):
     return out
 
 
+def cp_lines(st, now_rx):
+    """Franja del copiloto: (texto, color, tamano). Lo aprendido y lo fijo, cada uno con su nombre."""
+    head = ("Copilot - advisory only. LEARNED: decision tree trained offline on simulated breaths. FIXED: the rules "
+            "that turn its class into an action, and safety_mon's checks. Nothing changes unless the operator "
+            "accepts.", MUTED, 8)
+    c = st.cp
+    if c is None:
+        return [head, ("Copilot: no data", MUTED, 10)]
+    if not c.get("on"):
+        return [head, ("Copilot: off", MUTED, 10)]
+    out = [head]
+    stale = now_rx - st.cp_rx > CP_STALE_S
+    cls = CP_CLASSES.get(c.get("cls"), c.get("cls"))
+    tree = (f"Tree, breath #{int(c['breath'])}: {cls}"
+            + (f"  (leaf fraction {c['conf']:.2f})" if c.get("cls") != "-" else "")
+            + f"   tree+rules max {c['infer_max_us']:.1f} us   pid {int(c['pid'])}, restarts {int(c['restarts'])}"
+            + ("   [stale]" if stale else ""))
+    col = MUTED if stale else GOOD if c.get("cls") == "normal" else WARN if c.get("cls") != "-" else MUTED
+    out.append((tree, col, 10))
+    state, pid_ = c.get("state"), int(c.get("id", 0))
+    if pid_ and state == "pending":
+        out.append((f"PROPOSAL #{pid_} ({CP_CLASSES.get(c['pcls'], c['pcls'])}): {c['text']}    -> answer: "
+                    f"bg_cmd.py copilot accept {pid_}   |   copilot reject {pid_}", WARN, 11))
+    elif pid_:
+        out.append((f"Proposal #{pid_} {state}: {c['text']}", MUTED, 10))
+    else:
+        out.append(("No proposal", GOOD, 10))
+    out.append((f"safety_mon: {int(c['n_blk'])} of {int(c['n_sug'])} suggestions blocked (last: {c['why']})   "
+                f"proposed {int(c['n_prop'])}  accepted {int(c['n_acc'])}  rejected {int(c['n_rej'])}  "
+                f"expired {int(c['n_exp'])}   refused copilot messages {int(c['denied'])}", MUTED, 8))
+    return out
+
+
 def build_figure(plt):
-    fig = plt.figure(figsize=(17, 8.6), facecolor=BG)
+    fig = plt.figure(figsize=(17, 9.6), facecolor=BG)
     fig.canvas.manager.set_window_title("BreathGuard RT") if hasattr(fig.canvas, "manager") and fig.canvas.manager \
         else None
-    gs = fig.add_gridspec(3, 3, width_ratios=[2.35, 1.22, 1.0], hspace=0.28, wspace=0.06,
-                          left=0.045, right=0.99, top=0.87, bottom=0.07)
+    gs = fig.add_gridspec(4, 3, width_ratios=[2.35, 1.22, 1.0], height_ratios=[1, 1, 1, 0.42], hspace=0.28,
+                          wspace=0.06, left=0.045, right=0.99, top=0.885, bottom=0.03)
     axes = []
     specs = [("Airway pressure (cmH2O)", C_PAW, (-2, 42)), ("Flow (L/min)", C_FLOW, (-90, 90)),
              ("Volume (mL)", C_VOL, (-50, 800))]
@@ -351,9 +409,10 @@ def build_figure(plt):
         axes.append(ax)
     axes[-1].set_xlabel("seconds", color=MUTED, fontsize=9)
     axes[1].axhline(0, color=MUTED, linewidth=0.8)
-    side = fig.add_subplot(gs[:, 1], facecolor=PANEL)
+    side = fig.add_subplot(gs[:3, 1], facecolor=PANEL)
     rt = fig.add_subplot(gs[:2, 2], facecolor=PANEL)
-    for ax in (side, rt):
+    cp = fig.add_subplot(gs[3, :], facecolor=PANEL)
+    for ax in (side, rt, cp):
         ax.set_xticks([])
         ax.set_yticks([])
         for s in ax.spines.values():
@@ -368,7 +427,7 @@ def build_figure(plt):
              weight="bold")
     clock = fig.text(0.985, 0.955, "", color=MUTED, fontsize=10, ha="right")
     caption = fig.text(0.05, 0.905, "", color=WARN, fontsize=13)
-    return fig, axes, lines, (side, rt, hist), (clock, caption)
+    return fig, axes, lines, (side, rt, hist, cp), (clock, caption)
 
 
 def draw_hist(ax, r):
@@ -406,7 +465,7 @@ _last_hist = [None]
 
 
 def draw(st, now_rx, lines, panels, texts, axes=None):
-    side, rtax, hist = panels
+    side, rtax, hist, cpax = panels
     clock, caption = texts
     text, t_cap = st.caption
     caption.set_text(text if text and now_rx - t_cap < CAPTION_S else "")
@@ -434,6 +493,12 @@ def draw(st, now_rx, lines, panels, texts, axes=None):
         for text, col, size in content:
             ax.text(x0, y, text, color=col, fontsize=size, va="top", family="monospace", transform=ax.transAxes)
             y -= 0.009 + size * (0.0034 if ax is side else 0.0054)
+    for txt in list(cpax.texts):
+        txt.remove()
+    y = 0.90
+    for text, col, size in cp_lines(st, now_rx):
+        cpax.text(0.008, y, text, color=col, fontsize=size, va="top", family="monospace", transform=cpax.transAxes)
+        y -= 0.05 + size * 0.022
     key = tuple(st.rt["hist"]) if st.rt and "hist" in st.rt else None
     if key != _last_hist[0]:  # redibujar el histograma solo cuando cambia (1 Hz)
         _last_hist[0] = key
@@ -448,7 +513,7 @@ def read_csv(path):
         for raw in f:
             host, _, rest = raw.partition(",")
             d = parse(rest)
-            if d and (rows or ("caption" not in d and "rt" not in d)):  # el inicio lo da la telemetria
+            if d and (rows or ("caption" not in d and "rt" not in d and "cp" not in d)):  # el inicio lo da la telemetria
                 rows.append((float(host), d))
     return rows
 

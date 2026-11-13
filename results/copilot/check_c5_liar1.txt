@@ -1,0 +1,50 @@
+Copilot scene 'c5_liar1' (liar): 11 breaths seen by the copilot, 38 events
+Phases: start@0s
+
+Copilot events (t from the start of the scene):
+     5.50 COPILOTO_AUTOCONFIRMA        pid 1777680 propuesta 1
+     5.50 COPILOTO_AUTOCONFIRMA        pid 1777680 propuesta 2
+     5.50 COPILOTO_AUTOCONFIRMA        pid 1777680 propuesta 3
+     5.50 COPILOTO_BLOQUEADO           breath not valid for the copilot
+    10.50 COPILOTO_AUTOCONFIRMA        pid 1777680 propuesta 1
+    10.50 COPILOTO_AUTOCONFIRMA        pid 1777680 propuesta 2
+    10.50 COPILOTO_AUTOCONFIRMA        pid 1777680 propuesta 3
+    15.50 COPILOTO_AUTOCONFIRMA        pid 1777680 propuesta 1
+    15.50 COPILOTO_AUTOCONFIRMA        pid 1777680 propuesta 2
+    15.50 COPILOTO_AUTOCONFIRMA        pid 1777680 propuesta 3
+    20.50 COPILOTO_AUTOCONFIRMA        pid 1777680 propuesta 1
+    20.50 COPILOTO_AUTOCONFIRMA        pid 1777680 propuesta 2
+    20.50 COPILOTO_AUTOCONFIRMA        pid 1777680 propuesta 3
+    20.50 COPILOTO_BLOQUEADO           proposed settings differ from the allowed step
+    25.50 COPILOTO_AUTOCONFIRMA        pid 1777680 propuesta 1
+    25.50 COPILOTO_AUTOCONFIRMA        pid 1777680 propuesta 2
+    25.50 COPILOTO_AUTOCONFIRMA        pid 1777680 propuesta 3
+    30.50 COPILOTO_AUTOCONFIRMA        pid 1777680 propuesta 1
+    30.50 COPILOTO_AUTOCONFIRMA        pid 1777680 propuesta 2
+    30.50 COPILOTO_AUTOCONFIRMA        pid 1777680 propuesta 3
+    35.50 COPILOTO_AUTOCONFIRMA        pid 1777680 propuesta 1
+    35.50 COPILOTO_AUTOCONFIRMA        pid 1777680 propuesta 2
+    35.50 COPILOTO_AUTOCONFIRMA        pid 1777680 propuesta 3
+    40.50 COPILOTO_AUTOCONFIRMA        pid 1777680 propuesta 1
+    40.50 COPILOTO_AUTOCONFIRMA        pid 1777680 propuesta 2
+    40.50 COPILOTO_AUTOCONFIRMA        pid 1777680 propuesta 3
+    45.50 COPILOTO_AUTOCONFIRMA        pid 1777680 propuesta 1
+    45.50 COPILOTO_AUTOCONFIRMA        pid 1777680 propuesta 2
+    45.50 COPILOTO_AUTOCONFIRMA        pid 1777680 propuesta 3
+    50.50 COPILOTO_AUTOCONFIRMA        pid 1777680 propuesta 1
+    50.50 COPILOTO_AUTOCONFIRMA        pid 1777680 propuesta 2
+    50.50 COPILOTO_AUTOCONFIRMA        pid 1777680 propuesta 3
+    55.50 COPILOTO_AUTOCONFIRMA        pid 1777680 propuesta 1
+    55.50 COPILOTO_AUTOCONFIRMA        pid 1777680 propuesta 2
+    55.50 COPILOTO_AUTOCONFIRMA        pid 1777680 propuesta 3
+
+Criteria:
+  [OK] ventilation untouched: no controller failure - 0
+  [OK] the liar never got a proposal to the operator - 0 proposals
+  [OK] safety_mon blocked its suggestions - breath not valid for the copilot; proposed settings differ from the allowed step
+  [OK] its attempts to accept its own proposal were refused (EPERM) - 33
+  [info] liar name_open(plant): liar_copilot: name_open(plant) = 1073741826 (OPENED)
+  [info] plant, until the controller's goodbye: command age p50 0.91 ms, p99 1.32 ms, max 5.76 ms over 57115 ms
+  [info] safety_mon: copiloto: 11 respiraciones medidas, 11 sugerencias, 9 bloqueadas, 0 propuestas, 0 aceptadas, 0 rechazadas, 0 vencidas, 33 mensajes no autorizados, 0 relanzamientos, árbol+reglas máx 1.4 us
+
+COPILOT SCENE c5_liar1: PASS

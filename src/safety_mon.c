@@ -22,8 +22,16 @@
  * protector: el limite de Vt alto es 8 mL/kg de peso ideal, calculado con la talla (-h cm) y el sexo (-g m|f).
  * Metricas de tiempo real: breath_ctrl las manda en cada consulta de ajustes; se reenvian a la HMI.
  *
+ * Copiloto (punto 5, -K): lanza ./copilot (prio 8, tipo "copilot") y lo relanza si muere. En cada tick mide la
+ * respiración (breath_feat); al cerrarla responde la consulta diferida del copiloto. Sus sugerencias pasan por
+ * cp_check (con las mediciones propias de safety_mon) y solo se aplican si el operador las confirma (COPILOT_ACK).
+ *
+ * Canal con _NTO_CHF_FIXED_PRIORITY: por defecto QNX baja el hilo que recibe a la prioridad del cliente (medido:
+ * 55 -> 8 al atender al copiloto). safety_mon nunca debe correr a la prioridad de un cliente de baja prioridad.
+ *
  * Uso: safety_mon [-s seg] [-p prio] [-m pcv|vcv] [-P p_insp] [-V vt_ml] [-e peep] [-r rr]
  *                 [-h talla_cm] [-g m|f] [-A auto_peep_max] [-c ruta_breath_ctrl] [-H ip_host] [-o eventos.csv]
+ *                 [-K] [-Q copilot.csv] [-k ruta_copilot]
  */
 #include <getopt.h>
 #include <signal.h>
@@ -33,6 +41,8 @@
 #include <unistd.h>
 
 #include "alarms.h"
+#include "breath_feat.h"
+#include "copilot_logic.h"
 #include "lung_mon.h"
 #include "bg_power.h"
 #include "bg_proto.h"
@@ -53,6 +63,9 @@ typedef union {
     struct _pulse pulse;
     bg_settings_msg_t sset;
     bg_settings_get_t sget;
+    bg_copilot_get_t cget;
+    bg_copilot_suggest_t csug;
+    bg_copilot_ack_t cack;
 } safety_msg_t;
 
 #define SEC_ALARM_S 10.0 /* la alarma de comando no autorizado dura esto tras el último rechazo */
@@ -103,6 +116,27 @@ static pid_t spawn_hmi(double secs_left)
     if (rc != 0) { errno = rc; return -1; }
     return pid;
 }
+/* Copiloto (punto 5): proceso de baja prioridad con el tipo derivado "copilot" (solo puede hablar con safety_mon). */
+static const char *copilot_csv = NULL;
+static const char *copilot_path = "./copilot";
+
+static pid_t spawn_copilot(double secs_left)
+{
+    char ss[32];
+    snprintf(ss, sizeof ss, "%.3f", rt_child_secs(secs_left));
+    char *argv[] = { (char *)copilot_path, "-s", ss, NULL, NULL, NULL };
+    if (copilot_csv) { argv[3] = "-o"; argv[4] = (char *)copilot_csv; }
+    pid_t pid;
+    extern char **environ;
+    posix_spawnattr_t attr;
+    posix_spawnattr_init(&attr);
+    secpol_posix_spawnattr_settypeid(NULL, &attr, "copilot", 0);
+    int rc = posix_spawn(&pid, copilot_path, NULL, &attr, argv, environ);
+    posix_spawnattr_destroy(&attr);
+    if (rc != 0) { errno = rc; return -1; }
+    return pid;
+}
+
 static char ctrl_args[10][32];
 static int n_ctrl_args;
 
@@ -178,7 +212,8 @@ int main(int argc, char **argv)
     double height_cm = 180.3; /* paciente StandardMale de Pulse: 71 in */
     int male = 1;
     lung_cfg_t lcfg = lung_default_cfg();
-    while ((opt = getopt(argc, argv, "s:p:m:P:V:e:r:h:g:A:c:H:o:")) != -1) {
+    int use_copilot = 0;
+    while ((opt = getopt(argc, argv, "s:p:m:P:V:e:r:h:g:A:c:H:o:KQ:k:")) != -1) {
         switch (opt) {
         case 's': secs = atof(optarg); break;
         case 'p': prio = atoi(optarg); break;
@@ -193,9 +228,13 @@ int main(int argc, char **argv)
         case 'c': ctrl_path = optarg; break;
         case 'H': hmi_host = optarg; break;
         case 'o': out_path = optarg; break;
+        case 'K': use_copilot = 1; break;
+        case 'Q': copilot_csv = optarg; break;
+        case 'k': copilot_path = optarg; break;
         default:
             fprintf(stderr, "uso: %s [-s seg] [-p prio] [-m pcv|vcv] [-P p_insp] [-V vt_ml] [-e peep] [-r rr] "
-                            "[-h talla_cm] [-g m|f] [-A auto_peep_max] [-c breath_ctrl] [-H ip_host] [-o eventos.csv]\n", PROG);
+                            "[-h talla_cm] [-g m|f] [-A auto_peep_max] [-c breath_ctrl] [-H ip_host] [-o eventos.csv] "
+                            "[-K] [-Q copilot.csv] [-k copilot]\n", PROG);
             return 1;
         }
     }
@@ -208,8 +247,14 @@ int main(int argc, char **argv)
     signal(SIGCHLD, SIG_IGN); /* los hijos muertos no quedan como zombis */
     signal(SIGTERM, on_term);
 
-    /* Nuestro canal, con nombre: aquí llegan los latidos y el aviso de desconexión. */
-    name_attach_t *att = name_attach(NULL, BG_SAFETY_NAME, 0);
+    /* Nuestro canal, con nombre: aquí llegan los latidos y el aviso de desconexión. Lo creamos nosotros (no
+     * name_attach) para añadir _NTO_CHF_FIXED_PRIORITY a los flags que pone name_attach. */
+    int chid = ChannelCreate(_NTO_CHF_FIXED_PRIORITY | _NTO_CHF_DISCONNECT | _NTO_CHF_COID_DISCONNECT |
+                             _NTO_CHF_UNBLOCK);
+    if (chid == -1) rt_die(PROG, "ChannelCreate");
+    dispatch_t *dpp = dispatch_create_channel(chid, DISPATCH_FLAG_NOLOCK);
+    if (!dpp) rt_die(PROG, "dispatch_create_channel");
+    name_attach_t *att = name_attach(dpp, BG_SAFETY_NAME, 0);
     if (!att) rt_die(PROG, "name_attach");
 
     int plant = -1;
@@ -245,7 +290,7 @@ int main(int argc, char **argv)
     watchdog_t wd;
     pid_t ctrl_pid = spawn_ctrl(plant, &cur, secs - 0.5);
     wd_arm(&wd, (uint64_t)(rt_now_s() * 1e9), (uint64_t)(WD_TIMEOUT_S * 1e9), (uint64_t)(WD_STARTUP_S * 1e9));
-    char buf[64];
+    char buf[192]; /* event() recorta a 64 */
     int ctrl_scoid = -1;
     int hmi_scoid = -1;
     pid_t hmi_pid = hmi_host ? spawn_hmi(secs - 0.5) : -1;
@@ -255,6 +300,26 @@ int main(int argc, char **argv)
         snprintf(buf, sizeof buf, "pid %d", hmi_pid);
         event(t_start, "LANZA_HMI", buf);
     }
+    /* Copiloto */
+    breath_feat_t bfm;
+    bf_init(&bfm);
+    int bf_dirty = 1;              /* la respiración en curso no sirve al copiloto (alarma, respaldo, cambio...) */
+    cp_breath_t cp_ring[4];        /* las últimas respiraciones medidas por safety_mon */
+    memset(cp_ring, 0, sizeof cp_ring);
+    uint32_t cp_n = 0;             /* respiraciones cerradas */
+    int cp_rcvid = -1;             /* consulta del copiloto retenida hasta la próxima respiración */
+    cp_check_t cpc;
+    cp_check_init(&cpc);
+    bg_copilot_status_t cps = { .enabled = use_copilot, .pid = -1, .last_cls = -1 };
+    int cp_scoid = -1;
+    char cp_last_why[64] = "";
+    if (use_copilot) {
+        cps.pid = spawn_copilot(secs - 0.5);
+        snprintf(buf, sizeof buf, "pid %d", cps.pid);
+        event(t_start, "LANZA_COPILOTO", buf);
+    }
+    int bf_dirty_next = 0;
+    bg_settings_t bf_set = cur; /* ajustes con que empezó la respiración en curso */
     int watching = 1; /* 0 tras la despedida del controlador */
     snprintf(buf, sizeof buf, "pid %d", ctrl_pid);
     event(t_start, "LANZA_CONTROL", buf);
@@ -319,6 +384,18 @@ int main(int argc, char **argv)
                 st.tau_exp = lm.valid ? lm.tau : -1;
                 st.eef = lm.eef;
                 st.denied = last_vt.denied;
+                cps.id = cpc.id;
+                cps.state = cpc.state;
+                cps.cls = cpc.cls;
+                cps.action = cpc.action;
+                cps.conf = cpc.conf;
+                cps.age_s = cpc.id ? now - cpc.t : -1;
+                cps.req = cpc.req;
+                memcpy(cps.text, cpc.text, sizeof cps.text);
+                memcpy(cps.why, cpc.why, sizeof cps.why);
+                cps.n_suggest = cpc.n_suggest; cps.n_blocked = cpc.n_blocked; cps.n_proposed = cpc.n_proposed;
+                cps.n_accepted = cpc.n_accepted; cps.n_rejected = cpc.n_rejected; cps.n_expired = cpc.n_expired;
+                st.cp = cps;
                 MsgReply(rcvid, EOK, &st, sizeof st);
             }
             else if (m.hdr.type == BG_MSG_SETTINGS_GET) { /* breath_ctrl: lo más reciente, con su t0 */
@@ -347,6 +424,102 @@ int main(int argc, char **argv)
                 }
                 r.now = pending ? next : cur;
                 MsgReply(rcvid, EOK, &r, sizeof r);
+            }
+            /* --- Copiloto. Solo el proceso que lanzamos (pid que pone el kernel) puede consultar y sugerir. --- */
+            else if (m.hdr.type == BG_MSG_COPILOT_GET) {
+                if (!use_copilot || info.pid != cps.pid || info.srcmsglen < (ssize_t)sizeof m.cget) {
+                    cps.denied++;
+                    MsgError(rcvid, EPERM);
+                } else {
+                    cp_scoid = info.scoid; /* así reconocemos su desconexión */
+                    const cp_breath_t *last = cp_n ? &cp_ring[(cp_n - 1) % 4] : NULL;
+                    /* una respiración que el copiloto (o el anterior, si se relanzó) aún no respondió */
+                    if (last && last->breath > m.cget.after && (!cpc.n || last->breath > cpc.last_breath))
+                        MsgReply(rcvid, EOK, last, sizeof *last);
+                    else { /* respuesta diferida: se contesta al cerrar la próxima respiración (abajo) */
+                        if (cp_rcvid != -1) MsgError(cp_rcvid, EBUSY);
+                        cp_rcvid = rcvid;
+                    }
+                }
+            }
+            else if (m.hdr.type == BG_MSG_COPILOT_SUGGEST) {
+                if (!use_copilot || info.pid != cps.pid || info.srcmsglen < (ssize_t)sizeof m.csug) {
+                    cps.denied++;
+                    snprintf(buf, sizeof buf, "SUGGEST de pid %d", info.pid);
+                    event(now, "COPILOTO_NO_AUTORIZADO", buf);
+                    MsgError(rcvid, EPERM);
+                } else {
+                    const cp_suggest_t *sg = &m.csug.s;
+                    const cp_breath_t *mine = NULL; /* NUESTRA medición de esa respiración, no la copia del copiloto */
+                    for (int i = 0; i < 4; i++)
+                        if (cp_ring[i].breath && cp_ring[i].breath == sg->breath) mine = &cp_ring[i];
+                    cps.last_cls = sg->cls;
+                    cps.last_conf = sg->conf;
+                    cps.last_breath = sg->breath;
+                    cps.infer_ns_last = sg->infer_ns;
+                    if (sg->infer_ns > cps.infer_ns_max) cps.infer_ns_max = sg->infer_ns;
+                    int st0 = cpc.state;
+                    char why[64];
+                    int r = cp_check(&cpc, mine, sg, &cur, pending, now, why, sizeof why);
+                    if (r == 1) {
+                        snprintf(buf, sizeof buf, "#%u %s %.2f: %s", cpc.id, cp_class_name(cpc.cls), cpc.conf, cpc.text);
+                        event(now, "COPILOTO_PROPONE", buf);
+                    } else if (r == -1 && strncmp(why, cp_last_why, sizeof cp_last_why - 1)) { /* sin repetir */
+                        snprintf(cp_last_why, sizeof cp_last_why, "%s", why);
+                        event(now, "COPILOTO_BLOQUEADO", why);
+                    }
+                    if (st0 == CP_ST_PENDING && cpc.state == CP_ST_CLEARED) {
+                        snprintf(buf, sizeof buf, "#%u: %d respiraciones normales", cpc.id, CP_PERSIST);
+                        event(now, "COPILOTO_RESUELTO", buf);
+                    }
+                    if (r == -1) MsgError(rcvid, EINVAL);
+                    else MsgReply(rcvid, EOK, NULL, 0);
+                }
+            }
+            else if (m.hdr.type == BG_MSG_COPILOT_ACK) { /* el operador (HMI o ventd) responde una propuesta */
+                bg_copilot_ack_reply_t ar = { 0 };
+                if (info.srcmsglen < (ssize_t)sizeof m.cack) MsgError(rcvid, EINVAL);
+                else if (use_copilot && cps.pid > 0 && (info.pid == cps.pid || m.cack.origin_pid == cps.pid)) {
+                    /* el copiloto no puede confirmarse a sí mismo: ni directo ni a través de ventd */
+                    cps.denied++;
+                    snprintf(buf, sizeof buf, "pid %d%s propuesta %u", m.cack.origin_pid == cps.pid ?
+                             m.cack.origin_pid : info.pid, m.cack.origin_pid == cps.pid ? " (via ventd)" : "",
+                             m.cack.id);
+                    event(now, "COPILOTO_AUTOCONFIRMA", buf);
+                    MsgError(rcvid, EPERM);
+                } else {
+                    int has = 0;
+                    bg_settings_t req;
+                    /* no pisar en silencio un cambio del operador ya programado */
+                    if (pending && m.cack.accept && m.cack.id == cpc.id && cpc.state == CP_ST_PENDING) {
+                        ar.ok = 0;
+                        snprintf(ar.why, sizeof ar.why, "busy: settings change #%u pending; answer again later",
+                                 next.seq);
+                    } else {
+                        ar.ok = cp_ack(&cpc, m.cack.id, m.cack.accept, &cur, now, &has, &req, ar.why, sizeof ar.why);
+                    }
+                    if (ar.ok && has) { /* el mismo camino que un ajuste del operador: validar y programar */
+                        char w2[64];
+                        req.set.rise_s = cur.set.rise_s;
+                        if (settings_validate(&cur, &req, w2, sizeof w2) &&
+                            settings_schedule(&cur, NULL, now, &req.t0, w2, sizeof w2)) {
+                            req.seq = cur.seq + 1;
+                            next = req;
+                            pending = 1;
+                            snprintf(buf, sizeof buf, "#%u copiloto #%u: %s", next.seq, cpc.id, cpc.text);
+                            event(now, "AJUSTE_ACEPTADO", buf);
+                        } else {
+                            cpc.state = CP_ST_PENDING; /* sigue pendiente: el operador puede reintentar */
+                            cpc.n_accepted--;
+                            ar.ok = 0;
+                            snprintf(ar.why, sizeof ar.why, "%s", w2);
+                        }
+                    }
+                    snprintf(buf, sizeof buf, "#%u %s: %s", m.cack.id, m.cack.accept ? "acepta" : "rechaza", ar.why);
+                    event(now, !ar.ok ? "COPILOTO_RESP_INVALIDA" : m.cack.accept ? "COPILOTO_ACEPTADO"
+                                                                                       : "COPILOTO_RECHAZADO", buf);
+                    MsgReply(rcvid, EOK, &ar, sizeof ar);
+                }
             }
             else MsgError(rcvid, ENOSYS);
             continue;
@@ -378,8 +551,22 @@ int main(int argc, char **argv)
             event(now, "CONTROL_TERMINA", "despedida");
             continue;
         }
+        if (m.pulse.code == _PULSE_CODE_UNBLOCK) { /* una señal al copiloto mientras esperaba su respiración */
+            if (m.pulse.value.sival_int == cp_rcvid) { MsgError(cp_rcvid, EINTR); cp_rcvid = -1; }
+            continue;
+        }
         if (m.pulse.code == _PULSE_CODE_DISCONNECT) {
             if (m.pulse.scoid == ctrl_scoid) { ctrl_failed = 1; why = "CONTROL_MUERTO"; ctrl_scoid = -1; }
+            if (m.pulse.scoid == cp_scoid) { /* el copiloto murió: la ventilación no se entera; se relanza */
+                cp_scoid = -1;
+                cp_rcvid = -1;
+                if (now - t_start < secs - 1.0) {
+                    cps.restarts++;
+                    cps.pid = spawn_copilot(secs - (now - t_start));
+                    snprintf(buf, sizeof buf, "pid %d", cps.pid);
+                    event(now, "COPILOTO_RELANZADO", buf);
+                }
+            }
             if (m.pulse.scoid == hmi_scoid && hmi_host && now - t_start < secs - 1.0) {
                 /* La HMI murió: no afecta a la ventilación; solo se relanza. */
                 hmi_scoid = -1;
@@ -438,6 +625,7 @@ int main(int argc, char **argv)
             breath_base += settings_breath(&cur, next.t0 - 1e-6, NULL, NULL) + 1;
             cur = next;
             pending = 0;
+            bf_dirty_next = 1; /* la primera respiración con ajustes nuevos es transitoria: no va al copiloto */
             init_vent(&backup, &cur, pbl_max);
             al.cfg = alarms_default_cfg(cur.set.peep); /* umbrales que dependen de la PEEP */
             snprintf(buf, sizeof buf, "#%u", cur.seq);
@@ -467,6 +655,33 @@ int main(int argc, char **argv)
             uint32_t vt_bits = ALARM_LOW_VT | ALARM_HIGH_VT | ALARM_LEAK;
             up |= vt_al & ~al.active;
             al.active = (al.active & ~vt_bits) | vt_al;
+        }
+        /* Copiloto: features de la respiración, medidas aquí con los mismos sensores. Una respiración con alarmas de
+         * circuito o de proceso, respaldo o alivio no es la de un pulmón R-C sano ni enfermo: no se le muestra. */
+        if (backup_mode || relief || overriding ||
+            (al.active & (ALARM_DISCONNECT | ALARM_APNEA | ALARM_HIGH_PRESSURE | ALARM_CTRL_DEAD | ALARM_CTRL_HANG)))
+            bf_dirty = 1;
+        if (bf_update(&bfm, now, s.paw, s.flow, insp, cur.set.peep, cur.vcv)) {
+            cp_breath_t *r = &cp_ring[cp_n % 4];
+            r->breath = ++cp_n;
+            r->valid = bfm.valid && !bf_dirty;
+            memcpy(r->f, bfm.f, sizeof r->f);
+            r->set = bf_set;
+            r->vti_ml = bfm.vti * 1e3;
+            r->vte_ml = bfm.vte * 1e3;
+            r->ibw_kg = ibw;
+            r->auto_peep = lm.valid ? lm.auto_peep : -1;
+            bf_dirty = bf_dirty_next;
+            bf_dirty_next = 0;
+            bf_set = cur;
+            if (cp_rcvid != -1) { /* la consulta retenida del copiloto: MsgReply no bloquea a safety_mon */
+                MsgReply(cp_rcvid, EOK, r, sizeof *r);
+                cp_rcvid = -1;
+            }
+        }
+        if (cp_expire(&cpc, now)) {
+            snprintf(buf, sizeof buf, "#%u sin respuesta en %.0f s", cpc.id, CP_EXPIRE_S);
+            event(now, "COPILOTO_VENCIDO", buf);
         }
         for (int b = 0; b < ALARM_COUNT; b++) {
             if (up & (1u << b)) {
@@ -536,6 +751,7 @@ int main(int argc, char **argv)
     timer_delete(tm);
     if (ctrl_pid > 0) kill(ctrl_pid, SIGTERM);
     if (hmi_pid > 0) kill(hmi_pid, SIGTERM);
+    if (cps.pid > 0) kill(cps.pid, SIGTERM);
     name_detach(att, 0);
     rt_relax();
     size_t ev0 = n_events > N_EVENTS ? n_events - N_EVENTS : 0; /* los últimos N_EVENTS */
@@ -548,6 +764,11 @@ int main(int argc, char **argv)
     printf("%s: peso ideal %.1f kg (talla %.1f cm); última respiración: auto-PEEP %.2f cmH2O, flujo final %.2f L/min, "
            "tau %.2f s, R %.1f, C %.1f mL/cmH2O\n", PROG, ibw, height_cm, lm.auto_peep, lm.q_ee * 60, lm.tau, lm.r_tot,
            lm.c * 1e3);
+    if (use_copilot)
+        printf("%s: copiloto: %u respiraciones medidas, %u sugerencias, %u bloqueadas, %u propuestas, %u aceptadas, "
+               "%u rechazadas, %u vencidas, %u mensajes no autorizados, %u relanzamientos, árbol+reglas máx %.1f us\n",
+               PROG, cp_n, cpc.n_suggest, cpc.n_blocked, cpc.n_proposed, cpc.n_accepted, cpc.n_rejected, cpc.n_expired,
+               cps.denied, cps.restarts, cps.infer_ns_max / 1e3);
     if (out_path) {
         FILE *f = fopen(out_path, "w");
         if (!f) rt_die(PROG, out_path);

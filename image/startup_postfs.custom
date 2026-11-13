@@ -6,7 +6,7 @@ mkdir -p /data/var/log/bg
 cd /system/bg
 START_P(bg_plant_t) ./pneumatic_sim -s 0 > /data/var/log/bg/plant.txt 2>&1 &
 waitfor /dev/name/local/breathguard_pneumatic 5
-START_P(bg_safety_t) ./safety_mon -s 0 -H 172.31.1.1 -o /data/var/log/bg/events.csv > /data/var/log/bg/safety.txt 2>&1 &
+START_P(bg_safety_t) ./safety_mon -s 0 -H 172.31.1.1 -K -o /data/var/log/bg/events.csv > /data/var/log/bg/safety.txt 2>&1 &
 START_P(bg_power_t) ./power_mgr -s 0 > /data/var/log/bg/power.txt 2>&1 &
 START_P(bg_ventd_t) ./ventd > /data/var/log/bg/ventd.txt 2>&1 &
 cd /

@@ -1,0 +1,91 @@
+0.049 Options changed
+0.811 Generating output/build/mount_fs.sh
+0.828 Generating output/build/expandfs.sh
+0.841 Generating output/build/post_startup.sh
+0.857 Generating output/build/start_net.sh
+0.873 Generating output/build/startup.sh
+0.887 Generating output/build/passwd
+0.906 Generating output/build/group
+0.918 Generating output/build/shadow
+0.932 Generating output/build/ifs.build
+0.948 Generating output/build/system.build
+0.960 Generating output/build/data.build
+0.971 Generating output/build/qemu_options
+0.982 Generating output/build/secpolgen_start.sh
+0.993 Generating output/build/secpolused
+1.007 Compiling the secpol used events . . .
+1.017 [91;1m[0mBuilding disk
+1.026 Generating system partition . . .
+1.161 [91;1m[0mGenerating data partition . . .
+1.170 [91;1m[0mGenerating ifs . . .
+2.739 [91;1m[0mBuilding boot partition . . .
+2.796 [91;1m[0mBuilding disk . . .
+3.229 Target type: qemu
+3.236 Architecture: x86_64
+3.248 Security: open
+3.257 Repositories:
+3.266     
+3.271     /home/david/qnx800/target/qnx
+3.276 
+3.285 Options with non-default values:
+3.290 
+3.295 --data-inodes='6000'
+3.301 --data-size='200'
+3.307 --ip='172.31.1.2'
+3.315 --network='bridge:br0'
+3.321 --policy='/home/david/medpower/.claude/worktrees/copilot-ml/image/policy.txt'
+3.330 --secpol='open'
+3.336 --usb='no'
+3.343 
+3.349 For full list of options, run "mkqnximage --options"
+3.720 QEMU Command: qemu-system-x86_64 -smp 2 --enable-kvm --cpu host -m 1G -drive file=output/disk-qemu.vmdk,if=ide,id=drv0 -netdev bridge,br=br0,id=net0 -device virtio-net-pci,netdev=net0,mac=52:54:00:ca:c5:c7 -pidfile output/qemu.pid -nographic -kernel output/ifs.bin -serial mon:stdio -object rng-random,filename=/dev/urandom,id=rng0 -device virtio-rng-pci,rng=rng0 -nographic
+4.252 c[?7l[2J[0mSeaBIOS (version 1.17.0-debian-1.17.0-1ubuntu1)
+4.260 
+4.268 
+4.275 iPXE (https://ipxe.org) 00:03.0 CA00 PCI2.10 PnP PMM+3EFC7B50+3EF07B50 CA00
+4.294 Press Ctrl-B to configure iPXE (PCI 00:03.0)...                                                                               
+4.301 
+4.308 
+4.314 Booting from ROM..
+4.319 non UEFI or UEFI+CSM boot
+4.325 ACPI table not found (0x4746434d)
+4.360 overriding mask for controller 2, vector_base 0
+5.064 ---> Starting policy generator
+5.812 Path=0 - Intel 82371SB
+5.817  target=0 lun=0     Direct-Access(0) -          QEMU HARDDISK    Rev: 2.5+
+5.824 Path=1 - Intel 82371SB
+5.830  target=0 lun=0            CD-ROM(5) - QEMU     QEMU DVD-ROM     Rev: 2.5+
+5.860 ---> Loading security policy
+5.865 ---> Starting slogger2
+5.882 ---> Starting PCI Services
+6.221 ---> Starting fsevmgr
+6.230 # ---> Starting devb
+6.615 ---> Mounting file systems
+6.620 Path=0 - Intel 82371SB
+6.626  target=0 lun=0     Direct-Access(0) -          QEMU HARDDISK    Rev: 2.5+
+6.631 Path=1 - Intel 82371SB---> Mounting file systems
+6.638 
+6.645  target=0 lun=0            CD-ROM(5) - QEMU     QEMU DVD-ROM     Rev: 2.5+
+6.670 ---> BreathGuard RT
+6.803 ---> Starting Networking
+6.812 secpolgenerate: dumper (pid:372756 uid:30 type:dumper_t) failed to access /dev/slog2/stderr
+6.832 secpolgenerate: dumper (pid:372756 uid:30 type:dumper_t) failed to access /dev/slog2/stdout
+7.965 ifconfig: WARNING: setting interface address without mask is deprecated,
+7.970 default mask may not be correct.
+8.003 ---> Starting sshd
+8.050 ---> Starting misc
+8.073 
+8.078 To exit QEMU, type <ctrl>a x
+8.083 
+8.087 [?7hProcess count:32
+8.093 Startup complete
+8.098 QNX noname 8.0.0 2026/06/05-16:26:03EDT x86pc x86_64
+24.509 secpolgenerate: cleared errors
+31.894 secpolgenerate: liar_copilot (pid:1163280 type:bg_safety_t__copilot) failed to use ability channel_connect:bg_plant_t as root
+31.899 secpolgenerate: liar_copilot (pid:1163280 type:bg_safety_t__copilot) failed to use ability channel_connect:bg_ventd_t as root
+49.763 secpolgenerate: ksh (pid:1191951 type:bg_safety_t__copilot) failed to use ability channel_connect:bg_ventd_t as root
+51.706 secpolgenerate: liar_copilot (pid:1245196 type:bg_safety_t__copilot) failed to use ability channel_connect:bg_plant_t as root
+62.155 secpolgenerate: cleared errors
+77.225 secpolgenerate: evil_hmi (pid:1617937 type:bg_safety_t__hmi) failed to use ability channel_connect:bg_plant_t as root
+77.240 secpolgenerate: evil_hmi (pid:1630225 type:bg_ventd_t) failed to use ability channel_connect:bg_plant_t as root
+77.994 secpolgenerate: ksh (pid:1642513 type:bg_safety_t__hmi) failed to use ability channel_connect:bg_ventd_t as root

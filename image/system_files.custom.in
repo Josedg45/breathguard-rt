@@ -9,10 +9,13 @@
 [uid=0 gid=0 perms=0755] bg/ventd=@BUILD@/ventd
 [uid=0 gid=0 perms=0755] bg/bg_fault=@BUILD@/bg_fault
 [uid=0 gid=0 perms=0755] bg/evil_hmi=@BUILD@/evil_hmi
+[uid=0 gid=0 perms=0755] bg/copilot=@BUILD@/copilot
+[uid=0 gid=0 perms=0755] bg/liar_copilot=@BUILD@/liar_copilot
 [uid=0 gid=0 perms=0755] bg/bg_stop.sh = {
 #!/bin/sh
 # Stops the ventilator started at boot (so the tests can run their own copy from /tmp/medpower).
 slay -s TERM safety_mon ventd power_mgr > /dev/null 2>&1
+slay -s TERM copilot liar_copilot > /dev/null 2>&1
 sleep 1
 slay -s TERM pneumatic_sim > /dev/null 2>&1
 exit 0
