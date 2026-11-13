@@ -1,0 +1,67 @@
+== 1. types
+  868362 ./pneumatic_sim                                                                  pneumatic_sim      bg_plant_t       
+  884747 ./safety_mon                                                                     safety_mon         bg_safety_t      
+  884748 ./power_mgr                                                                      power_mgr          bg_power_t       
+  884751 ./ventd                                                                          ventd              bg_ventd_t       
+  913421 ./breath_ctrl                                                                    breath_ctrl        bg_safety_t__ctr 
+  913434 ./hmi                                                                            hmi                bg_safety_t__hmi 
+== status before
+clock_s=87.539
+source=breath_ctrl
+mode=pcv p_insp=20.0 peep=5.0 rr=12.0 ie=2.0 vt=500
+pending=0 seq=0
+paw_cmh2o=5.15 flow_lpm=-4.6
+spo2_pct=na etco2_mmhg=na hr_bpm=na (sin Pulse)
+ibw_kg=75.4 auto_peep_cmh2o=1.04
+alarms=0x0 failovers=0 hmi_restarts=0 denied=0
+loop_p99_ms=1.395 loop_max_ms=4.266 loop_late=96 loop_cycles=14900
+power=mains soc_pct=100 autonomy_min=160
+last_event=LANZA_CONTROL
+MARK attack 1794534889
+== 2. evil_hmi as bg_safety_t__hmi
+evil_hmi: pid 950288, t_abs=87.552260: name_open(planta) RECHAZADO por el kernel (Operation not permitted): ataque bloqueado (capa 2)
+RC_HMI 0
+== 3. evil_hmi as bg_ventd_t
+evil_hmi: pid 962576, t_abs=87.566988: name_open(planta) RECHAZADO por el kernel (Operation not permitted): ataque bloqueado (capa 2)
+RC_VENTD 0
+== 4. settings write as bg_safety_t__hmi
+/proc/boot/ksh: cannot create /dev/ventilator/settings: Operation not permitted
+RC_HMI_WRITE 1
+== 5. settings write as root (unrestricted, the operator's console)
+RC_ROOT_WRITE 0
+== status after
+clock_s=99.592
+source=breath_ctrl
+mode=pcv p_insp=21.0 peep=5.0 rr=12.0 ie=2.0 vt=500
+pending=0 seq=1
+paw_cmh2o=20.98 flow_lpm=12.5
+spo2_pct=na etco2_mmhg=na hr_bpm=na (sin Pulse)
+ibw_kg=75.4 auto_peep_cmh2o=1.13
+alarms=0x0 failovers=0 hmi_restarts=0 denied=0
+loop_p99_ms=1.395 loop_max_ms=5.043 loop_late=165 loop_cycles=26900
+power=mains soc_pct=100 autonomy_min=160
+last_event=AJUSTE_APLICADO
+== settings
+mode=pcv p_insp=21.0 peep=5.0 rr=12.0 ie=2.0 vt=500
+seq=1 pending=0
+last=ACK #1 desde t=88.030 (p_insp=21)
+== secpolgenerate errors (kernel denials)
+# This file represents errors that have been encountered.  These errors might be
+# expected.  Alternatively, some of these rules might need to be added to the
+# security policy.
+
+2026-11-13 01:54:49 evil_hmi (pid:950288 type:bg_safety_t__hmi) failed to use ability channel_connect:bg_plant_t as root
+2026-11-13 01:54:49 evil_hmi (pid:962576 type:bg_ventd_t) failed to use ability channel_connect:bg_plant_t as root
+2026-11-13 01:54:50 ksh (pid:974864 type:bg_safety_t__hmi) failed to use ability channel_connect:bg_ventd_t as root
+
+# === Rules for type bg_safety_t__hmi ============
+allow bg_safety_t__hmi self:ability {
+    channel_connect:bg_plant_t,bg_ventd_t
+};
+
+# === Rules for type bg_ventd_t ============
+allow bg_ventd_t self:ability {
+    channel_connect:bg_plant_t
+};
+
+== end

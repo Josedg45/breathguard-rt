@@ -612,3 +612,8 @@ la planta) y B2 (política secpol: el tipo de la HMI no tiene `channel_connect` 
 - **Límites:** imagen de desarrollo: el resto del sistema (consola, `sshd`, root) sigue sin restricciones; root puede
   usar `on -T` con cualquier tipo. Producción: `--secpol=secure`, todos los tipos restringidos y sin root.
 - **Pendiente:** `ventd` sigue sin supervisión (si muere, nadie lo relanza; la ventilación no se entera).
+- **Consola limpia (2026-11-12):** `io-sock -m usb` reintentaba cada 2 s abrir `/dev/usb/io-usb-otg` sin permiso
+  (uid 33 frente a 0644 del uid 44) y `secpolgenerate -v` lo imprimía. Imagen con `--usb=no` (la VM no tiene USB):
+  ya no arrancan `io-usb-otg` ni el módulo USB de io-sock. Quedan 2 líneas de `dumper` una sola vez al arrancar
+  (plantilla de QNX). Regenerar borró `/data`: Pulse y estados redesplegados. Arranque repetido (4 corridas):
+  primera inspiración 5.10–5.83 s; más lento en todas las etapas, también la BIOS → host.

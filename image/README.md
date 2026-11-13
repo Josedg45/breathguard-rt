@@ -12,7 +12,15 @@ boots it and measures the time from QEMU launch to the first breath. The files i
 | `data_files.custom` | `secpolgenerate` configuration: the rest of the system unrestricted (development image), our six types **restricted** to the policy |
 | `policy.txt` | The security policy, compiled at build time into `/data/var/secpol/secpol.bin` |
 
-Image options used: `--secpol=open --policy=image/policy.txt --ip=172.31.1.2 --data-size=200 --data-inodes=6000`.
+Image options used: `--secpol=open --policy=image/policy.txt --usb=no --ip=172.31.1.2 --data-size=200
+--data-inodes=6000`.
+
+`--usb=no`: the VM has no USB devices and the ventilator does not use USB. With USB enabled (the default),
+`io-sock -m usb` (uid 33) retried every 2 s to open `/dev/usb/io-usb-otg` (owned by uid 44, mode 0644), and
+`secpolgenerate -v` printed each failure on the console. That is a POSIX permission problem, not a missing policy
+rule: "allowing" it would mean giving the network stack abilities to override file permissions. Removing the
+unused service is the right fix, and it also shrinks the attack surface. Two `dumper` lines (`/dev/slog2/stderr`,
+mode `--w--w--w-`) still appear once at boot; they come from the QNX image template and do not repeat.
 With a static IP the VM needs no DHCP, so `vm_run.sh` sets `OPT_NETWORK=bridge:br0`.
 
 ## Types
@@ -57,8 +65,8 @@ The other abilities are what the processes need and nothing more. `mem_lock` is 
 2. Run everything the system does: boot, ventilation, operator commands through the HMI and through
    `/dev/ventilator`, killing the HMI and the controller (restarts).
 3. Copy `/dev/secpolgenerate/policy` to `policy.txt` and rebuild with our types restricted.
-4. Check that `/dev/secpolgenerate/errors` shows no denial for a legitimate process. The only denials in the image
-   are the system's own (`io-sock` probing USB, unrelated to the ventilator).
+4. Check that `/dev/secpolgenerate/errors` shows no denial for a legitimate process. The only remaining denial in
+   the image is the system's own (`dumper` at boot, unrelated to the ventilator).
 
 Learning a policy from observation has a known weakness: it allows what was observed, including anything a bug did
 during the learning run. We read every `bg_` rule (above); none of them is surprising.

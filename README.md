@@ -167,7 +167,13 @@ before the console, network and `sshd` (`image/startup_postfs.custom`). It needs
 | First HMI telemetry packet | 5.41 | 5.40 | 5.55 |
 | `sshd` listening | 5.46 | 5.45 | 5.60 |
 
-The QNX clock starts about 1.1 s after QEMU launch, so the first breath comes 3.3–3.6 s after the kernel starts.
+Repeated on 2026-11-12 with the image built with `--usb=no` (4 runs): first inspiration 5.10–5.83 s, ping
+6.41–6.96 s. Every boot stage was slower that day, including the QEMU BIOS, which runs before QNX and does not
+depend on our image, so we attribute the difference to the host (Windows + WSL2). In all 7 runs the ventilator
+breathed 0.8–1.4 s before the VM answered a ping.
+
+On 2026-11-09 the QNX clock started about 1.1 s after QEMU launch, so the first breath came 3.3–3.6 s after the
+kernel started.
 0.5 s of that is deliberate: `safety_mon` schedules the first breath 0.5 s after it starts. The first breath time is
 read from `breath_ctrl`'s log (QNX clock) and converted to host time (±0.08 s). This is QEMU with a virtual disk;
 real hardware with a minimal IFS would be different (likely faster), and we have not measured it.
