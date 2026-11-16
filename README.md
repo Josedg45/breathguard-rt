@@ -45,14 +45,16 @@ firmware without patients.
 | CPU saturated (2 junk threads) | Vt and SpO2 unchanged |
 | Kill `breath_ctrl` (`kill -9`) | Backup ventilation in control ~2 ms after the last command (6 runs; one outlier at 24 ms under load). Vt and SpO2 unchanged |
 | Tube disconnection | Alarm in 20.4–20.7 ms (3 runs) |
-| Controller hang (`SIGSTOP`) | Detected by the apnea alarm after 9 s (heartbeat watchdog in progress, target 0.2 s) |
+| Controller hang (`SIGSTOP`) | Heartbeat watchdog: detected 204–228 ms after the freeze (200 ms deadline, 3 runs), backup in control 0.03–0.12 ms later; every breath 568–569 mL, SpO2 unchanged. Before the watchdog, the apnea alarm caught it after 9.2 s with two 0 mL breaths |
 | Mains power loss | Detected in ~2 ms; load shedding raises autonomy from 160 to 524 min; low/critical battery alarms |
 | HMI killed, crashed (NULL pointer) or hung (infinite loop) | Ventilation unchanged; HMI relaunched in 0.1–2 s |
 | Tube reconnected in mid-inspiration | Peak 23.3 cmH2O after a fix found by this test bench (was 44 cmH2O; see `docs/demo.md`) |
 | Operator changes settings while ventilating | Applied exactly at the next breath start by controller and backup alike; invalid values rejected with a reason |
 | Auto-PEEP (gas trapping) at 30 bpm, I:E 1:1 | Estimated 5.1–5.4 cmH2O from Y-piece sensors alone (true value 5.1 in the fixed-RC model); AUTO-PEEP alarm after 2 breaths, cleared when the rate is lowered |
 | Power-on to first breath | 4.5–4.7 s from QEMU launch (3 runs), ~0.85 s before the VM even answers a ping: the ventilator starts before the network and `sshd` |
+| Compromised HMI, layer 1 (plant checks the sender) | 1001 forged actuator commands refused with `EPERM`; airway pressure stays at 20.5 cmH2O (41 without the check) |
 | Compromised HMI (security policy, layer 2) | The kernel refuses its connection to the plant (`EPERM` at `name_open`); the plant never sees a message |
+| Ventilator pinned to a reserved vCPU (runmask) under load | 65–73 late cycles and max period ≤ 6 ms in 6/6 runs, vs 34–165 and > 7 ms in 4/6 with the same load unpinned; pinning without reserving changes nothing measurable (`results/m3/runmask_resumen.txt`) |
 | Loop timing, live | Period p50/p99/p99.9/max, deadline misses and a period histogram on the dashboard. VM noise varies by run: 0.3 % to 3 % of cycles later than 1.5 ms, worst case 7–82 ms. The gaps appear with and without CPU load, and M1 measured gaps of 1–18 ms even for a priority-200 thread that never blocks: they come from the host (Windows + WSL2 + QEMU), so treat them as an upper bound |
 
 ## Clinical monitoring
@@ -123,9 +125,9 @@ Layer 1 of the defense:
 - **No start-up race.** `safety_mon` spawns `breath_ctrl` with `POSIX_SPAWN_HOLD` (a QNX extension). The child is
   created stopped; it is authorized in the plant and only then released with `SIGCONT`.
 
-The plant-side check (`auth_check()`) is a learning exercise in progress (`tareas/04_plant_auth`). Until it is
-completed, the plant accepts every command, as before. The results with the check in place will be published
-here.
+With the check in place (`tareas/04_plant_auth/plant_auth.c`), the same attack fails: the plant refused the forged
+`AUTH`, the `OVERRIDE` and all 999 `WRITE`s with `EPERM`, airway pressure stayed at 20.5 cmH2O, and `safety_mon`
+logged the attempt 36 ms after it started (`results/sec/*_b1_tarea4*`).
 
 The first `AUTH` claims the plant (trust on first use). This works because `safety_mon` starts right after the
 plant and launches the HMI itself.
@@ -283,6 +285,8 @@ uses `_NTO_CHF_FIXED_PRIORITY`: by default QNX lowers the receiving thread to th
 | Sender identity from the kernel (`struct _msg_info`: `pid`, `srcmsglen`) to authorize actuator commands | `src/pneumatic_sim.c`, `tareas/04_plant_auth/` |
 | `POSIX_SPAWN_HOLD`: child created stopped, authorized, then released with `SIGCONT` | `src/safety_mon.c`: `spawn_ctrl()` |
 | Resource manager (`resmgr_attach`, `iofunc_*`, `dispatch_*`, `resmgr_msgget`) exposing `/dev/ventilator` | `src/ventd.c` |
+| System log: `slog2_register()` / `slog2f()` with a severity per event (no I/O on the critical path); `slog2info -S -b breathguard` | `src/safety_mon.c`: `slog_init()`, `event()`; `results/slog2/` |
+| CPU affinity: `ThreadCtl(_NTO_TCTL_RUNMASK_GET_AND_SET_INHERIT)` (`-C cpu`) | `src/rt_util.h`: `rt_pin()`; `src/cpu_burn.c`; `results/m3/runmask_resumen.txt` |
 | `TimerTimeout()` bounding a blocking `MsgSend` (the controller never waits more than 2 ms for the supervisor) | `src/breath_ctrl.c`: `fetch_settings()` |
 | Loop metrics carried in the same bounded `MsgSend` (no extra message on the critical path) | `src/breath_ctrl.c`: `stats_add()`; `src/bg_proto.h`: `bg_loop_stats_t` |
 | Security policy types: `on -T` at boot, `secpol_posix_spawnattr_settypeid()` for spawned children, derived types | `image/startup_postfs.custom`, `src/safety_mon.c`: `spawn_ctrl()`, `spawn_hmi()`, `image/policy.txt` |
@@ -370,9 +374,9 @@ build/m5_offline build/lung_mon_test build/settings_schedule_test`. Copilot: `ma
 and `safety_mon`'s checks against honest and lying suggestions); training data `make build/copilot_gen`, training
 `scripts/copilot_train.py` (needs scikit-learn).
 
-The copilot's tree walk (`tareas/05_tree/tree_predict.c`) is a learning exercise and ships as a skeleton that always
-answers "don't know": with it the copilot never suggests anything, which is safe. The copilot results above were
-measured with a completed walk, which must pass `make tarea5` (1 512 vectors checked against scikit-learn).
+The copilot's tree walk (`tareas/05_tree/tree_predict.c`) must pass `make tarea5` (1 512 vectors checked against
+scikit-learn, plus NaN, infinity, corrupt and cyclic trees). The boot image ships with it; `c5_run.sh pulse|rc|liar`,
+`c5sec_run.sh`, `b2_run.sh` and `c5hmi_run.py` all pass with it (`results/copilot/*_t5*`).
 
 Fault injection on the target: `bg_fault -d 1` (disconnect), `-o 8` (obstruction), `-l` (leak), `-k 1` (stuck
 pressure sensor), `-m 0|1` (mains off/on).

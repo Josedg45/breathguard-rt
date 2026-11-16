@@ -50,7 +50,7 @@ open. This is the core of layer 2:
 | Type | May connect to | Notably NOT to |
 |---|---|---|
 | `bg_safety_t__ctrl` (controller) | plant, `safety_mon` | |
-| `bg_safety_t` (`safety_mon`) | plant | |
+| `bg_safety_t` (`safety_mon`) | plant, system logger (`slogger2`) | |
 | `bg_power_t` | plant, `safety_mon` | |
 | `bg_ventd_t` | `safety_mon`, `power_mgr` | plant |
 | `bg_safety_t__hmi` | `safety_mon`, `power_mgr`, network stack | plant, `ventd` |
@@ -75,6 +75,11 @@ them on the controller's (`mem_lock`, `prot_exec`, `map_fixed`) and gave it a si
 `safety_mon`. Then we checked them like the learned ones. With the type restricted, the normal copilot ran without
 any entry in `/dev/secpolgenerate/errors`. The test-only liar's attempts on the plant and on `ventd` were logged as
 denials (`scripts/c5sec_run.sh`, `results/copilot/log_c5sec3.txt`).
+
+**Also by hand: `channel_connect:slogger_t` for `bg_safety_t`**, so `safety_mon` can write its events to the
+system log (`slog2_register()` connects to `slogger2`). We checked that the rule is needed: a minimal
+`slog2_register()` program run with `on -T bg_safety_t__copilot` (no such rule) gets `EPERM`, and the denial appears in
+`/dev/secpolgenerate/errors`; with `on -T bg_safety_t` it works (`results/slog2/policy_check.txt`).
 
 Learning a policy from observation has a known weakness: it allows what was observed, including anything a bug did
 during the learning run. We read every `bg_` rule (above); none of them is surprising.
