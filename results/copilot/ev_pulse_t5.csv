@@ -1,0 +1,9 @@
+t_s,evento,detalle
+55.397920,LANZA_COPILOTO,pid 2068508
+55.397920,LANZA_CONTROL,pid 2064401
+130.898381,COPILOTO_PROPONE,#1 leak 1.00: check_circuit (no settings change)
+190.898588,COPILOTO_VENCIDO,#1 sin respuesta en 60 s
+200.898358,AUTO_PEEP,auto-PEEP 3.2 cmH2O, flujo final -2.7 L/min, tau 4.21 s
+200.898402,COPILOTO_PROPONE,#2 high_resistance 1.00: RR 12.0 -> 10.0 /min
+260.898387,COPILOTO_RESUELTO,#2: 3 respiraciones normales
+274.904832,CONTROL_TERMINA,despedida

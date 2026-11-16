@@ -38,6 +38,7 @@
 #include <spawn.h>
 #include <secpol/secpol.h>
 #include <sys/dispatch.h>
+#include <sys/slog2.h>
 #include <unistd.h>
 
 #include "alarms.h"
@@ -84,6 +85,45 @@ static event_t events[N_EVENTS];
 static size_t n_events;
 static double t_start;
 
+/* --- Registro del sistema (slog2) ---------------------------------------------------------------
+ * slog2 es el registro estándar de QNX. Cada proceso registra un "buffer set" con slogger2 una vez al
+ * arrancar; después, escribir un evento es copiar unos bytes a memoria compartida: no hay mensaje a slogger2
+ * ni E/S en el camino crítico, a diferencia de printf. Se lee con: slog2info -b breathguard -w
+ * Si el registro falla (p. ej. slogger2 no corre), el ventilador sigue igual: slog2_buf queda en NULL. */
+static slog2_buffer_t slog2_buf;
+
+static void slog_init(void)
+{
+    slog2_buffer_set_config_t cfg = {
+        .num_buffers = 1,
+        .buffer_set_name = "breathguard",
+        .verbosity_level = SLOG2_INFO,
+        .buffer_config = { { .buffer_name = "safety_mon", .num_pages = 8 } }, /* 32 KiB: ~300 eventos */
+    };
+    if (slog2_register(&cfg, &slog2_buf, SLOG2_QUIET) == -1) {
+        slog2_buf = NULL;
+        fprintf(stderr, PROG ": slog2_register fallo; los eventos solo quedan en memoria\n");
+    }
+}
+
+/* Gravedad de cada evento en slog2. Lo que no está en la lista es informativo (lanzamientos, ajustes...). */
+static uint8_t slog_severity(const char *what)
+{
+    static const char *const critical[] = { "CONTROL_MUERTO", "CONTROL_COLGADO", "RELANZA_CONTROL",
+                                            "ALIVIO_PRESION", "BATERIA_CRITICA", "PRESION_ALTA",
+                                            "DESCONEXION", "APNEA" };
+    static const char *const warning[] = { "COMANDO_NO_AUTORIZADO", "COPILOTO_NO_AUTORIZADO",
+                                           "COPILOTO_AUTOCONFIRMA", "HMI_COLGADA", "HMI_MUERTA_RELANZADA",
+                                           "COPILOTO_RELANZADO", "BATERIA_BAJA", "APNEA_CON_CONTROL_VIVO",
+                                           "AJUSTE_RECHAZADO", "VT_BAJO", "VT_ALTO", "FUGA", "ENERGIA",
+                                           "AUTO_PEEP", "SEGURIDAD" };
+    for (size_t i = 0; i < sizeof critical / sizeof *critical; i++)
+        if (strcmp(what, critical[i]) == 0) return SLOG2_CRITICAL;
+    for (size_t i = 0; i < sizeof warning / sizeof *warning; i++)
+        if (strcmp(what, warning[i]) == 0) return SLOG2_WARNING;
+    return SLOG2_INFO;
+}
+
 static void event(double t, const char *what, const char *detail)
 {
     { /* anillo: sin límite de tiempo se conservan los últimos */
@@ -92,7 +132,10 @@ static void event(double t, const char *what, const char *detail)
         snprintf(e->what, sizeof e->what, "%s", what);
         snprintf(e->detail, sizeof e->detail, "%s", detail);
     }
-    /* No se imprime aquí: printf es E/S y bloquearía el camino crítico. Se imprime todo al final. */
+    /* No se imprime aquí: printf es E/S y bloquearía el camino crítico (se imprime todo al final).
+     * slog2f sí: escribe en memoria compartida. El código 1 marca "evento del ventilador". */
+    if (slog2_buf)
+        slog2f(slog2_buf, 1, slog_severity(what), "t=%.3f %s: %s", t - t_start, what, detail);
 }
 
 /* --- Lanzar breath_ctrl ------------------------------------------------------------------------ */
@@ -264,6 +307,7 @@ int main(int argc, char **argv)
     }
     if (plant == -1) rt_die(PROG, "name_open(" BG_PNEUMATIC_NAME ")");
 
+    slog_init(); /* antes de rt_setup: registrar el buffer reserva memoria (mlockall la fija después) */
     rt_setup(PROG, prio);
     timer_t tm = rt_periodic_pulse(PROG, att->chid, prio, PULSE_TICK, 1000000);
 

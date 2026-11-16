@@ -1,0 +1,9 @@
+# 2026-11-16, imagen nueva (--secpol=open con image/policy.txt; nuestros tipos restringidos).
+# Programa mínimo que llama a slog2_register(), lanzado con "on -T <tipo>":
+tipo bg_safety_t:
+slog2_register: OK
+tipo bg_safety_t__copilot:
+slog2_register: FALLA (Operation not permitted)
+# /dev/secpolgenerate/errors registró la habilidad que faltaba:
+#     channel_connect:slogger_t
+# => la regla "channel_connect:...,slogger_t" de bg_safety_t es necesaria; el copiloto no la tiene a propósito.

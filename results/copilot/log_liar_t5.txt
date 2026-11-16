@@ -1,0 +1,75 @@
+MARK start 499.653658
+== copilot (liar)
+copilot=on pid=4517911 restarts=0 denied=16
+learned: last_class=low_compliance conf=0.99 breath=5 infer_us=0.8 infer_max_us=20.0
+proposal: id=0 state=none class=- action=- age_s=-1.0
+text=-
+last_blocked=proposed settings differ from the allowed step
+counts: suggestions=5 blocked=3 proposed=0 accepted=0 rejected=0 expired=0
+answer=NAK the copilot cannot answer its own proposal (accept 1)
+== copilot (end)
+copilot=on pid=4517911 restarts=0 denied=31
+learned: last_class=low_compliance conf=0.99 breath=10 infer_us=4.2 infer_max_us=20.0
+proposal: id=0 state=none class=- action=- age_s=-1.0
+text=-
+last_blocked=proposed settings differ from the allowed step
+counts: suggestions=10 blocked=8 proposed=0 accepted=0 rejected=0 expired=0
+answer=NAK the copilot cannot answer its own proposal (accept 1)
+liar_copilot: prio 8, tree of 25 nodes (depth 5)
+breath_ctrl: pid 4517905, PCV 16/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 60 s
+breath_ctrl: primera inspiración t=500.155 s del reloj del sistema
+liar_copilot: ACK 1 refused: Operation not permitted
+liar_copilot: ACK 2 refused: Operation not permitted
+liar_copilot: ACK 3 refused: Operation not permitted
+liar_copilot: name_open(plant) = 1073741826 (OPENED)
+liar_copilot: open(/dev/ventilator/copilot) = 4 (OPENED)
+liar_copilot: write(accept 1) = -1 (Operation not permitted)
+breath_ctrl: 59380 ciclos, 144 con periodo > 1.5 ms, periodo máx 6.32 ms; cómputo p50 5.6 us, p99 177.1 us, máx 1638.0 us
+breath_ctrl: ajustes aplicados 0 (último #0), consultas sin respuesta 0
+breath_ctrl: settings changes received after their start time: 0 (expected 0)
+liar_copilotsafety_mon: t=0.000 LANZA_COPILOTO pid 4517911
+safety_mon: t=0.000 LANZA_CONTROL pid 4517905
+safety_mon: t=5.500 COPILOTO_AUTOCONFIRMA pid 4517911 propuesta 1
+safety_mon: t=5.500 COPILOTO_AUTOCONFIRMA pid 4517911 propuesta 2
+safety_mon: t=5.500 COPILOTO_AUTOCONFIRMA pid 4517911 propuesta 3
+safety_mon: t=5.501 COPILOTO_AUTOCONFIRMA pid 4517911 (via ventd) propuesta 1
+safety_mon: t=5.501 COPILOTO_BLOQUEADO breath not valid for the copilot
+safety_mon: t=10.501 COPILOTO_AUTOCONFIRMA pid 4517911 propuesta 1
+safety_mon: t=10.501 COPILOTO_AUTOCONFIRMA pid 4517911 propuesta 2
+safety_mon: t=10.501 COPILOTO_AUTOCONFIRMA pid 4517911 propuesta 3
+safety_mon: t=15.501 COPILOTO_AUTOCONFIRMA pid 4517911 propuesta 1
+safety_mon: t=15.501 COPILOTO_AUTOCONFIRMA pid 4517911 propuesta 2
+safety_mon: t=15.501 COPILOTO_AUTOCONFIRMA pid 4517911 propuesta 3
+safety_mon: t=20.500 COPILOTO_AUTOCONFIRMA pid 4517911 propuesta 1
+safety_mon: t=20.500 COPILOTO_AUTOCONFIRMA pid 4517911 propuesta 2
+safety_mon: t=20.500 COPILOTO_AUTOCONFIRMA pid 4517911 propuesta 3: MsgSend(COPILOT_GET):
+safety_mon: t=20.500 COPILOTO_BLOQUEADO proposed settings differ from the allowed step
+safety_mon: t=25.501 COPILOTO_AUTOCONFIRMA pid 4517911 propuesta 1
+safety_mon: t=25.501 COPILOTO_AUTOCONFIRMA pid 4517911 propuesta 2
+safety_mon: t=25.501 COPILOTO_AUTOCONFIRMA pid 4517911 propuesta 3
+safety_mon: t=30.501 COPILOTO_AUTOCONFIRMA pid 4517911 propuesta 1
+safety_mon: t=30.501 COPILOTO_AUTOCONFIRMA pid 4517911 propuesta 2
+safety_mon: t=30.501 COPILOTO_AUTOCONFIRMA pid 4517911 propuesta 3
+safety_mon: t=35.500 COPILOTO_AUTOCONFIRMA pid 4517911 propuesta 1
+safety_mon: t=35.500 COPILOTO_AUTOCONFIRMA pid 4517911 propuesta 2
+safety_mon: t=35.500 COPILOTO_AUTOCONFIRMA pid 4517911 propuesta 3
+safety_mon: t=40.501 COPILOTO_AUTOCONFIRMA pid 4517911 propuesta 1
+safety_mon: t=40.501 COPILOTO_AUTOCONFIRMA pid 4517911 propuesta 2
+safety_mon: t=40.501 COPILOTO_AUTOCONFIRMA pid 4517911 propuesta 3
+safety_mon: t=45.501 COPILOTO_AUTOCONFIRMA pid 4517911 propuesta 1
+safety_mon: t=45.501 COPILOTO_AUTOCONFIRMA pid 4517911 propuesta 2 No such process
+
+safety_mon: t=45.501 COPILOTO_AUTOCONFIRMA pid 4517911 propuesta 3
+safety_mon: t=50.500 COPILOTO_AUTOCONFIRMA pid 4517911 propuesta 1
+safety_mon: t=50.501 COPILOTO_AUTOCONFIRMA pid 4517911 propuesta 2
+safety_mon: t=50.501 COPILOTO_AUTOCONFIRMA pid 4517911 propuesta 3
+safety_mon: t=55.501 COPILOTO_AUTOCONFIRMA pid 4517911 propuesta 1
+safety_mon: t=55.501 COPILOTO_AUTOCONFIRMA pid 4517911 propuesta 2
+safety_mon: t=55.501 COPILOTO_AUTOCONFIRMA pid 4517911 propuesta 3
+safety_mon: t=59.507 CONTROL_TERMINA despedida
+safety_mon: 59876 ticks, 0 fallas del controlador, 39 eventos; vt_meter: 0 respiraciones, Vti 0, Vte 0 mL
+safety_mon: peso ideal 75.4 kg (talla 180.3 cm); última respiración: auto-PEEP 0.78 cmH2O, flujo final -1.94 L/min, tau 1.44 s, R 24.2, C 59.3 mL/cmH2O
+safety_mon: copiloto: 11 respiraciones medidas, 11 sugerencias, 9 bloqueadas, 0 propuestas, 0 aceptadas, 0 rechazadas, 0 vencidas, 34 mensajes no autorizados, 0 relanzamientos, árbol+reglas máx 20.0 us
+ventd: listo en /dev/ventilator/{status,alarms,settings,copilot}, prio 10
+ventd: copiloto, escritura de pid 4517911: NAK the copilot cannot answer its own proposal (accept 1)
+ventd: fin
