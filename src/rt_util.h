@@ -44,6 +44,23 @@ static inline void rt_setup(const char *prog, int prio)
     if (rc != 0) { errno = rc; rt_die(prog, "pthread_setschedparam"); }
 }
 
+/* Runmask: ancla el hilo que llama (y los hilos que cree después) a una sola CPU. cpu < 0: no hace nada.
+ * ThreadCtl es la llamada de QNX para ajustar un hilo; con _NTO_TCTL_RUNMASK_GET_AND_SET_INHERIT se fija la
+ * máscara de este hilo y también la que heredarán sus hilos hijos. Cada bit de la máscara es una CPU. */
+static inline void rt_pin(const char *prog, int cpu)
+{
+    if (cpu < 0) return;
+    if (cpu >= _syspage_ptr->num_cpu) { errno = EINVAL; rt_die(prog, "rt_pin: esa CPU no existe"); }
+    /* Formato que espera el kernel: size, luego size palabras de runmask y size de inherit_mask. */
+    struct { int size; unsigned words[2 * 4]; } rm; /* 4 palabras: hasta 128 CPU */
+    memset(&rm, 0, sizeof rm);
+    rm.size = RMSK_SIZE(_syspage_ptr->num_cpu);
+    unsigned *runmask = rm.words, *inherit = rm.words + rm.size;
+    RMSK_SET(cpu, runmask);
+    RMSK_SET(cpu, inherit);
+    if (ThreadCtl(_NTO_TCTL_RUNMASK_GET_AND_SET_INHERIT, &rm) == -1) rt_die(prog, "ThreadCtl(RUNMASK)");
+}
+
 /* Timer periódico del kernel que manda un pulso con 'code' al canal chid, con prioridad prio. */
 static inline timer_t rt_periodic_pulse(const char *prog, int chid, int prio, int code, long period_ns)
 {

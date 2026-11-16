@@ -124,10 +124,10 @@ static int cmp_float(const void *a, const void *b)
 int main(int argc, char **argv)
 {
     double secs = 30, vt_ml = 500, t0 = -1;
-    int prio = 50, opt, vcv = 0, heartbeat = 0;
+    int prio = 50, opt, vcv = 0, heartbeat = 0, cpu = -1;
     const char *out_path = NULL;
     vent_settings_t set = { .rr = 12, .ie = 2.0, .p_insp = 20, .peep = 5, .rise_s = 0.1 };
-    while ((opt = getopt(argc, argv, "s:p:m:P:V:e:r:i:T:So:")) != -1) {
+    while ((opt = getopt(argc, argv, "s:p:m:P:V:e:r:i:T:So:C:")) != -1) {
         switch (opt) {
         case 's': secs = atof(optarg); break;
         case 'p': prio = atoi(optarg); break;
@@ -140,9 +140,10 @@ int main(int argc, char **argv)
         case 'T': t0 = atof(optarg); break;
         case 'S': heartbeat = 1; break;
         case 'o': out_path = optarg; break;
+        case 'C': cpu = atoi(optarg); break; /* runmask: anclar a esta CPU */
         default:
             fprintf(stderr, "uso: %s [-s seg] [-p prio] [-m pcv|vcv] [-P p_insp] [-V vt_ml] [-e peep] [-r rr] "
-                            "[-i ie] [-T inicio_ciclo] [-S] [-o salida.csv]\n", PROG);
+                            "[-i ie] [-T inicio_ciclo] [-S] [-o salida.csv] [-C cpu]\n", PROG);
             return 1;
         }
     }
@@ -181,6 +182,7 @@ int main(int argc, char **argv)
         if (MsgSend(coid, &au, sizeof au, NULL, 0) == -1) rt_die(PROG, "MsgSend(AUTH)");
     }
 
+    rt_pin(PROG, cpu); /* -C: el lazo solo corre en esa CPU (ThreadCtl, runmask) */
     rt_setup(PROG, prio);
 
     int chid = ChannelCreate(_NTO_CHF_PRIVATE);

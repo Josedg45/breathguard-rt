@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/neutrino.h>
 #include <sys/syspage.h>
 #include <time.h>
 
@@ -18,6 +19,7 @@
 
 struct worker {
     pthread_t tid;
+    double start;   /* instante común de inicio (lo fija main antes de crear los hilos) */
     double seconds;
     double cpu_pct;
 };
@@ -38,7 +40,9 @@ static void *burn(void *arg)
         return NULL;
     }
 
-    double start = now_s(CLOCK_MONOTONIC);
+    /* El reloj corre desde el inicio común, no desde que este hilo consiguió CPU: si otro hilo de igual
+     * prioridad FIFO le tuvo la CPU ocupada, eso tiene que verse como un porcentaje bajo. */
+    double start = w->start;
     double cpu_start = now_s(CLOCK_THREAD_CPUTIME_ID);
     double end = start + w->seconds;
     size_t idx = 0;
@@ -58,22 +62,41 @@ static void *burn(void *arg)
 
 int main(int argc, char **argv)
 {
-    int threads = _syspage_ptr->num_cpu, prio = 9, opt;
+    int threads = _syspage_ptr->num_cpu, prio = 9, opt, cpu = -1;
     double seconds = 12.0;
 
-    while ((opt = getopt(argc, argv, "n:s:p:")) != -1) {
+    while ((opt = getopt(argc, argv, "n:s:p:C:")) != -1) {
         switch (opt) {
         case 'n': threads = atoi(optarg); break;
         case 's': seconds = atof(optarg); break;
         case 'p': prio = atoi(optarg); break;
+        case 'C': cpu = atoi(optarg); break;
         default:
-            fprintf(stderr, "uso: cpu_burn [-n hilos] [-s segundos] [-p prioridad]\n");
+            fprintf(stderr, "uso: cpu_burn [-n hilos] [-s segundos] [-p prioridad] [-C cpu]\n");
             return EXIT_FAILURE;
         }
     }
     if (threads <= 0 || seconds <= 0 || prio <= 0) {
         fprintf(stderr, "cpu_burn: argumentos inválidos\n");
         return EXIT_FAILURE;
+    }
+
+    /* -C: todos los hilos de carga en una sola CPU. "on -C" no basta: solo ancla el hilo principal, y los
+     * hilos nuevos heredan la inherit_mask, no la runmask. Por eso se fijan las dos con ThreadCtl. */
+    if (cpu >= 0) {
+        if (cpu >= _syspage_ptr->num_cpu) {
+            fprintf(stderr, "cpu_burn: la CPU %d no existe\n", cpu);
+            return EXIT_FAILURE;
+        }
+        struct { int size; unsigned words[2 * 4]; } rm;
+        memset(&rm, 0, sizeof rm);
+        rm.size = RMSK_SIZE(_syspage_ptr->num_cpu);
+        RMSK_SET(cpu, rm.words);           /* runmask de este hilo */
+        RMSK_SET(cpu, rm.words + rm.size); /* inherit_mask: la de los hilos que cree */
+        if (ThreadCtl(_NTO_TCTL_RUNMASK_GET_AND_SET_INHERIT, &rm) == -1) {
+            perror("cpu_burn: ThreadCtl(RUNMASK)");
+            return EXIT_FAILURE;
+        }
     }
 
     struct worker *w = calloc((size_t)threads, sizeof *w);
@@ -89,7 +112,9 @@ int main(int argc, char **argv)
     pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
     pthread_attr_setschedparam(&attr, &sp);
 
+    double t0 = now_s(CLOCK_MONOTONIC);
     for (int i = 0; i < threads; i++) {
+        w[i].start = t0;
         w[i].seconds = seconds;
         int rc = pthread_create(&w[i].tid, &attr, burn, &w[i]);
         if (rc != 0) {

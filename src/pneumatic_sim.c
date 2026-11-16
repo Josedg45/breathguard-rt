@@ -164,16 +164,17 @@ static void apply_patient(const bg_patient_msg_t *m)
 int main(int argc, char **argv)
 {
     double secs = 30, peep0 = 5;
-    int prio = 60, opt;
+    int prio = 60, opt, cpu = -1;
     const char *out_path = NULL;
-    while ((opt = getopt(argc, argv, "s:p:e:o:")) != -1) {
+    while ((opt = getopt(argc, argv, "s:p:e:o:C:")) != -1) {
         switch (opt) {
         case 's': secs = atof(optarg); break;
         case 'p': prio = atoi(optarg); break;
         case 'e': peep0 = atof(optarg); break;
         case 'o': out_path = optarg; break;
+        case 'C': cpu = atoi(optarg); break; /* runmask: anclar a esta CPU */
         default:
-            fprintf(stderr, "uso: %s [-s segundos] [-p prio] [-e peep_inicial] [-o salida.csv]\n", PROG);
+            fprintf(stderr, "uso: %s [-s segundos] [-p prio] [-e peep_inicial] [-o salida.csv] [-C cpu]\n", PROG);
             return 1;
         }
     }
@@ -192,6 +193,7 @@ int main(int argc, char **argv)
     act.exh_open = 1.0;
     act.peep_cmd = peep0;
 
+    rt_pin(PROG, cpu); /* -C: el lazo solo corre en esa CPU (ThreadCtl, runmask) */
     rt_setup(PROG, prio);
 
     /* name_attach: crea un canal y lo publica bajo un nombre (en /dev/name/local/). Así los

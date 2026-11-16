@@ -1,0 +1,41 @@
+Runmask (ThreadCtl _NTO_TCTL_RUNMASK_GET_AND_SET_INHERIT): PCV 20/5, 12 rpm, planta RC, 30 s por corrida, carga a prio 9.
+VM QEMU/KVM de 2 vCPU sobre WSL2. Medido por breath_ctrl (prio 50). Datos: results/m3/log_rm_*.txt. 2026-11-16.
+
+(a) libre: 2 hilos de carga, nada anclado
+   corrida 1: 29657 ciclos,  304 tarde (>1.5 ms), periodo máx 11.56 ms, cómputo p50 7.3 us p99 35.5 us, carga cpu% 95.4/95.9
+   corrida 2: 29945 ciclos,  123 tarde (>1.5 ms), periodo máx  8.66 ms, cómputo p50 7.3 us p99 33.7 us, carga cpu% 95.0/97.0
+   corrida 3: 29586 ciclos,  324 tarde (>1.5 ms), periodo máx 12.08 ms, cómputo p50 14.7 us p99 134.9 us, carga cpu% 92.4/92.8
+   mediana: 304 tarde, periodo máx 11.56 ms (peor 12.08); cómputo p50 7.3 us
+
+(b) ancla: planta+control en CPU 1, 2 hilos de carga libres
+   corrida 1: 29798 ciclos,  245 tarde (>1.5 ms), periodo máx  9.42 ms, cómputo p50 6.9 us p99 36.1 us, carga cpu% 96.4/95.0
+   corrida 2: 29957 ciclos,  125 tarde (>1.5 ms), periodo máx  8.34 ms, cómputo p50 7.2 us p99 30.8 us, carga cpu% 97.2/94.6
+   corrida 3: 29499 ciclos,  475 tarde (>1.5 ms), periodo máx 11.31 ms, cómputo p50 8.1 us p99 66.0 us, carga cpu% 94.4/95.9
+   mediana: 245 tarde, periodo máx 9.42 ms (peor 11.31); cómputo p50 7.2 us
+
+(c) reserva: planta+control en CPU 1, 1 hilo de carga en CPU 0
+   corrida 1: 29944 ciclos,   68 tarde (>1.5 ms), periodo máx  3.57 ms, cómputo p50 4.8 us p99 34.6 us, carga cpu% 99.8
+   corrida 2: 29926 ciclos,   73 tarde (>1.5 ms), periodo máx  5.99 ms, cómputo p50 4.8 us p99 33.3 us, carga cpu% 99.9
+   corrida 3: 29947 ciclos,   65 tarde (>1.5 ms), periodo máx  5.06 ms, cómputo p50 4.7 us p99 24.5 us, carga cpu% 99.9
+   corrida 4: 29955 ciclos,   66 tarde (>1.5 ms), periodo máx  3.32 ms, cómputo p50 4.4 us p99 22.8 us, carga cpu% 99.8
+   corrida 5: 29938 ciclos,   66 tarde (>1.5 ms), periodo máx  5.18 ms, cómputo p50 4.6 us p99 35.9 us, carga cpu% 99.9
+   corrida 6: 29951 ciclos,   66 tarde (>1.5 ms), periodo máx  3.15 ms, cómputo p50 4.5 us p99 22.5 us, carga cpu% 99.8
+   mediana: 66 tarde, periodo máx 4.31 ms (peor 5.99); cómputo p50 4.7 us
+
+(d) control de (c): 1 hilo de carga, nada anclado
+   corrida 1: 29816 ciclos,  165 tarde (>1.5 ms), periodo máx  9.35 ms, cómputo p50 4.8 us p99 25.5 us, carga cpu% 99.0
+   corrida 2: 29934 ciclos,   79 tarde (>1.5 ms), periodo máx  2.69 ms, cómputo p50 4.6 us p99 24.0 us, carga cpu% 99.5
+   corrida 3: 29931 ciclos,   86 tarde (>1.5 ms), periodo máx 10.59 ms, cómputo p50 4.5 us p99 42.1 us, carga cpu% 99.6
+   corrida 4: 29888 ciclos,  103 tarde (>1.5 ms), periodo máx  9.21 ms, cómputo p50 4.8 us p99 24.3 us, carga cpu% 99.7
+   corrida 5: 29967 ciclos,   34 tarde (>1.5 ms), periodo máx  4.20 ms, cómputo p50 9.8 us p99 71.1 us, carga cpu% 93.1
+   corrida 6: 29924 ciclos,   71 tarde (>1.5 ms), periodo máx  7.07 ms, cómputo p50 9.8 us p99 79.8 us, carga cpu% 93.0
+   mediana: 82 tarde, periodo máx 8.14 ms (peor 10.59); cómputo p50 4.8 us
+
+Lectura:
+- Anclar solo el ventilador (b) no cambia nada medible frente a (a): el lazo ya tiene prioridad 50 sobre la carga (9);
+  en su CPU la carga no le quita tiempo. Las diferencias entre (a) y (b) están dentro de la variación de la VM.
+- La reserva (c) rinde parecido a su control (d) en ciclos tarde (mediana 66 frente a 82), pero es MUCHO más estable:
+  65-73 en 6 de 6 corridas (d: 34-165) y periodo máximo <= 6 ms en 6 de 6 (d: > 7 ms en 4 de 6).
+- Casi toda la mejora de (a) a (c) viene de que hay menos carga en total (un hilo en vez de dos): el cómputo baja de
+  ~7 a ~4.7 us en (c) y en 4 de 6 corridas de (d). La carga ensucia caché y memoria del host, compartidas entre vCPU.
+- Cota superior: el piso de la VM (vm_noise) domina; en hardware real el efecto de reservar una CPU puede ser otro.

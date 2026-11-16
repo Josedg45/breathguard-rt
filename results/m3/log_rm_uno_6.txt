@@ -1,0 +1,10 @@
+cpu_burn: hilo 0 prio=9 SCHED_FIFO cpu=93.0%
+breath_ctrl: pid 14839822, PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 30 s
+breath_ctrl: primera inspiración t=1166.281 s del reloj del sistema
+breath_ctrl: 29924 ciclos, 71 con periodo > 1.5 ms, periodo máx 7.07 ms; cómputo p50 9.8 us, p99 79.8 us, máx 1566.1 us
+pneumatic_sim: listo como 'breathguard_pneumatic', prio 60, 33 s
+pneumatic_sim: AUTH t_abs=1166.279527 de pid 14839822: controlador autorizado pid 14839822
+pneumatic_sim: 32928 ticks, 26 > 1.5 ms, dt máx 6.17 ms, huecos recortados 0, lecturas 29924, comandos 29924
+pneumatic_sim: ventanas 1650, paciente sin Pulse (RC fijo), ventanas perdidas 0, resultados descartados 0
+pneumatic_sim: comandos rechazados por autorización 0 (último: pid 0, tipo 0x0)
+pneumatic_sim: mensajes de override 0
