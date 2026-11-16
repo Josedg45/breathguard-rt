@@ -10,8 +10,8 @@ Cambio de enfoque (2026-11-06): el proyecto pasó de MedPower (continuidad eléc
 |---|---|---|
 | M1 | Prueba de latencia | Completado |
 | M2 | Pulse en el host, API y paso de tiempo, port a QNX | Completado |
-| M3 | `pneumatic_sim` + `breath_ctrl` (PCV, VCV) | Completado (falta la tarea 2 del usuario) |
-| M4 | `safety_mon` | En curso (escenas en la VM hechas; falta la tarea 1 del usuario) |
+| M3 | `pneumatic_sim` + `breath_ctrl` (PCV, VCV) | Completado (falta la tarea 2 del usuario); runmask medido (2026-11-16) |
+| M4 | `safety_mon` | Completado (tarea 1 hecha por Claude a pedido del usuario el 2026-11-16; escena congelar repetida) |
 | M5 | `power_mgr` | Completado |
 | M6 | HMI, dashboard, comandos del operador, versión monolítica | Completado (contraste medido; tarea 3 del usuario pendiente) |
 | M7 | Entrega | En curso (demo grabable lista; falta el video) |
@@ -492,7 +492,7 @@ Error corregido: la antigüedad del comando contaba desde el arranque de la plan
 
 ### Pendiente
 - Grabar el video (< 3 min) con `scripts/demo_run.sh` y el contraste monolítico; subirlo a YouTube.
-- Repetir la escena "congelar" cuando el watchdog (tarea 1) funcione.
+- ~~Repetir la escena "congelar" cuando el watchdog (tarea 1) funcione.~~ Hecho el 2026-11-16 (ver "E").
 
 ## Plan QNX-específico (informe del 2026-11-09)
 
@@ -537,7 +537,7 @@ la planta) y B2 (política secpol: el tipo de la HMI no tiene `channel_connect` 
    Documentar qué es aprendido y qué son reglas de seguridad; nunca llamar IA a reglas fijas.
 6. Paquete `design/` para MATLAB: **ya hecho** en 9785f04. Mejoras, si hacen falta, quedan para después.
 
-### B1 — Autorización por pid en la planta (capa 1) (2026-11-09; falta la tarea 4)
+### B1 — Autorización por pid en la planta (capa 1) (2026-11-09; tarea 4 hecha el 2026-11-16)
 - **Tarea 4 del usuario** (`tareas/04_plant_auth/`): `auth_check()` en `plant_auth.c` (esqueleto que acepta todo,
   con TODO), README con la explicación de `_msg_info`, las reglas y 3 preguntas. Pruebas:
   - `make tarea4`: prueba unitaria en la VM (22 casos con `_msg_info` fabricados). Con el esqueleto fallan 11.
@@ -618,7 +618,7 @@ la planta) y B2 (política secpol: el tipo de la HMI no tiene `channel_connect` 
   (plantilla de QNX). Regenerar borró `/data`: Pulse y estados redesplegados. Arranque repetido (4 corridas):
   primera inspiración 5.10–5.83 s; más lento en todas las etapas, también la BIOS → host.
 
-### D — Copiloto con ML real (punto 5) (2026-11-09 y 2026-11-12; falta la tarea 5)
+### D — Copiloto con ML real (punto 5) (2026-11-09 y 2026-11-12; tarea 5 hecha el 2026-11-16)
 - **Qué es aprendido y qué no:** el árbol de decisión (`src/copilot_tree.h`, generado) solo dice a qué patrón se
   parece la respiración: `normal`, `leak`, `high_r` o `low_c`. Las features (`src/breath_feat.c`), la tabla clase →
   acción (`cp_rules`), las comprobaciones de `safety_mon` (`cp_check`, `cp_ack`) y la confirmación del operador son
@@ -675,3 +675,47 @@ la planta) y B2 (política secpol: el tipo de la HMI no tiene `channel_connect` 
   - Las clases son excluyentes: dos problemas a la vez no están en los datos.
   - Las zonas grises (R 25–40, C 30–40) se dejaron fuera del entrenamiento a propósito.
   - "Confianza" es la fracción de la hoja en el entrenamiento, no una probabilidad calibrada.
+
+## E — Tareas 1, 4 y 5 y extras QNX (2026-11-16)
+El usuario pidió que Claude hiciera las tareas recomendadas (1, 4 y 5) y dos extras para el premio "Best use of
+QNX-specific technologies" (`slog2` y runmask). Las tareas 2 y 3 siguen siendo suyas.
+
+- **Tarea 1, watchdog** (`tareas/01_watchdog/watchdog.c`): `make tarea1` pasa en la VM. Un latido que llega
+  cuando el plazo ya venció no borra el fallo (se evalúa el plazo antes de aceptarlo).
+  - **Escena congelar** (`slay -s STOP breath_ctrl` a los 40 s, Pulse, 3 corridas, `results/m4/*congelar_wd*`):
+    `CONTROL_COLGADO` 204–228 ms tras el `SIGSTOP` (198–200 ms tras el último comando; plazo 200 ms), override
+    0.03–0.12 ms después, respaldo 5.3 s, todas las respiraciones 568–569 mL, SpO2 97.94–98.04 %. Antes: APNEA a
+    los 9.2 s, 2 respiraciones de 0 mL y SpO2 97.04 %.
+- **Tarea 4, autorización por pid** (`tareas/04_plant_auth/plant_auth.c`): `make tarea4` pasa en la VM.
+  `scripts/b1_run.sh` PASA (`results/sec/*_b1_tarea4*`): AUTH, OVERRIDE y 999 WRITE rechazados con `EPERM`, Paw
+  máx 20.5 cmH2O durante el ataque (41 con el esqueleto), evento a los 36 ms. `b1_check.py` ahora ignora las líneas
+  `CP` de la HMI (se rompía desde el punto 5).
+- **Tarea 5, árbol** (`tareas/05_tree/tree_predict.c`): `make tarea5` y `make tarea5-host` pasan. Imagen regenerada
+  (`CLEAN=1`) con las tres tareas; Pulse y estados redesplegados. Con la imagen nueva PASAN `c5_run.sh pulse`
+  (fuga 15.5 s, obstrucción 15.4 s), `rc`, `liar`, `c5sec_run.sh`, `b2_run.sh` y `c5hmi_run.py`
+  (`results/copilot/*_t5*`). Árbol + reglas: máximo 1.5 µs (20 µs con el mentiroso).
+- **`slog2`** (`src/safety_mon.c`: `slog_init()`, `event()`): cada evento va al registro del sistema con gravedad
+  (CRITICAL/WARNING/INFO). `slog2f` solo copia a memoria compartida: puede ir en el camino crítico. Política:
+  `channel_connect:slogger_t` para `bg_safety_t`, a mano; comprobado que sin ella `slog2_register` da `EPERM`
+  (`results/slog2/`). En la imagen de arranque, matar `breath_ctrl` deja `CONTROL_MUERTO` y `RELANZA_CONTROL` como
+  `SLOG2_CRITICAL`, sin negaciones de secpol.
+- **Runmask** (`rt_pin()` en `src/rt_util.h`, `-C cpu` en `breath_ctrl`, `pneumatic_sim` y `cpu_burn`), 21 corridas
+  de 30 s con carga (`results/m3/runmask_resumen.txt`):
+
+  | Configuración | Ciclos tarde (mediana; rango) | Periodo máx (mediana; peor) |
+  |---|---|---|
+  | (a) libre, 2 hilos de carga | 304; 123–324 | 11.56; 12.08 ms |
+  | (b) ventilador en CPU 1, 2 hilos de carga libres | 245; 125–475 | 9.42; 11.31 ms |
+  | (c) reserva: ventilador en CPU 1, 1 hilo de carga en CPU 0 (6 corridas) | 66; 65–73 | 4.31; 5.99 ms |
+  | (d) control de (c): 1 hilo de carga, nada anclado (6 corridas) | 82; 34–165 | 8.14; 10.59 ms |
+
+  Anclar sin reservar no cambia nada medible (la prioridad ya protege). Reservar una vCPU hace el lazo mucho más
+  estable que la misma carga sin anclar. La mayor parte de la mejora de (a) a (c) se debe a que hay menos carga total.
+  Es una cota superior: domina el ruido de la VM.
+  - **Error encontrado:** `cpu_burn` medía el % de CPU de cada hilo desde que ese hilo empezaba a correr: un hilo que
+    esperó a que otro terminara marcaba 100 %. Ahora todos miden desde un inicio común (el hambreado marca 0 %).
+  - **`on -C` no basta para un proceso con hilos:** solo ancla el hilo principal. Por eso `cpu_burn -C`.
+- **Infraestructura:** WSL perdió el puente `br0` (crearlo exige `sudo`). Para no detenerse, la VM se arrancó con red
+  de usuario de QEMU en la misma subred (SSH reenviado a 127.0.0.1:2222, UDP 5006 para los comandos) y un alias
+  temporal en `~/.ssh/config`. `bg_cmd.py` acepta `BG_VM`.
+
