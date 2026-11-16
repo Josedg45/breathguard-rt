@@ -51,7 +51,7 @@ def main():
     res("3. safety_mon registra el evento", bool(evs), det)
 
     with open(os.path.join(d, f"hmi_{lab}.csv")) as f:
-        rows = [r for r in csv.DictReader(f) if r["t"] != "RT"]  # t_host, luego la línea de la HMI
+        rows = [r for r in csv.DictReader(f) if r["t"] not in ("RT", "CP")]  # solo las líneas de datos (no RT ni CP)
     paws = [float(r["paw"]) for r in rows]
     res("4. la HMI muestra datos (vía safety_mon)", len(rows) > 1000 and max(paws) > 15,
         f"{len(rows)} muestras, Paw máx {max(paws) if paws else 0:.1f} cmH2O")

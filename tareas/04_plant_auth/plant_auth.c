@@ -14,19 +14,38 @@ void auth_init(plant_auth_t *a)
 
 int auth_check(plant_auth_t *a, const struct _msg_info *info, uint16_t type, const bg_auth_msg_t *auth)
 {
-    (void)a;
-    (void)info;
-    (void)type;
-    (void)auth;
-    /* TODO 1: los mensajes que no mueven actuadores (READ, VITALS, PATIENT, FAULT y cualquier tipo desconocido)
-     *         se aceptan siempre. Usa un switch sobre type. */
-    /* TODO 2: BG_MSG_AUTH. En este orden:
-     *         a) si el emisor mandó menos bytes que sizeof(bg_auth_msg_t), rechazar (mira info->srcmsglen);
-     *         b) si auth->pid <= 0, rechazar;
-     *         c) si nadie es dueño todavía (safety_pid == 0), el emisor pasa a serlo;
-     *         d) si el emisor no es el dueño, rechazar;
-     *         e) ctrl_pid = auth->pid y aceptar. */
-    /* TODO 3: BG_MSG_WRITE: aceptar solo si hay un controlador autorizado y el emisor es ese proceso. */
-    /* TODO 4: BG_MSG_OVERRIDE: aceptar solo si hay dueño y el emisor es el dueño. */
-    return 1; /* esqueleto: acepta todo, como antes de esta tarea */
+    /* info->pid lo escribe el kernel: es el único dato de "quién envía" en el que se puede confiar. */
+    pid_t sender = info->pid;
+
+    switch (type) {
+    case BG_MSG_AUTH:
+        /* a) Mensaje truncado: el campo pid del union tendría basura del mensaje anterior. srcmsglen es con
+         *    signo (_Ssize64t), por eso se convierte el sizeof: comparar con signo distinto da avisos. */
+        if (auth == NULL || info->srcmsglen < (_Ssize64t)sizeof(bg_auth_msg_t))
+            return 0;
+        /* b) Un pid <= 0 no es un proceso: rechazarlo ANTES de nombrar dueño, para que un AUTH inválido
+         *    no le regale la propiedad a nadie. */
+        if (auth->pid <= 0)
+            return 0;
+        /* c) Trust on first use: el primero con un AUTH válido es el dueño (safety_mon arranca primero). */
+        if (a->safety_pid == 0)
+            a->safety_pid = sender;
+        /* d) Solo el dueño puede cambiar quién es el controlador. */
+        if (sender != a->safety_pid)
+            return 0;
+        /* e) El nuevo controlador reemplaza al anterior: un breath_ctrl viejo queda sin permiso. */
+        a->ctrl_pid = auth->pid;
+        return 1;
+
+    case BG_MSG_WRITE:
+        return a->ctrl_pid > 0 && sender == a->ctrl_pid;
+
+    case BG_MSG_OVERRIDE:
+        return a->safety_pid > 0 && sender == a->safety_pid;
+
+    default:
+        /* READ, VITALS, PATIENT, FAULT y tipos desconocidos no mueven actuadores (la planta contesta ENOSYS
+         * a lo que no conoce). */
+        return 1;
+    }
 }
