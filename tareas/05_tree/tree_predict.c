@@ -1,7 +1,8 @@
-/* tree_predict.c - TAREA 5 (tuya). Lee README.md antes de empezar. Unas 25-35 líneas.
+/* tree_predict.c - tarea 5: recorrer el árbol de decisión del copiloto. Las reglas están en README.md;
+ * la prueba es test_tree_predict.c (make tarea5 en la VM, make tarea5-host en Ubuntu).
  *
- * Mientras devuelva -1, el copiloto nunca sugiere nada (es seguro, pero no sirve para nada).
- * Prueba: make tarea5   (en Ubuntu: make tarea5-host) */
+ * Tiempo acotado: como mucho n_nodes pasos (con el árbol real, 5 comparaciones), sin memoria dinámica y sin
+ * recursión. Ante cualquier duda devuelve -1 ("no sé"), que para el copiloto significa "no sugerir nada". */
 #include "tree_predict.h"
 
 #include <math.h>
@@ -9,21 +10,34 @@
 int tree_predict(const tp_tree_t *t, const double *x, double *conf)
 {
     *conf = 0.0;
-    (void)t;
-    (void)x;
+    if (t->n_nodes <= 0 || t->n_classes <= 0 || t->n_classes > TP_MAX_CLASSES)
+        return -1;                                  /* árbol vacío o mal declarado */
 
-    /* TODO 1: empieza en la raíz (nodo 0) y recorre como máximo t->n_nodes pasos.
-     *         Si el índice del nodo actual no está en [0, n_nodes), el árbol está dañado: return -1. */
+    int node = 0;
+    int steps;
+    for (steps = 0; steps < t->n_nodes; steps++) {
+        if (node < 0 || node >= t->n_nodes)
+            return -1;                              /* hijo fuera de rango: árbol dañado */
+        int f = t->feature[node];
+        if (f == -1)
+            break;                                  /* hoja */
+        if (f < 0 || f >= t->n_features)
+            return -1;                              /* feature inválida */
+        if (!isfinite(x[f]))
+            return -1;                              /* NaN o infinito: no se adivina con datos malos */
+        /* scikit-learn compara la feature convertida a float (32 bits) contra un umbral double. */
+        node = ((double)(float)x[f] <= t->threshold[node]) ? t->left[node] : t->right[node];
+    }
+    /* Si se agotaron los pasos sin llegar a una hoja hay un ciclo. Si el último salto fue al nodo
+     * n_nodes (o más), tampoco hay hoja válida. Ambos casos se detectan aquí. */
+    if (steps == t->n_nodes || node < 0 || node >= t->n_nodes || t->feature[node] != -1)
+        return -1;
 
-    /* TODO 2: si el nodo es una hoja (feature == -1), sal del recorrido.
-     *         Si la feature no está en [0, n_features), árbol dañado: return -1. */
-
-    /* TODO 3: lee x[feature]. Si no es un número finito (isfinite), return -1: no se adivina con datos malos.
-     *         Compara como scikit-learn (README, "La trampa del float") y avanza a left o right. */
-
-    /* TODO 4: si saliste por el límite de pasos sin llegar a una hoja, return -1 (hay un ciclo).
-     *         En la hoja: busca la clase con mayor value (si empatan, la de menor índice),
-     *         pon su fracción en *conf y devuélvela. */
-
-    return -1;
+    const float *v = &t->value[node * t->n_classes];
+    int best = 0;
+    for (int k = 1; k < t->n_classes; k++)
+        if (v[k] > v[best])                         /* estricto: en empate gana el menor índice */
+            best = k;
+    *conf = v[best];
+    return best;
 }
