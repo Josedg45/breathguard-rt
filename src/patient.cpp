@@ -10,8 +10,11 @@
 // el tiempo real).
 //
 // Debe ejecutarse desde el directorio de datos de Pulse (/data/pulse en la VM).
-// Uso: patient [-s segundos] [-p prio] [-o salida.csv]
+// Uso: patient [-s segundos] [-p prio] [-o salida.csv] [-S estado.json]
 //      patient -W segundos    crea el estado "ya ventilado" y termina (una sola vez)
+//   -S: paciente del catálogo (states/BG_<tipo>.json, generados en el host con tools/pulse_states). Sin -S, el
+//       StandardMale de siempre. El tipo (<tipo>), la talla y el sexo viajan a la planta y de ahí a safety_mon
+//       (peso ideal) y a la HMI. La FiO2 la fija el mezclador de la planta en cada ventana.
 //
 // Por qué el estado ventilado: el R y la C que reporta Pulse son promedios por respiración que
 // convergen en varias respiraciones (R: 1.5 -> 22 cmH2O/(L/s)). Si se arranca con el paciente que
@@ -21,17 +24,22 @@
 #include <unistd.h>
 
 #include <cstdio>
+#include <algorithm>
+#include <cmath>
 #include <cstdlib>
+#include <cstring>
 #include <memory>
 #include <string>
 #include <vector>
 
 #include "engine/PulseEngine.h"
 #include "cdm/engine/SEPatientConfiguration.h"
+#include "cdm/patient/SEPatient.h"
 #include "cdm/patient/actions/SEDyspnea.h"
 #include "cdm/patient/actions/SEMechanicalVentilation.h"
 #include "cdm/properties/SEScalar0To1.h"
 #include "cdm/properties/SEScalarFrequency.h"
+#include "cdm/properties/SEScalarLength.h"
 #include "cdm/properties/SEScalarPressure.h"
 #include "cdm/properties/SEScalarPressureTimePerVolume.h"
 #include "cdm/properties/SEScalarTime.h"
@@ -52,7 +60,26 @@ namespace {
 constexpr const char* kProg = "patient";
 constexpr const char* kStatePath = "./states/BreathGuard_StandardMale.json";
 constexpr const char* kVentStatePath = "./states/BreathGuard_StandardMale_PCV.json";
-constexpr double kFiO2 = 0.21;
+constexpr double kFiO2 = 0.21;  // aire, hasta que la planta diga otra cosa
+
+// Fija la mezcla que respira Pulse: O2 = fio2, CO2 del aire, el resto N2.
+void set_gas(SEMechanicalVentilation& mech, const SESubstanceManager& subs, double fio2)
+{
+  mech.GetGasFraction(*subs.GetSubstance("Oxygen")).GetFractionAmount().SetValue(fio2);
+  mech.GetGasFraction(*subs.GetSubstance("CarbonDioxide")).GetFractionAmount().SetValue(4.0e-4);
+  mech.GetGasFraction(*subs.GetSubstance("Nitrogen")).GetFractionAmount().SetValue(1.0 - fio2 - 4.0e-4);
+}
+
+// "states/BG_ards_moderate.json" -> "ards_moderate"; cualquier otro nombre -> el archivo sin carpeta ni .json.
+std::string type_name(const std::string& path)
+{
+  std::string b = path.substr(path.find_last_of('/') + 1);
+  if (b.size() > 5 && b.compare(b.size() - 5, 5, ".json") == 0) b.resize(b.size() - 5);
+  if (b.compare(0, 3, "BG_") == 0) b = b.substr(3);
+  for (char& ch : b)
+    if (ch == ',' || ch == ' ') ch = '_';  // va en una línea CSV de la HMI
+  return b;
+}
 
 struct Row {
   uint32_t k, backlog, lost;
@@ -66,14 +93,16 @@ int main(int argc, char** argv)
   double secs = 60, warmup = 0;
   int prio = 20, opt;
   const char* out_path = nullptr;
-  while ((opt = getopt(argc, argv, "s:p:o:W:")) != -1) {
+  const char* state_arg = nullptr;
+  while ((opt = getopt(argc, argv, "s:p:o:W:S:")) != -1) {
     switch (opt) {
     case 's': secs = std::atof(optarg); break;
     case 'W': warmup = std::atof(optarg); break;
     case 'p': prio = std::atoi(optarg); break;
     case 'o': out_path = optarg; break;
+    case 'S': state_arg = optarg; break;
     default:
-      std::fprintf(stderr, "uso: %s [-s segundos] [-p prio] [-o salida.csv]\n", kProg);
+      std::fprintf(stderr, "uso: %s [-s segundos] [-p prio] [-o salida.csv] [-S estado.json]\n", kProg);
       return 1;
     }
   }
@@ -83,7 +112,8 @@ int main(int argc, char** argv)
   std::unique_ptr<PhysiologyEngine> pe = CreatePulseEngine();
   pe->GetLogger()->LogToConsole(false);
   pe->GetLogger()->SetLogFile("./test_results/patient.log");
-  const char* state = (warmup == 0 && access(kVentStatePath, R_OK) == 0) ? kVentStatePath : kStatePath;
+  const char* state = state_arg ? state_arg
+                     : (warmup == 0 && access(kVentStatePath, R_OK) == 0) ? kVentStatePath : kStatePath;
   if (!pe->SerializeFromFile(state)) {
     std::fprintf(stderr, "%s: no se pudo cargar %s\n", kProg, state);
     return 1;
@@ -97,9 +127,8 @@ int main(int argc, char** argv)
   SEMechanicalVentilation mech;
   mech.SetState(eSwitch::On);
   const SESubstanceManager& subs = pe->GetSubstanceManager();
-  mech.GetGasFraction(*subs.GetSubstance("Oxygen")).GetFractionAmount().SetValue(kFiO2);
-  mech.GetGasFraction(*subs.GetSubstance("CarbonDioxide")).GetFractionAmount().SetValue(4.0e-4);
-  mech.GetGasFraction(*subs.GetSubstance("Nitrogen")).GetFractionAmount().SetValue(1.0 - kFiO2 - 4.0e-4);
+  double fio2 = kFiO2;
+  set_gas(mech, subs, fio2);
   const double dt_pulse = pe->GetTimeStep(TimeUnit::s);
   if (dt_pulse < BG_WINDOW_S - 1e-9 || dt_pulse > BG_WINDOW_S + 1e-9) {
     std::fprintf(stderr, "%s: Pulse avanza %.4f s por paso y la ventana es %.4f s\n", kProg, dt_pulse,
@@ -124,7 +153,12 @@ int main(int argc, char** argv)
                 pe->GetBloodChemistrySystem()->GetOxygenSaturation() * 100);
     return pe->SerializeToFile(kVentStatePath) ? 0 : 1;
   }
-  std::printf("%s: %s cargado en %.1f s\n", kProg, state, rt_now_s() - t_load);
+  const SEPatient& patient = pe->GetPatient();
+  const std::string name = state_arg ? type_name(state_arg) : "healthy_male";
+  const double height_cm = patient.GetHeight(LengthUnit::cm);
+  const int male = patient.GetSex() == ePatient_Sex::Male;
+  std::printf("%s: %s cargado en %.1f s (%s, %s, %.0f cm)\n", kProg, state, rt_now_s() - t_load, name.c_str(),
+              male ? "hombre" : "mujer", height_cm);
   std::fflush(stdout);
 
   // 2. Conectarse a la planta por nombre.
@@ -137,8 +171,15 @@ int main(int argc, char** argv)
 
   rt_setup(kProg, prio);
 
+  // -s 0: sin límite (banco de pruebas interactivo). Las filas solo se guardan si se pidió un CSV (-o): en una
+  // sesión larga crecerían sin fin. El resumen final usa contadores, no las filas.
+  secs = rt_duration(secs);
   std::vector<Row> rows;
-  rows.reserve(static_cast<size_t>(secs / BG_WINDOW_S) + 1000);
+  if (out_path) rows.reserve(static_cast<size_t>(std::min(secs, 3600.0) / BG_WINDOW_S) + 1000);
+  size_t n_windows = 0, late = 0;
+  uint32_t max_backlog = 0, last_lost = 0;
+  double max_step = 0;
+  Row last{};
 
   bg_patient_msg_t msg{};
   msg.hdr.type = BG_MSG_PATIENT;
@@ -154,6 +195,11 @@ int main(int argc, char** argv)
     const double t_got = rt_now_s();
 
     mech.GetPressure().SetValue(w.paw_mean, PressureUnit::cmH2O);
+    // Mezclador de O2: solo se toca la mezcla si cambió (y si el valor es sensato: lo manda otro proceso).
+    if (std::isfinite(w.fio2) && w.fio2 >= 0.21 && w.fio2 <= 1.0 && std::fabs(w.fio2 - fio2) > 1e-4) {
+      fio2 = w.fio2;
+      set_gas(mech, subs, fio2);
+    }
     pe->ProcessAction(mech);
     pe->AdvanceModelTime();
     const double step_us = (rt_now_s() - t_got) * 1e6;
@@ -167,32 +213,32 @@ int main(int argc, char** argv)
     st.spo2 = pe->GetBloodChemistrySystem()->GetOxygenSaturation();
     st.etco2 = resp->GetEndTidalCarbonDioxidePressure(PressureUnit::mmHg);
     st.hr = pe->GetCardiovascularSystem()->GetHeartRate(FrequencyUnit::Per_min);
-    st.fio2 = kFiO2;  // la mezcla que le damos a Pulse (aire ambiente; no hay mezclador de O2 en el modelo)
+    st.fio2 = fio2;  // la mezcla que respira Pulse ahora
+    st.height_cm = height_cm;
+    st.male = male;
+    std::snprintf(st.name, sizeof st.name, "%s", name.c_str());
     msg.have_result = 1;
     msg.k = w.k;
 
-    rows.push_back({w.k, w.backlog, w.lost, w.t_end, t_got - t_start, w.paw_mean, st.v * 1e3, st.q * 1e3,
-                    st.r, st.c * 1e3, st.spo2, st.etco2, st.hr, step_us, w.last_dv * 1e3});
+    last = {w.k, w.backlog, w.lost, w.t_end, t_got - t_start, w.paw_mean, st.v * 1e3, st.q * 1e3,
+            st.r, st.c * 1e3, st.spo2, st.etco2, st.hr, step_us, w.last_dv * 1e3};
+    if (out_path) rows.push_back(last);
+    n_windows++;
+    if (step_us > BG_WINDOW_S * 1e6) late++;
+    if (w.backlog > max_backlog) max_backlog = w.backlog;
+    if (step_us > max_step) max_step = step_us;
+    last_lost = w.lost;
   }
   name_close(coid);
   rt_relax();
 
-  if (rows.empty()) {
+  if (n_windows == 0) {
     std::fprintf(stderr, "%s: no se simuló ninguna ventana\n", kProg);
     return 1;
   }
-  size_t late = 0;
-  uint32_t max_backlog = 0;
-  double max_step = 0;
-  for (const Row& r : rows) {
-    if (r.step_us > BG_WINDOW_S * 1e6) late++;
-    if (r.backlog > max_backlog) max_backlog = r.backlog;
-    if (r.step_us > max_step) max_step = r.step_us;
-  }
-  const Row& last = rows.back();
   std::printf("%s: %zu ventanas, pasos > 20 ms %zu, paso máx %.1f ms, atraso máx %u ventanas, perdidas %u; "
               "final: SpO2 %.1f %%, EtCO2 %.1f mmHg, FC %.0f\n",
-              kProg, rows.size(), late, max_step / 1e3, max_backlog, last.lost, last.spo2 * 100, last.etco2,
+              kProg, n_windows, late, max_step / 1e3, max_backlog, last_lost, last.spo2 * 100, last.etco2,
               last.hr);
 
   if (out_path) {

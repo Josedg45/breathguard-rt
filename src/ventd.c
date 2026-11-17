@@ -72,8 +72,9 @@ static int get_safety(bg_safety_status_t *ss, bg_monitor_t *mo)
 
 static size_t put_settings(char *b, size_t n, const bg_settings_t *s)
 {
-    return (size_t)snprintf(b, n, "mode=%s p_insp=%.1f peep=%.1f rr=%.1f ie=%.1f vt=%.0f\n", s->vcv ? "vcv" : "pcv",
-                            s->set.p_insp, s->set.peep, s->set.rr, s->set.ie, s->vt * 1e3);
+    return (size_t)snprintf(b, n, "mode=%s p_insp=%.1f peep=%.1f rr=%.1f ie=%.1f vt=%.0f fio2=%.2f\n",
+                            s->vcv ? "vcv" : "pcv", s->set.p_insp, s->set.peep, s->set.rr, s->set.ie, s->vt * 1e3,
+                            s->set.fio2);
 }
 
 static size_t put_alarms(char *b, size_t n, uint32_t al)

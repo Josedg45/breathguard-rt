@@ -126,8 +126,8 @@ int main(int argc, char **argv)
     double secs = 30, vt_ml = 500, t0 = -1;
     int prio = 50, opt, vcv = 0, heartbeat = 0, cpu = -1;
     const char *out_path = NULL;
-    vent_settings_t set = { .rr = 12, .ie = 2.0, .p_insp = 20, .peep = 5, .rise_s = 0.1 };
-    while ((opt = getopt(argc, argv, "s:p:m:P:V:e:r:i:T:So:C:")) != -1) {
+    vent_settings_t set = { .rr = 12, .ie = 2.0, .p_insp = 20, .peep = 5, .rise_s = 0.1, .fio2 = 0.21 };
+    while ((opt = getopt(argc, argv, "s:p:m:P:V:e:r:i:T:So:C:F:")) != -1) {
         switch (opt) {
         case 's': secs = atof(optarg); break;
         case 'p': prio = atoi(optarg); break;
@@ -137,13 +137,14 @@ int main(int argc, char **argv)
         case 'e': set.peep = atof(optarg); break;
         case 'r': set.rr = atof(optarg); break;
         case 'i': set.ie = atof(optarg); break;
+        case 'F': set.fio2 = atof(optarg); break;
         case 'T': t0 = atof(optarg); break;
         case 'S': heartbeat = 1; break;
         case 'o': out_path = optarg; break;
         case 'C': cpu = atoi(optarg); break; /* runmask: anclar a esta CPU */
         default:
             fprintf(stderr, "uso: %s [-s seg] [-p prio] [-m pcv|vcv] [-P p_insp] [-V vt_ml] [-e peep] [-r rr] "
-                            "[-i ie] [-T inicio_ciclo] [-S] [-o salida.csv] [-C cpu]\n", PROG);
+                            "[-i ie] [-F fio2] [-T inicio_ciclo] [-S] [-o salida.csv] [-C cpu]\n", PROG);
             return 1;
         }
     }

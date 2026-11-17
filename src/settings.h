@@ -38,6 +38,8 @@ typedef struct {
 #define SET_IE_MAX 4.0        /* I:E 1:4 */
 #define SET_VT_MIN 0.2        /* L */
 #define SET_VT_MAX 0.8
+#define SET_FIO2_MIN 0.21     /* aire */
+#define SET_FIO2_MAX 1.0      /* O2 puro */
 #define SET_LEAD_S 0.2        /* un cambio necesita al menos esto antes de aplicarse */
                               /* Must stay above breath_ctrl's poll period (SETTINGS_EVERY, ~100 ms) plus its
                                * 2 ms query timeout, so the controller sees every change before its t0. */
@@ -64,7 +66,8 @@ int settings_schedule(const bg_settings_t *cur, const bg_settings_t *pending, do
 /* Numero de respiracion (desde t0 de cur) en now, y si esta en inspiracion. */
 uint32_t settings_breath(const bg_settings_t *cur, double now, int *insp, double *into);
 
-/* Comando de texto del operador ("p_insp=25 peep=8", claves mode=pcv|vcv, p_insp, peep, rr, ie, vt en mL) ->
+/* Comando de texto del operador ("p_insp=25 peep=8", claves mode=pcv|vcv, p_insp, peep, rr, ie, vt en mL,
+ * fio2 como fracción 0.21-1 o porcentaje 21-100) ->
  * pedido de ajustes, partiendo de base. Modifica txt (strtok). Devuelve 0 si se entendio; si no, -1 y el motivo
  * en err. Lo usan la HMI (UDP) y ventd (/dev/ventilator/settings). */
 int settings_parse_cmd(char *txt, const bg_settings_t *base, bg_settings_t *req, char *err, size_t n);

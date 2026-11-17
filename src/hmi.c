@@ -206,9 +206,10 @@ int main(int argc, char **argv)
             else if (!rep.ok) snprintf(ans, sizeof ans, "NAK %s\n", rep.why);
             else {
                 ss.set = rep.now; /* para que un segundo comando seguido parta de este */
-                snprintf(ans, sizeof ans, "ACK #%u %s p_insp %.1f peep %.1f rr %.1f ie %.1f vt %.0f desde t=%.3f\n",
+                snprintf(ans, sizeof ans,
+                         "ACK #%u %s p_insp %.1f peep %.1f rr %.1f ie %.1f vt %.0f fio2 %.2f desde t=%.3f\n",
                          rep.now.seq, rep.now.vcv ? "VCV" : "PCV", rep.now.set.p_insp, rep.now.set.peep,
-                         rep.now.set.rr, rep.now.set.ie, rep.now.vt * 1e3, rep.now.t0);
+                         rep.now.set.rr, rep.now.set.ie, rep.now.vt * 1e3, rep.now.set.fio2, rep.now.t0);
             }
             sendto(csock, ans, strlen(ans), 0, (struct sockaddr *)&from, flen);
             flen = sizeof from;
@@ -233,12 +234,14 @@ int main(int argc, char **argv)
                              "RT,t=%.3f,pid=%d,cyc=%u,late=%u,lost=%u,p50=%.3f,p99=%.3f,p999=%.3f,max=%.3f,"
                              "ex99=%.1f,exmax=%.1f,loop_age=%.2f,age99=%.2f,agemax=%.2f,fio2=%.2f,ibw=%.1f,"
                              "ap=%.2f,qee=%.4f,tau=%.3f,eef=%d,lim_phi=%.1f,lim_plo=%.1f,lim_apnea=%.1f,"
-                             "lim_vtlo=%.0f,lim_vthi=%.0f,lim_ap=%.1f,denied=%u,hist=",
+                             "lim_vtlo=%.0f,lim_vthi=%.0f,lim_ap=%.1f,denied=%u,set_fio2=%.2f,patient=%s,"
+                             "height=%.1f,male=%d,hist=",
                              rt_now_s(), L->pid, L->cycles, L->late, L->lost, L->p50_ms, L->p99_ms, L->p999_ms,
                              L->max_ms, L->exec_p99_us, L->exec_max_us, ss.loop_age_s, mo.vt.cmd_age_p99_all * 1e3,
                              mo.vt.cmd_age_max_all * 1e3, mo.vt.fio2, ss.ibw_kg, ss.auto_peep, ss.q_ee, ss.tau_exp,
                              ss.eef, ss.lim_p_high, ss.lim_p_low, ss.lim_apnea_s, ss.lim_vt_lo * 1e3,
-                             ss.lim_vt_hi * 1e3, ss.lim_auto_peep, ss.denied);
+                             ss.lim_vt_hi * 1e3, ss.lim_auto_peep, ss.denied, ss.set.set.fio2,
+                             mo.vt.have && mo.vt.name[0] ? mo.vt.name : "-", mo.vt.height_cm, mo.vt.male);
             for (int h = 0; h < BG_HIST_BINS && k < (int)sizeof rt - 16; h++)
                 k += snprintf(rt + k, sizeof rt - k, h ? "|%u" : "%u", L->hist[h]);
             k += snprintf(rt + k, sizeof rt - k, "\n");

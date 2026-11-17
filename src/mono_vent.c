@@ -65,7 +65,7 @@ int main(int argc, char **argv)
     const char *host = NULL;
     int port = 5005, prio = 50, opt;
     double secs = 3600;
-    vent_settings_t set = { .rr = 12, .ie = 2.0, .p_insp = 20, .peep = 5, .rise_s = 0.1 };
+    vent_settings_t set = { .rr = 12, .ie = 2.0, .p_insp = 20, .peep = 5, .rise_s = 0.1, .fio2 = 0.21 };
     while ((opt = getopt(argc, argv, "h:u:s:p:P:e:r:")) != -1) {
         switch (opt) {
         case 'h': host = optarg; break;

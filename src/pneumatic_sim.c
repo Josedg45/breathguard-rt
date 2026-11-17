@@ -97,8 +97,11 @@ static void reply_window(int rcvid, uint32_t k)
         k = win_k - RING;
     }
     window_t *w = &ring[k % RING];
+    /* FiO2: la del mezclador ahora (no por ventana: el gas tarda más que 20 ms en llegar al alvéolo). Antes del
+     * primer comando act.fio2 vale 0 -> aire. */
     bg_window_t rep = { .k = k, .backlog = win_k - k - 1, .t_end = w->t_end,
-                        .paw_mean = w->paw_mean, .last_dv = last_dv, .lost = lost };
+                        .paw_mean = w->paw_mean, .last_dv = last_dv, .lost = lost,
+                        .fio2 = act.fio2 >= 0.21 ? act.fio2 : 0.21 };
     MsgReply(rcvid, EOK, &rep, sizeof rep);
 }
 
@@ -320,7 +323,10 @@ int main(int argc, char **argv)
                                .c = pl.p.c_pat, .src = override_on, .cmd_age_max = cmd_age_max,
                                .cmd_age_p99_all = age_p99(), .cmd_age_max_all = age_max_all,
                                .fio2 = have_patient ? vitals.fio2 : -1, .denied = denied,
-                               .denied_pid = denied_pid, .denied_type = denied_type };
+                               .denied_pid = denied_pid, .denied_type = denied_type,
+                               .height_cm = have_patient ? vitals.height_cm : 0, .male = vitals.male };
+            if (have_patient) memcpy(vt.name, vitals.name, sizeof vt.name);
+            vt.name[sizeof vt.name - 1] = 0; /* lo escribió otro proceso: no confiar en que termine en 0 */
             cmd_age_max = 0;
             MsgReply(rcvid, EOK, &vt, sizeof vt);
             break;

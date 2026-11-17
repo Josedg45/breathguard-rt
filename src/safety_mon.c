@@ -180,7 +180,7 @@ static pid_t spawn_copilot(double secs_left)
     return pid;
 }
 
-static char ctrl_args[10][32];
+static char ctrl_args[12][32];
 static int n_ctrl_args;
 
 /* breath_ctrl se lanza (y relanza) con los ajustes vigentes y su inicio de ciclo; si hay un cambio programado,
@@ -199,6 +199,8 @@ static pid_t spawn_ctrl(int plant, const bg_settings_t *cur, double secs_left)
     snprintf(ctrl_args[n_ctrl_args++], 32, "%.3f", cur->set.rr);
     snprintf(ctrl_args[n_ctrl_args++], 32, "-i");
     snprintf(ctrl_args[n_ctrl_args++], 32, "%.3f", cur->set.ie);
+    snprintf(ctrl_args[n_ctrl_args++], 32, "-F");
+    snprintf(ctrl_args[n_ctrl_args++], 32, "%.2f", cur->set.fio2);
     snprintf(t0s, sizeof t0s, "%.6f", cur->t0);
     snprintf(ss, sizeof ss, "%.3f", rt_child_secs(secs_left));
     char *argv[24];
@@ -251,12 +253,12 @@ int main(int argc, char **argv)
     double secs = 60, vt_ml = 500;
     int prio = 55, opt, vcv = 0;
     const char *out_path = NULL;
-    vent_settings_t set = { .rr = 12, .ie = 2.0, .p_insp = 20, .peep = 5, .rise_s = 0.1 };
+    vent_settings_t set = { .rr = 12, .ie = 2.0, .p_insp = 20, .peep = 5, .rise_s = 0.1, .fio2 = 0.21 };
     double height_cm = 180.3; /* paciente StandardMale de Pulse: 71 in */
     int male = 1;
     lung_cfg_t lcfg = lung_default_cfg();
     int use_copilot = 0;
-    while ((opt = getopt(argc, argv, "s:p:m:P:V:e:r:h:g:A:c:H:o:KQ:k:")) != -1) {
+    while ((opt = getopt(argc, argv, "s:p:m:P:V:e:r:F:h:g:A:c:H:o:KQ:k:")) != -1) {
         switch (opt) {
         case 's': secs = atof(optarg); break;
         case 'p': prio = atoi(optarg); break;
@@ -265,6 +267,7 @@ int main(int argc, char **argv)
         case 'V': vt_ml = atof(optarg); break;
         case 'e': set.peep = atof(optarg); break;
         case 'r': set.rr = atof(optarg); break;
+        case 'F': set.fio2 = atof(optarg) > 1.0 ? atof(optarg) / 100.0 : atof(optarg); break;
         case 'h': height_cm = atof(optarg); break;
         case 'g': male = optarg[0] != 'f'; break;
         case 'A': lcfg.auto_peep_max = atof(optarg); break;
@@ -275,7 +278,7 @@ int main(int argc, char **argv)
         case 'Q': copilot_csv = optarg; break;
         case 'k': copilot_path = optarg; break;
         default:
-            fprintf(stderr, "uso: %s [-s seg] [-p prio] [-m pcv|vcv] [-P p_insp] [-V vt_ml] [-e peep] [-r rr] "
+            fprintf(stderr, "uso: %s [-s seg] [-p prio] [-m pcv|vcv] [-P p_insp] [-V vt_ml] [-e peep] [-r rr] [-F fio2] "
                             "[-h talla_cm] [-g m|f] [-A auto_peep_max] [-c breath_ctrl] [-H ip_host] [-o eventos.csv] "
                             "[-K] [-Q copilot.csv] [-k copilot]\n", PROG);
             return 1;
@@ -326,7 +329,10 @@ int main(int argc, char **argv)
     vtm_init(&vtm);
     lung_mon_t lm;
     lung_init(&lm, &lcfg);
-    const double ibw = ibw_kg(height_cm, male);
+    /* Peso ideal: de -h/-g al arrancar; si Pulse informa la talla y el sexo de su paciente (que el banco de pruebas
+     * puede cambiar en marcha, scripts/patients.py), manda lo de Pulse. Cambia los límites de Vt y el copiloto. */
+    double ibw = ibw_kg(height_cm, male);
+    char patient_name[24] = "";
     bg_loop_stats_t loop = { 0 };
     double loop_t = -1; /* cuando llegaron las ultimas metricas del lazo */
     uint32_t vtm_breaths_seen = 0;
@@ -459,9 +465,9 @@ int main(int argc, char **argv)
                     req.seq = base->seq + 1;
                     next = req;
                     pending = 1;
-                    snprintf(buf, sizeof buf, "#%u %s %.1f/%.1f %.0f rpm 1:%.1f Vt %.0f desde t=%.3f", next.seq,
-                             next.vcv ? "VCV" : "PCV", next.set.p_insp, next.set.peep, next.set.rr, next.set.ie,
-                             next.vt * 1e3, next.t0 - t_start);
+                    snprintf(buf, sizeof buf, "#%u %s %.1f/%.1f %.0f rpm 1:%.1f Vt %.0f FiO2 %.0f desde t=%.3f",
+                             next.seq, next.vcv ? "VCV" : "PCV", next.set.p_insp, next.set.peep, next.set.rr,
+                             next.set.ie, next.vt * 1e3, next.set.fio2 * 100, next.t0 - t_start);
                     event(now, "AJUSTE_ACEPTADO", buf);
                 } else {
                     event(now, "AJUSTE_RECHAZADO", r.why);
@@ -654,6 +660,17 @@ int main(int argc, char **argv)
         last_s = s;
         if (ticks % 100 == 1) { /* cada 100 ms: signos vitales y registro de la planta (para la HMI y la tarea 4) */
             if (MsgSend(plant, &rv, sizeof rv, &last_vt, sizeof last_vt) == -1) break;
+            if (last_vt.have && last_vt.height_cm > 100 && last_vt.height_cm < 230 &&
+                strncmp(last_vt.name, patient_name, sizeof patient_name) != 0) {
+                height_cm = last_vt.height_cm;
+                male = last_vt.male != 0;
+                ibw = ibw_kg(height_cm, male);
+                memcpy(patient_name, last_vt.name, sizeof patient_name);
+                patient_name[sizeof patient_name - 1] = 0;
+                snprintf(buf, sizeof buf, "%s, %s, %.0f cm, peso ideal %.1f kg", patient_name[0] ? patient_name : "?",
+                         male ? "hombre" : "mujer", height_cm, ibw);
+                event(now, "PACIENTE", buf);
+            }
             if (last_vt.denied != denied_seen) {
                 snprintf(buf, sizeof buf, "pid %d tipo 0x%x; %u rechazos", last_vt.denied_pid,
                          last_vt.denied_type, last_vt.denied);

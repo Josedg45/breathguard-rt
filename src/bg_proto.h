@@ -136,12 +136,16 @@ typedef struct {
     double paw_mean;   /* presión promedio en la boca del paciente durante la ventana (cmH2O) */
     double last_dv;    /* corrección de volumen aplicada con el resultado anterior (L) */
     uint32_t lost;     /* ventanas que patient no alcanzó a simular */
+    double fio2;       /* fracción de O2 que entrega el mezclador al final de la ventana (0.21-1.0) */
 } bg_window_t;
 
 typedef struct {
     double v, q, r, c;           /* estado de Pulse: L, L/s, cmH2O/(L/s), L/cmH2O */
     double spo2, etco2, hr;      /* fracción 0-1, mmHg, lpm */
     double fio2;                 /* fracción de O2 del gas que respira el paciente en Pulse */
+    double height_cm;            /* talla del paciente de Pulse (para el peso ideal) */
+    int32_t male;                /* 1 hombre, 0 mujer */
+    char name[24];               /* tipo de paciente del catálogo (BG_<name>.json), p. ej. "ards_moderate" */
 } bg_patient_state_t;
 
 typedef struct {
@@ -164,6 +168,9 @@ typedef struct {
     double cmd_age_max;  /* s: antigüedad máxima del último comando aplicado desde la consulta anterior */
     double cmd_age_p99_all, cmd_age_max_all; /* s: p99 y máximo de la antigüedad desde el arranque (cada 1 ms) */
     double fio2;
+    double height_cm;    /* paciente de Pulse conectado: talla, sexo y tipo (0 / "" si no hay) */
+    int32_t male;
+    char name[24];
     /* Comandos rechazados por la autorización (tarea 4): total, y el último emisor y tipo de mensaje. */
     uint32_t denied;
     int32_t denied_pid;

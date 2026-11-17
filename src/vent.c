@@ -61,6 +61,8 @@ void vent_step(vent_t *c, double now_s, double dt, const sensors_t *s, actuators
 {
     const vent_settings_t *v = &c->set;
     const double period = 60.0 / v->rr;
+    /* El mezclador de O2 no depende de la fase: se fija en cada paso (controlador y respaldo por igual). */
+    out->fio2 = v->fio2 >= 0.21 ? (v->fio2 <= 1.0 ? v->fio2 : 1.0) : 0.21;
     const double ti = period / (1.0 + v->ie);
 
     double since = now_s - c->t0;
