@@ -1,0 +1,8 @@
+healthy_male: ibw 75.4 SpO2 97.9 EtCO2 34.2 Vt(last3) [573, 571, 570] Ppeak 20.72 auto-PEEP 1.02 R 22.9 C 59 alarms [] cp normal/none
+healthy_female: ibw 54.7 SpO2 98.6 EtCO2 27.5 Vt(last3) [567, 567, 568] Ppeak 20.563 auto-PEEP 0.98 R 22.9 C 58 alarms [] cp normal/none
+obese_male: ibw 75.4 SpO2 97.6 EtCO2 36.6 Vt(last3) [571, 572, 573] Ppeak 20.685 auto-PEEP 1.0 R 22.9 C 59 alarms [] cp normal/none
+ards_moderate: ibw 75.4 SpO2 74.8 EtCO2 37.6 Vt(last3) [425, 421, 423] Ppeak 20.83 auto-PEEP 0.26 R 25.0 C 33 alarms [] cp normal/none
+ards_severe: ibw 75.4 SpO2 33.8 EtCO2 34.2 Vt(last3) [396, 397, 395] Ppeak 20.68 auto-PEEP 0.14 R 25.7 C 30 alarms [] cp normal/none
+copd: ibw 75.4 SpO2 80.8 EtCO2 40.1 Vt(last3) [417, 414, 413] Ppeak 20.713 auto-PEEP 2.61 R 32.4 C 63 alarms [] cp high_resistance/pending
+pneumonia: ibw 54.7 SpO2 87.8 EtCO2 29.1 Vt(last3) [503, 503, 502] Ppeak 20.861 auto-PEEP 0.55 R 23.5 C 37 alarms [] cp normal/cleared
+asthma_attack: ibw 54.7 SpO2 98.2 EtCO2 32.1 Vt(last3) [469, 472, 472] Ppeak 20.62 auto-PEEP 1.37 R 29.8 C 56 alarms [] cp normal/cleared

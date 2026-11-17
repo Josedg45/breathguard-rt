@@ -719,3 +719,20 @@ QNX-specific technologies" (`slog2` y runmask). Las tareas 2 y 3 siguen siendo s
   de usuario de QEMU en la misma subred (SSH reenviado a 127.0.0.1:2222, UDP 5006 para los comandos) y un alias
   temporal en `~/.ssh/config`. `bg_cmd.py` acepta `BG_VM`.
 
+
+## F — Banco interactivo y catálogo de pacientes (2026-11-16)
+Pedido: interfaz interactiva y varios tipos de paciente. Decidido por el usuario: pacientes Pulse con enfermedades
+(estados generados antes), controles como botones en el dashboard.
+- `tools/pulse_states` (host): 8 pacientes (sano H/M, obeso, SDRA moderado/grave, EPOC, neumonía, crisis asmática),
+  estabilizados y ventilados 120 s con PCV 20/5 → `states/BG_<id>.json` (`results/patients/states_build.txt`).
+- FiO2 de punta a punta: ajuste del operador (`fio2=` en fracción o %, 21-100 %), `vent_settings_t.fio2` →
+  `actuators_t.fio2` (mezclador) → ventana de la planta → `patient` cambia la mezcla de Pulse. HMI/ventd/dashboard la muestran.
+- `patient -S estado.json` y el nombre/sexo/altura viajan a `safety_mon`, que recalcula peso ideal y límites de Vt
+  (evento `PACIENTE`, también en slog2).
+- Banco: `scripts/bench_target.sh` (VM), `scripts/bench.py` (host), `scripts/bench_run.sh`, panel
+  `scripts/dashboard_controls.py` (`dashboard.py --control`): operador por la HMI, banco por SSH.
+- Probado en la VM: los 8 pacientes en marcha (`results/patients/tour_pcv20_5.txt`); SDRA + FiO2 60/PEEP 10/Pinsp 25 →
+  SpO2 74 → 88 % en ~50 s (`results/patients/ards_fio2.txt`); fallas, red, matar HMI/controlador y NAK por el panel.
+- Errores corregidos: parse del dashboard con valores de texto, `patient -s 0`, filas sin límite, mensaje del NAK de FiO2.
+- Límite: las alarmas de Vt y fuga dependen de la tarea 2 (pendiente del usuario).
+- Imagen regenerada con `CLEAN=1` (cambiaron las estructuras); Pulse y estados redesplegados.

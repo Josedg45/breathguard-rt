@@ -69,10 +69,51 @@ firmware without patients.
   patient's time constant is 1.4 s.
 - Also on the dashboard:
   - measured respiratory rate, I:E and minute ventilation;
-  - FiO2;
+  - FiO2 delivered and set (the blender mixes the gas Pulse breathes);
+  - the connected patient (type, sex, height);
   - the active alarm limits;
   - vertical event markers on the waveforms (controller failover, HMI restart, disconnection, mains loss, settings
     applied).
+
+## Interactive test bench: eight virtual patients
+
+`scripts/bench_run.sh [patient]` deploys the ventilator to the VM, connects a Pulse patient and opens the dashboard
+with a control panel (`scripts/dashboard.py --control`). The panel has two groups, kept apart on purpose:
+
+- **Operator** (as on a real ventilator): mode, Pinsp, PEEP, RR, I:E, Vt and **FiO2**. The values go by UDP to the
+  HMI, and `safety_mon` validates them. A refused value comes back as a NAK with the reason, for example
+  `NAK PEEP 40.0 fuera de 0-15 cmH2O`. The copilot's proposals are accepted or rejected from the same panel.
+- **Test bench** (the physical world, over SSH to `scripts/bench_target.sh`): patient type, tube disconnection,
+  leak, obstruction, stuck pressure sensor, mains loss, and killing the HMI or `breath_ctrl`.
+
+The patient can be changed while the ventilator keeps running. `patient` (Pulse) restarts from a new state and
+`pneumatic_sim` waits for it. `safety_mon` recomputes the ideal body weight and the Vt limits from the new
+patient's height and sex.
+
+The patient states come from `tools/pulse_states` (host build). Each patient is stabilized, then ventilated for
+120 s with PCV 20/5 at 12 bpm. Measured on QNX with that same PCV 20/5 setting, FiO2 21 %
+(`results/patients/tour_pcv20_5.txt`):
+
+| Patient | Pulse condition | R / C | Vt | SpO2 |
+|---|---|---|---|---|
+| Healthy male, 180 cm | none | 22.9 / 59 | 571 mL (7.6 mL/kg) | 97.9 % |
+| Healthy female, 163 cm | none | 22.9 / 58 | 567 mL (**10.4 mL/kg**) | 98.6 % |
+| Obese male (98 kg, 180 cm) | none | 22.9 / 59 | 572 mL | 97.6 % |
+| ARDS, moderate | ARDS 0.6, both lungs | 25.0 / 33 | 423 mL | 74.8 % |
+| ARDS, severe | ARDS 0.9, both lungs | 25.7 / 30 | 396 mL | 33.8 % |
+| COPD | bronchitis 0.5, emphysema 0.6 | 32.4 / 63 | 414 mL, auto-PEEP 2.6 | 80.8 % |
+| Pneumonia | right lung 0.7 | 23.5 / 37 | 503 mL | 87.8 % |
+| Asthma attack | asthma attack 0.6 | 29.8 / 56 | 471 mL | 98.2 % |
+
+R is in cmH2O·s/L and C in mL/cmH2O. Some cases teach on their own:
+
+- The female patient gets the "normal" setting but 10.4 mL/kg, because the ideal body weight depends on height,
+  not on actual weight.
+- In COPD, the copilot proposes a change for high resistance.
+- In moderate ARDS, the operator command `fio2=60 peep=10 p_insp=25` is applied at the next breath. SpO2 then rises
+  from 74 % to 88 % over about 50 s (`results/patients/ards_fio2.txt`).
+
+These are Pulse's models of the conditions. They are not validated patient data.
 
 ## Reference model data for MATLAB/Simulink
 
@@ -321,6 +362,17 @@ kill $(cat ~/qnxvm/output/qemu.pid)   # stops it
 scripts/b2_run.sh               # layer-2 test (security policy)
 ```
 
+Interactive bench (see "Interactive test bench" above):
+
+```bash
+(cd ~/pulse/build/install/bin && ~/pulse/states-build/pulse_states all)   # once, on the host: 8 patient states
+scripts/bench_run.sh ards_moderate      # deploy + start + dashboard with control panel; closing it stops the bench
+scripts/bench.py list                  # the same actions from a terminal:
+scripts/bench.py patient copd          #   swap the patient
+scripts/bench.py fault -d 1            #   disconnect the tube (no options: clear faults)
+scripts/bench.py op fio2=60 peep=8     #   operator command through the HMI
+```
+
 The test scripts below stop the boot-time ventilator (`/system/bg/bg_stop.sh`) and run their own copy from
 `/tmp/medpower`.
 
@@ -396,7 +448,7 @@ pressure sensor), `-m 0|1` (mains off/on).
 
 ```text
 src/        QNX processes and pure-C models (plant.c, vent.c, alarms.c, lung_mon.c, battery.c, settings.c)
-tools/      offline test harnesses and the Pulse probe
+tools/      offline test harnesses, the Pulse probe and pulse_states (the patient catalogue)
 port/       recipe to build Pulse for QNX 8.0
 scripts/    run scripts (host + target) and analysis
 results/    raw data and summaries of every measurement

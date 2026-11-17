@@ -1,0 +1,7 @@
+ARDS (moderate) on the interactive bench, 2026-11-16, QNX VM (QEMU user networking), scripts/bench.py.
+PCV 20/5, RR 12, FiO2 21 %: SpO2 75.7 -> 74.9 -> 74.1 % (every ~12 s after connecting the patient), Vt ~423 mL.
+Operator via HMI: "fio2=60 peep=10 p_insp=25" -> ACK #1, applied at the next breath (AJUSTE_APLICADO).
+SpO2 every ~10 s after: 80.1, 83.7, 85.6, 86.9, 87.8 % (oxygenation follows in tens of seconds, not instantly).
+Note: during this run the host was also running tools/pulse_states at 100 % of one core; safety_mon saw 4
+CONTROL_COLGADO (watchdog) and relaunched breath_ctrl each time (override 0.05-15 ms after detection). With the
+host idle again, none in the following 90 s (p99 period back to ~2 ms). Host load, not QNX: see CLAUDE.md, vm_noise.

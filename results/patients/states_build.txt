@@ -1,0 +1,8 @@
+healthy_male: stabilized in 27 s, ventilated 120 s in 12 s; M 180 cm; R 22.9 cmH2O/(L/s), C 56.9 mL/cmH2O, SpO2 98.0 % on room air
+healthy_female: stabilized in 29 s, ventilated 120 s in 9 s; F 163 cm; R 22.9 cmH2O/(L/s), C 55.2 mL/cmH2O, SpO2 98.6 % on room air
+obese_male: stabilized in 38 s, ventilated 120 s in 15 s; M 180 cm; R 22.9 cmH2O/(L/s), C 56.9 mL/cmH2O, SpO2 97.6 % on room air
+ards_moderate: stabilized in 115 s, ventilated 120 s in 13 s; M 180 cm; R 25.0 cmH2O/(L/s), C 31.9 mL/cmH2O, SpO2 76.3 % on room air
+ards_severe: stabilized in 185 s, ventilated 120 s in 12 s; M 180 cm; R 25.7 cmH2O/(L/s), C 29.1 mL/cmH2O, SpO2 35.5 % on room air
+copd: stabilized in 79 s, ventilated 120 s in 20 s; M 180 cm; R 32.5 cmH2O/(L/s), C 63.4 mL/cmH2O, SpO2 82.1 % on room air
+pneumonia: stabilized in 130 s, ventilated 120 s in 14 s; F 163 cm; R 23.5 cmH2O/(L/s), C 37.6 mL/cmH2O, SpO2 88.3 % on room air
+asthma_attack: stabilized in 27 s, ventilated 120 s in 31 s; F 163 cm; R 29.8 cmH2O/(L/s), C 55.7 mL/cmH2O, SpO2 98.3 % on room air

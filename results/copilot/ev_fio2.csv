@@ -1,0 +1,10 @@
+t_s,evento,detalle
+146.630747,LANZA_COPILOTO,pid 4263964
+146.630747,LANZA_CONTROL,pid 4263963
+146.633537,PACIENTE,healthy_male, hombre, 180 cm, peso ideal 75.4 kg
+222.130976,COPILOTO_PROPONE,#1 leak 1.00: check_circuit (no settings change)
+282.130976,COPILOTO_VENCIDO,#1 sin respuesta en 60 s
+292.130931,AUTO_PEEP,auto-PEEP 3.3 cmH2O, flujo final -2.8 L/min, tau 4.22 s
+292.130975,COPILOTO_PROPONE,#2 high_resistance 1.00: RR 12.0 -> 10.0 /min
+352.131585,COPILOTO_VENCIDO,#2 sin respuesta en 60 s
+366.192000,CONTROL_TERMINA,despedida
