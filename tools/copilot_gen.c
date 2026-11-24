@@ -81,6 +81,7 @@ int main(int argc, char **argv)
             cur.set.ie = 60.0 / cur.set.rr / urand(0.8, 1.4) - 1.0;
         } while (cur.set.ie < SET_IE_MIN || cur.set.ie > SET_IE_MAX);
         cur.set.rise_s = 0.1;
+        cur.set.fio2 = 0.21;
         cur.t0 = 0;
 
         plant_t pl;

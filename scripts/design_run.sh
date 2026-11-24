@@ -1,5 +1,5 @@
 #!/bin/bash
-# design_run.sh - corridas de referencia en QNX para design/ (modelo de Simulink del usuario):
+# design_run.sh - corridas de referencia en QNX para design/ (modelo independiente en Simulink):
 #   1. PCV 20/5, 12 rpm, I:E 1:2, 60 s: pneumatic_sim + breath_ctrl solos (sin Pulse: R y C fijos)
 #   2. Escalones en lazo abierto: pneumatic_sim + step_test, 16 s
 # Luego genera la referencia ideal en el host (design_ref) y exporta todo con scripts/design_export.py.

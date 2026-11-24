@@ -13,7 +13,7 @@
  *    resultado de Pulse se corrige el volumen y se actualizan R, C y V0 del pulmón.
  *  - Arbitraje: safety_mon puede tomar el mando (BG_MSG_OVERRIDE). Mientras lo tiene, los WRITE de
  *    breath_ctrl se guardan pero no se aplican, como un relé de seguridad entre controlador y válvulas.
- *  - Autorización (tarea 4): solo el pid que autorizó safety_mon (BG_MSG_AUTH) puede mandar WRITE, y solo
+ *  - Autorización (src/plant_auth.c): solo el pid que autorizó safety_mon (BG_MSG_AUTH) puede mandar WRITE, y solo
  *    safety_mon puede mandar OVERRIDE. El pid del emisor lo pone el kernel en struct _msg_info: no se puede
  *    falsificar desde el mensaje. Un comando rechazado recibe EPERM y queda registrado (VITALS lo informa).
  *
@@ -97,8 +97,11 @@ static void reply_window(int rcvid, uint32_t k)
         k = win_k - RING;
     }
     window_t *w = &ring[k % RING];
+    /* FiO2: la del mezclador ahora (no por ventana: el gas tarda más que 20 ms en llegar al alvéolo). Antes del
+     * primer comando act.fio2 vale 0 -> aire. */
     bg_window_t rep = { .k = k, .backlog = win_k - k - 1, .t_end = w->t_end,
-                        .paw_mean = w->paw_mean, .last_dv = last_dv, .lost = lost };
+                        .paw_mean = w->paw_mean, .last_dv = last_dv, .lost = lost,
+                        .fio2 = act.fio2 >= 0.21 ? act.fio2 : 0.21 };
     MsgReply(rcvid, EOK, &rep, sizeof rep);
 }
 
@@ -138,7 +141,7 @@ static double sync_to_now(void)
     return now;
 }
 
-/* Resincroniza el pulmón con el estado de Pulse al final de la ventana k (APRENDIZAJE, M2 paso 6).
+/* Resincroniza el pulmón con el estado de Pulse al final de la ventana k.
  * El resultado llega tarde: la planta ya avanzó. Se corrige el volumen ACTUAL con el error que había
  * al final de la ventana k, y desde ahí sigue con el R y C nuevos. */
 static void apply_patient(const bg_patient_msg_t *m)
@@ -164,16 +167,17 @@ static void apply_patient(const bg_patient_msg_t *m)
 int main(int argc, char **argv)
 {
     double secs = 30, peep0 = 5;
-    int prio = 60, opt;
+    int prio = 60, opt, cpu = -1;
     const char *out_path = NULL;
-    while ((opt = getopt(argc, argv, "s:p:e:o:")) != -1) {
+    while ((opt = getopt(argc, argv, "s:p:e:o:C:")) != -1) {
         switch (opt) {
         case 's': secs = atof(optarg); break;
         case 'p': prio = atoi(optarg); break;
         case 'e': peep0 = atof(optarg); break;
         case 'o': out_path = optarg; break;
+        case 'C': cpu = atoi(optarg); break; /* runmask: anclar a esta CPU */
         default:
-            fprintf(stderr, "uso: %s [-s segundos] [-p prio] [-e peep_inicial] [-o salida.csv]\n", PROG);
+            fprintf(stderr, "uso: %s [-s segundos] [-p prio] [-e peep_inicial] [-o salida.csv] [-C cpu]\n", PROG);
             return 1;
         }
     }
@@ -192,6 +196,7 @@ int main(int argc, char **argv)
     act.exh_open = 1.0;
     act.peep_cmd = peep0;
 
+    rt_pin(PROG, cpu); /* -C: el lazo solo corre en esa CPU (ThreadCtl, runmask) */
     rt_setup(PROG, prio);
 
     /* name_attach: crea un canal y lo publica bajo un nombre (en /dev/name/local/). Así los
@@ -261,7 +266,7 @@ int main(int argc, char **argv)
             continue;
         }
 
-        /* Tarea 4: ¿puede este emisor mandar este mensaje? */
+        /* ¿Puede este emisor mandar este mensaje? */
         if (!auth_check(&auth, &info, m.hdr.type, m.hdr.type == BG_MSG_AUTH ? &m.auth : NULL)) {
             denied++;
             denied_pid = info.pid;
@@ -318,7 +323,10 @@ int main(int argc, char **argv)
                                .c = pl.p.c_pat, .src = override_on, .cmd_age_max = cmd_age_max,
                                .cmd_age_p99_all = age_p99(), .cmd_age_max_all = age_max_all,
                                .fio2 = have_patient ? vitals.fio2 : -1, .denied = denied,
-                               .denied_pid = denied_pid, .denied_type = denied_type };
+                               .denied_pid = denied_pid, .denied_type = denied_type,
+                               .height_cm = have_patient ? vitals.height_cm : 0, .male = vitals.male };
+            if (have_patient) memcpy(vt.name, vitals.name, sizeof vt.name);
+            vt.name[sizeof vt.name - 1] = 0; /* lo escribió otro proceso: no confiar en que termine en 0 */
             cmd_age_max = 0;
             MsgReply(rcvid, EOK, &vt, sizeof vt);
             break;

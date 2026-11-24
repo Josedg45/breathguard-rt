@@ -9,8 +9,7 @@ an operator would, with scripts/bg_cmd.py:
   copilot approve <id>      -> NAK (malformed)
 It records everything (results/copilot/hmi_<label>.csv, replayable with dashboard.py --replay) and checks it.
 
-Use: scripts/c5hmi_run.py label [copilot_binary]   (default build/copilot: with the task 5 skeleton the tree never
-     answers, so there is no proposal and the scene FAILS on purpose)
+Use: scripts/c5hmi_run.py label [copilot_binary]   (default build/copilot)
 """
 import os
 import socket

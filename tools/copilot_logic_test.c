@@ -12,7 +12,7 @@ static int fails;
 
 static bg_settings_t pcv(void)
 {
-    bg_settings_t s = { .seq = 0, .vcv = 0, .set = { .rr = 12, .ie = 2, .p_insp = 18, .peep = 5, .rise_s = 0.1 },
+    bg_settings_t s = { .seq = 0, .vcv = 0, .set = { .rr = 12, .ie = 2, .p_insp = 18, .peep = 5, .rise_s = 0.1, .fio2 = 0.21 },
                         .vt = 0.5 };
     return s;
 }

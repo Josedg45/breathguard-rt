@@ -1,0 +1,20 @@
+Eventos de safety_mon (t relativo al arranque de safety_mon):
+     0.000 s  LANZA_CONTROL            pid 3473432
+    40.212 s  CONTROL_COLGADO          respaldo activo
+    40.212 s  RELANZA_CONTROL          pid 3493911; override enviado 0.03 ms tras detectar; spawn 1.3 
+    45.501 s  DEVUELVE_MANDO           528 latidos del nuevo controlador
+
+Falla del controlador (CONTROL_COLGADO):
+  slay -> último comando de breath_ctrl:     7.6 ms (lo que tarda slay en matarlo)
+  slay -> safety_mon detecta:              205.7 ms
+  slay -> planta obedece al respaldo:      206.6 ms
+  último comando de breath_ctrl -> safety_mon detecta:   198.1 ms
+  último comando de breath_ctrl -> planta obedece al respaldo:   199.0 ms (resolución: tick de 1 ms de la planta)
+  respaldo activo:   5.29 s; mando devuelto al nuevo controlador
+
+Vt por respiración (mL), quién mandaba, y SpO2 de Pulse al final de cada una:
+   593  (98.0%)   569  (97.9%)   569  (98.0%)   569  (98.0%)   569  (98.0%)   569  (98.0%)
+   568  (98.0%)   569* (98.0%)   569* (98.0%)   569* (98.0%)   568  (98.0%)   568  (98.0%)
+   569  (98.0%)   569  (98.0%)   569  (98.0%)   569  (98.0%)   569  (98.0%)   569  (98.0%)
+  (* = safety_mon tuvo el mando en algún momento de esa respiración)
+SpO2 mín/máx: 97.94 / 98.04 %   EtCO2 mín/máx: 33.0 / 34.5

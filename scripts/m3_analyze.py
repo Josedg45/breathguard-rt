@@ -43,7 +43,7 @@ def main():
     period = 60.0 / a.rr
     ti = period / (1 + a.ie)
 
-    # Fórmula del RC con presión cuadrada (APRENDIZAJE M2, paso 5).
+    # Fórmula del RC con presión cuadrada (solución analítica del modelo de un compartimento).
     tau = a.r * a.c
     dp = a.p_insp - a.peep
     ei, ee, et = (math.exp(-x / tau) for x in (ti, period - ti, period))

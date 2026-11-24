@@ -1,6 +1,6 @@
 #!/bin/sh
 # b1_target.sh - corre en la VM QNX: el ventilador completo (sin Pulse, pulmón RC fijo) con HMI, y a los 20 s una
-# HMI comprometida (evil_hmi) ataca la planta durante 2 s. Prueba de la tarea 4 (autorización por pid).
+# HMI comprometida (evil_hmi) ataca la planta durante 2 s. Prueba de la autorización por pid (src/plant_auth.c).
 # uso: b1_target.sh etiqueta segundos ip_host
 cd "$(dirname "$0")" || exit 1
 # El ventilador que arranca con la imagen (punto C) ocupa los nombres: se detiene antes de la prueba.

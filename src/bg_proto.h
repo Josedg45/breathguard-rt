@@ -92,7 +92,7 @@ typedef struct {
     uint32_t denied;         /* mensajes del copiloto rechazados por no venir del pid del copiloto, o ACK del copiloto */
 } bg_copilot_status_t;
 
-/* Autorización de actuadores en la planta (tarea 4, tareas/04_plant_auth). safety_mon le dice a pneumatic_sim
+/* Autorización de actuadores en la planta (src/plant_auth.c). safety_mon le dice a pneumatic_sim
  * qué pid puede mandar WRITE: el del breath_ctrl que acaba de lanzar. La confianza no viene del pid escrito en
  * el mensaje, sino del pid del EMISOR, que pone el kernel en struct _msg_info. */
 typedef struct {
@@ -136,12 +136,16 @@ typedef struct {
     double paw_mean;   /* presión promedio en la boca del paciente durante la ventana (cmH2O) */
     double last_dv;    /* corrección de volumen aplicada con el resultado anterior (L) */
     uint32_t lost;     /* ventanas que patient no alcanzó a simular */
+    double fio2;       /* fracción de O2 que entrega el mezclador al final de la ventana (0.21-1.0) */
 } bg_window_t;
 
 typedef struct {
     double v, q, r, c;           /* estado de Pulse: L, L/s, cmH2O/(L/s), L/cmH2O */
     double spo2, etco2, hr;      /* fracción 0-1, mmHg, lpm */
     double fio2;                 /* fracción de O2 del gas que respira el paciente en Pulse */
+    double height_cm;            /* talla del paciente de Pulse (para el peso ideal) */
+    int32_t male;                /* 1 hombre, 0 mujer */
+    char name[24];               /* tipo de paciente del catálogo (BG_<name>.json), p. ej. "ards_moderate" */
 } bg_patient_state_t;
 
 typedef struct {
@@ -164,7 +168,10 @@ typedef struct {
     double cmd_age_max;  /* s: antigüedad máxima del último comando aplicado desde la consulta anterior */
     double cmd_age_p99_all, cmd_age_max_all; /* s: p99 y máximo de la antigüedad desde el arranque (cada 1 ms) */
     double fio2;
-    /* Comandos rechazados por la autorización (tarea 4): total, y el último emisor y tipo de mensaje. */
+    double height_cm;    /* paciente de Pulse conectado: talla, sexo y tipo (0 / "" si no hay) */
+    int32_t male;
+    char name[24];
+    /* Comandos rechazados por la autorización (src/plant_auth.c): total, y el último emisor y tipo de mensaje. */
     uint32_t denied;
     int32_t denied_pid;
     uint32_t denied_type;
@@ -188,7 +195,7 @@ typedef struct {
     /* Mecanica por respiracion (lung_mon): auto-PEEP estimado, flujo al final de la espiracion, tau espiratoria */
     double auto_peep, q_ee, tau_exp;
     int32_t eef;           /* 1 = el flujo no vuelve a cero al final de la espiracion */
-    uint32_t denied;       /* comandos rechazados por la planta (tarea 4) */
+    uint32_t denied;       /* comandos rechazados por la planta */
     bg_copilot_status_t cp;
 } bg_safety_status_t;
 

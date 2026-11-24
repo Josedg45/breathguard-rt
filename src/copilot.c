@@ -4,7 +4,7 @@
  *   1. MsgSend(COPILOT_GET) to safety_mon. safety_mon keeps the reply until a breath closes (deferred reply), so the
  *      copilot sleeps, blocked in the kernel, without polling.
  *   2. The reply is the breath as safety_mon measured it (cp_breath_t: features, settings, Vt, auto-PEEP).
- *   3. tree_predict() walks the tree learned offline (src/copilot_tree.h; the walk is the user's task 5) -> class.
+ *   3. tree_predict() walks the tree learned offline (src/copilot_tree.h, walked by src/tree_predict.c) -> class.
  *   4. cp_rules(): the FIXED table turns the class into an action (copilot_logic.c).
  *   5. MsgSend(COPILOT_SUGGEST). safety_mon checks it against its own measurements; the operator decides.
  * safety_mon launches it with the derived security type "copilot", which may only connect to safety_mon (not the

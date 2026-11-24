@@ -49,7 +49,7 @@ int main(int argc, char **argv)
         if (coid == -1) usleep(10000);
     }
     if (coid == -1) rt_die(PROG, "name_open(" BG_PNEUMATIC_NAME ")");
-    /* Sin safety_mon: este programa reclama la autorización de la planta y se autoriza a sí mismo (tarea 4). */
+    /* Sin safety_mon: este programa reclama la autorización de la planta y se autoriza a sí mismo (src/plant_auth.c). */
     bg_auth_msg_t au = { .hdr = { .type = BG_MSG_AUTH }, .pid = getpid() };
     if (MsgSend(coid, &au, sizeof au, NULL, 0) == -1) rt_die(PROG, "MsgSend(AUTH)");
     rt_setup(PROG, prio);

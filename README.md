@@ -45,14 +45,17 @@ firmware without patients.
 | CPU saturated (2 junk threads) | Vt and SpO2 unchanged |
 | Kill `breath_ctrl` (`kill -9`) | Backup ventilation in control ~2 ms after the last command (6 runs; one outlier at 24 ms under load). Vt and SpO2 unchanged |
 | Tube disconnection | Alarm in 20.4–20.7 ms (3 runs) |
-| Controller hang (`SIGSTOP`) | Detected by the apnea alarm after 9 s (heartbeat watchdog in progress, target 0.2 s) |
+| Leak in the circuit | LEAK alarm at the end of the first full breath with the leak (5.5 s after it starts at 12 bpm): Vti 834 mL, Vte 435 mL. In PCV the blower makes up for the leak, so HIGH VT fires too. No false volume alarms in 60 s of normal ventilation (Vti 574 / Vte 573 mL) |
+| Controller hang (`SIGSTOP`) | Heartbeat watchdog: detected 204–228 ms after the freeze (200 ms deadline, 3 runs), backup in control 0.03–0.12 ms later; every breath 568–569 mL, SpO2 unchanged. Before the watchdog, the apnea alarm caught it after 9.2 s with two 0 mL breaths |
 | Mains power loss | Detected in ~2 ms; load shedding raises autonomy from 160 to 524 min; low/critical battery alarms |
 | HMI killed, crashed (NULL pointer) or hung (infinite loop) | Ventilation unchanged; HMI relaunched in 0.1–2 s |
 | Tube reconnected in mid-inspiration | Peak 23.3 cmH2O after a fix found by this test bench (was 44 cmH2O; see `docs/demo.md`) |
-| Operator changes settings while ventilating | Applied exactly at the next breath start by controller and backup alike; invalid values rejected with a reason |
+| Operator changes settings while ventilating | Applied exactly at the next breath start by controller and backup alike; invalid values and oversized steps (more than 5 cmH2O Pinsp, 100 mL Vt, 3 cmH2O PEEP or 4 bpm per command) rejected with a reason |
 | Auto-PEEP (gas trapping) at 30 bpm, I:E 1:1 | Estimated 5.1–5.4 cmH2O from Y-piece sensors alone (true value 5.1 in the fixed-RC model); AUTO-PEEP alarm after 2 breaths, cleared when the rate is lowered |
 | Power-on to first breath | 4.5–4.7 s from QEMU launch (3 runs), ~0.85 s before the VM even answers a ping: the ventilator starts before the network and `sshd` |
+| Compromised HMI, layer 1 (plant checks the sender) | 995 forged actuator commands in 2 s refused with `EPERM`; airway pressure stays at 20.5 cmH2O (41 without the check) |
 | Compromised HMI (security policy, layer 2) | The kernel refuses its connection to the plant (`EPERM` at `name_open`); the plant never sees a message |
+| Ventilator pinned to a reserved vCPU (runmask) under load | 65–73 late cycles and max period ≤ 6 ms in 6/6 runs, vs 34–165 and > 7 ms in 4/6 with the same load unpinned; pinning without reserving changes nothing measurable (`results/m3/runmask_resumen.txt`) |
 | Loop timing, live | Period p50/p99/p99.9/max, deadline misses and a period histogram on the dashboard. VM noise varies by run: 0.3 % to 3 % of cycles later than 1.5 ms, worst case 7–82 ms. The gaps appear with and without CPU load, and M1 measured gaps of 1–18 ms even for a priority-200 thread that never blocks: they come from the host (Windows + WSL2 + QEMU), so treat them as an upper bound |
 
 ## Clinical monitoring
@@ -67,10 +70,52 @@ firmware without patients.
   patient's time constant is 1.4 s.
 - Also on the dashboard:
   - measured respiratory rate, I:E and minute ventilation;
-  - FiO2;
+  - FiO2 delivered and set (the blender mixes the gas Pulse breathes);
+  - the connected patient (type, sex, height);
   - the active alarm limits;
   - vertical event markers on the waveforms (controller failover, HMI restart, disconnection, mains loss, settings
     applied).
+
+## Interactive test bench: eight virtual patients
+
+`scripts/bench_run.sh [patient]` deploys the ventilator to the VM, connects a Pulse patient and opens the dashboard
+with a control panel (`scripts/dashboard.py --control`). The panel has two groups, kept apart on purpose:
+
+- **Operator** (as on a real ventilator): mode, Pinsp, PEEP, RR, I:E, Vt and **FiO2**. The values go by UDP to the
+  HMI, and `safety_mon` validates them. A refused value comes back as a NAK with the reason, for example
+  `NAK PEEP 40.0 fuera de 0-15 cmH2O`. The copilot's proposals are accepted or rejected from the same panel.
+- **Test bench** (the physical world, over SSH to `scripts/bench_target.sh`): patient type, tube disconnection,
+  leak, obstruction, stuck pressure sensor, mains loss, and killing the HMI or `breath_ctrl`.
+
+The patient can be changed while the ventilator keeps running. `patient` (Pulse) restarts from a new state and
+`pneumatic_sim` waits for it. `safety_mon` recomputes the ideal body weight and the Vt limits from the new
+patient's height and sex.
+
+The patient states come from `tools/pulse_states` (host build). Each patient is stabilized, then ventilated for
+120 s with PCV 20/5 at 12 bpm. Measured on QNX with that same PCV 20/5 setting, FiO2 21 %
+(`results/patients/tour_pcv20_5.txt`):
+
+| Patient | Pulse condition | R / C | Vt | SpO2 |
+|---|---|---|---|---|
+| Healthy male, 180 cm | none | 22.9 / 59 | 571 mL (7.6 mL/kg) | 97.9 % |
+| Healthy female, 163 cm | none | 22.9 / 58 | 567 mL (**10.4 mL/kg**) | 98.6 % |
+| Obese male (98 kg, 180 cm) | none | 22.9 / 59 | 572 mL | 97.6 % |
+| ARDS, moderate | ARDS 0.6, both lungs | 25.0 / 33 | 423 mL | 74.8 % |
+| ARDS, severe | ARDS 0.9, both lungs | 25.7 / 30 | 396 mL | 33.8 % |
+| COPD | bronchitis 0.5, emphysema 0.6 | 32.4 / 63 | 414 mL, auto-PEEP 2.6 | 80.8 % |
+| Pneumonia | right lung 0.7 | 23.5 / 37 | 503 mL | 87.8 % |
+| Asthma attack | asthma attack 0.6 | 29.8 / 56 | 471 mL | 98.2 % |
+
+R is in cmH2O·s/L and C in mL/cmH2O. Some cases teach on their own:
+
+- The female patient gets the "normal" setting but 10.4 mL/kg, because the ideal body weight depends on height,
+  not on actual weight. The HIGH VT alarm (8 mL/kg = 437 mL for her) fires until the operator lowers Pinsp.
+- In COPD, the copilot proposes a change for high resistance.
+- In moderate ARDS, the operator raises FiO2 to 60 % and PEEP to 10 cmH2O in two commands (`fio2=60 peep=8
+  p_insp=23`, then `peep=10 p_insp=25`: a single 5 cmH2O PEEP step is refused by the rate limit). Each is applied at
+  the next breath. SpO2 then rises from 74 % to 88 % over about 60 s (`results/patients/bench_2026-11-24.txt`).
+
+These are Pulse's models of the conditions. They are not validated patient data.
 
 ## Reference model data for MATLAB/Simulink
 
@@ -98,7 +143,7 @@ lost state) instead of only the display.
 
 Honesty notes: all timings come from a virtualized target, so they include host noise and are an upper bound
 (about 0.2–0.3 % late cycles at idle and 7–10 % under load in this VM; late cycles did not change ventilation).
-They do not prove what real hardware would achieve. Details and raw data: `PROGRESS.md` and `results/`.
+They do not prove what real hardware would achieve. Raw data and summaries: `results/`.
 
 ## Who may move the actuators (compromised-HMI defense, layer 1)
 
@@ -110,7 +155,7 @@ compromised HMI could command "blower at maximum, exhalation valve closed".
 were `safety_mon`, and then sends maximum-blower `WRITE`s every 1 ms for 2 s. `scripts/b1_run.sh` runs it against the
 full ventilator at t = 20 s. Without the check, airway pressure rose from 20 to 41 cmH2O. It stopped there only
 because `safety_mon` detected high pressure and opened the exhalation valve
-(`results/sec/*_b1_esqueleto*`).
+(`results/sec/*_b1_nocheck*`).
 
 Layer 1 of the defense:
 - **The HMI no longer connects to the plant.** It reads sensors and vitals through `safety_mon`
@@ -123,9 +168,9 @@ Layer 1 of the defense:
 - **No start-up race.** `safety_mon` spawns `breath_ctrl` with `POSIX_SPAWN_HOLD` (a QNX extension). The child is
   created stopped; it is authorized in the plant and only then released with `SIGCONT`.
 
-The plant-side check (`auth_check()`) is a learning exercise in progress (`tareas/04_plant_auth`). Until it is
-completed, the plant accepts every command, as before. The results with the check in place will be published
-here.
+With the check in place (`src/plant_auth.c`), the same attack fails: the plant refused the forged
+`AUTH`, the `OVERRIDE` and all 993 `WRITE`s with `EPERM`, airway pressure stayed at 20.5 cmH2O, and `safety_mon`
+logged the attempt 62 ms after it started (`results/sec/*_b1_auth*`).
 
 The first `AUTH` claims the plant (trust on first use). This works because `safety_mon` starts right after the
 plant and launches the HMI itself.
@@ -280,9 +325,11 @@ uses `_NTO_CHF_FIXED_PRIORITY`: by default QNX lowers the receiving thread to th
 | `ClockCycles()` time base shared by all processes | `src/rt_util.h`: `rt_now_s()` |
 | `mlockall()` to avoid page faults in loops | `src/rt_util.h` |
 | `posix_spawn()` to relaunch processes | `src/safety_mon.c` |
-| Sender identity from the kernel (`struct _msg_info`: `pid`, `srcmsglen`) to authorize actuator commands | `src/pneumatic_sim.c`, `tareas/04_plant_auth/` |
+| Sender identity from the kernel (`struct _msg_info`: `pid`, `srcmsglen`) to authorize actuator commands | `src/pneumatic_sim.c`, `src/plant_auth.c` |
 | `POSIX_SPAWN_HOLD`: child created stopped, authorized, then released with `SIGCONT` | `src/safety_mon.c`: `spawn_ctrl()` |
 | Resource manager (`resmgr_attach`, `iofunc_*`, `dispatch_*`, `resmgr_msgget`) exposing `/dev/ventilator` | `src/ventd.c` |
+| System log: `slog2_register()` / `slog2f()` with a severity per event (no I/O on the critical path); `slog2info -S -b breathguard` | `src/safety_mon.c`: `slog_init()`, `event()`; `results/slog2/` |
+| CPU affinity: `ThreadCtl(_NTO_TCTL_RUNMASK_GET_AND_SET_INHERIT)` (`-C cpu`) | `src/rt_util.h`: `rt_pin()`; `src/cpu_burn.c`; `results/m3/runmask_resumen.txt` |
 | `TimerTimeout()` bounding a blocking `MsgSend` (the controller never waits more than 2 ms for the supervisor) | `src/breath_ctrl.c`: `fetch_settings()` |
 | Loop metrics carried in the same bounded `MsgSend` (no extra message on the critical path) | `src/breath_ctrl.c`: `stats_add()`; `src/bg_proto.h`: `bg_loop_stats_t` |
 | Security policy types: `on -T` at boot, `secpol_posix_spawnattr_settypeid()` for spawned children, derived types | `image/startup_postfs.custom`, `src/safety_mon.c`: `spawn_ctrl()`, `spawn_hmi()`, `image/policy.txt` |
@@ -317,6 +364,17 @@ kill $(cat ~/qnxvm/output/qemu.pid)   # stops it
 scripts/b2_run.sh               # layer-2 test (security policy)
 ```
 
+Interactive bench (see "Interactive test bench" above):
+
+```bash
+(cd ~/pulse/build/install/bin && ~/pulse/states-build/pulse_states all)   # once, on the host: 8 patient states
+scripts/bench_run.sh ards_moderate      # deploy + start + dashboard with control panel; closing it stops the bench
+scripts/bench.py list                  # the same actions from a terminal:
+scripts/bench.py patient copd          #   swap the patient
+scripts/bench.py fault -d 1            #   disconnect the tube (no options: clear faults)
+scripts/bench.py op fio2=60 peep=8     #   operator command through the HMI
+```
+
 The test scripts below stop the boot-time ventilator (`/system/bg/bg_stop.sh`) and run their own copy from
 `/tmp/medpower`.
 
@@ -326,11 +384,12 @@ Run the scenarios from Ubuntu (the VM must be reachable at `172.31.1.2`):
 scripts/m3_run.sh demo 20 5 12 120 pulse      # PCV with Pulse in the loop
 scripts/m4_run.sh kill 75 matar               # kill breath_ctrl at 40 s
 scripts/m4_run.sh disc 75 desconectar         # tube disconnection at 40 s
+scripts/m4_run.sh leak 80 fuga                # circuit leak from 40 to 60 s: LEAK and volume alarms
 scripts/m5_run.sh power 100 60 1.0            # mains loss (battery time x60)
 scripts/m6_run.sh hmi 60 hmi_colgar           # HMI hangs in an infinite loop
 GUI=1 scripts/m6_run.sh mono 90 mono_bug      # same display bug in the monolithic build (live dashboard)
 scripts/m6_run.sh set 90 ajustes              # operator settings changes + controller kill
-scripts/m6_run.sh ap 75 autopeep              # 30 bpm, I:E 1:1 -> auto-PEEP alarm, then back to 12 bpm
+scripts/m6_run.sh ap 100 autopeep             # up to 30 bpm, I:E 1:1 in 4-bpm steps -> auto-PEEP alarm, then back
 scripts/design_run.sh                         # reference data for design/ (QNX + ideal offline)
 scripts/c5_run.sh cop rc                      # copilot: leak, obstruction, copilot killed, stiff lung, operator accept
 scripts/c5_run.sh copp pulse                  # copilot with Pulse: leak and obstruction
@@ -356,7 +415,8 @@ python3 scripts/dashboard.py --replay results/m6/hmi_ajustes.csv.gz   # replay a
 ```
 
 Operator commands go host → `hmi` (UDP 5006) → `safety_mon`, which owns the settings: it validates the
-ranges (`src/settings.c`) and schedules the change for the next breath start, a time shared by the controller and the
+ranges (`src/settings.c`) and the size of each step (`src/rate_limit.c`: typing 35 instead of 15 is refused, a large
+change takes several commands), and schedules the change for the next breath start, a time shared by the controller and the
 backup ventilator. The HMI only forwards; it never validates or applies anything.
 
 A newer command can replace a change that has not started yet, but only until `SET_LEAD_S` (0.2 s) before it starts.
@@ -370,9 +430,22 @@ build/m5_offline build/lung_mon_test build/settings_schedule_test`. Copilot: `ma
 and `safety_mon`'s checks against honest and lying suggestions); training data `make build/copilot_gen`, training
 `scripts/copilot_train.py` (needs scikit-learn).
 
-The copilot's tree walk (`tareas/05_tree/tree_predict.c`) is a learning exercise and ships as a skeleton that always
-answers "don't know": with it the copilot never suggests anything, which is safe. The copilot results above were
-measured with a completed walk, which must pass `make tarea5` (1 512 vectors checked against scikit-learn).
+### Unit tests
+
+The safety-critical modules are plain C with time passed in as an argument, so they are tested with simulated clocks
+and synthetic signals. `make test` builds the tests with `qcc`, copies them to the VM and runs them on QNX;
+`make test-host` runs the ones that do not need QNX headers on Ubuntu.
+
+| Test | Module | What it checks |
+|---|---|---|
+| `tests/test_watchdog.c` | `src/watchdog.c` | startup deadline, repeated sequence numbers (a stuck thread), latched timeout, unsigned time wrap |
+| `tests/test_vt_meter.c` | `src/vt_meter.c` | trapezoidal integration with the real dt, irregular sampling (lost ticks), gaps, clock going backwards, leak |
+| `tests/test_rate_limit.c` | `src/rate_limit.c` | step limits per command, equality at the limit, mode changes |
+| `tests/test_plant_auth.c` | `src/plant_auth.c` | forged, truncated and stale-controller actuator commands, built as the kernel's `struct _msg_info` |
+| `tests/test_tree_predict.c` | `src/tree_predict.c` | the copilot's tree against scikit-learn on 1 512 vectors, plus NaN, infinity, corrupt and cyclic trees |
+
+The boot image ships these modules; `c5_run.sh pulse|rc|liar`, `c5sec_run.sh`, `b2_run.sh` and `c5hmi_run.py` all
+pass with them (`results/copilot/*_t5*`).
 
 Fault injection on the target: `bg_fault -d 1` (disconnect), `-o 8` (obstruction), `-l` (leak), `-k 1` (stuck
 pressure sensor), `-m 0|1` (mains off/on).
@@ -392,13 +465,13 @@ pressure sensor), `-m 0|1` (mains off/on).
 
 ```text
 src/        QNX processes and pure-C models (plant.c, vent.c, alarms.c, lung_mon.c, battery.c, settings.c)
-tools/      offline test harnesses and the Pulse probe
+tools/      offline test harnesses, the Pulse probe and pulse_states (the patient catalogue)
 port/       recipe to build Pulse for QNX 8.0
 scripts/    run scripts (host + target) and analysis
 results/    raw data and summaries of every measurement
 design/     plant and controller equations + 1 kHz reference data for an independent (Simulink) model
 image/      QNX image snippets: automatic start and security policy
-tareas/     learning exercises (watchdog, tidal-volume meter, settings rate limit, plant authorization, tree walk)
+tests/      unit tests of the safety-critical modules (make test on QNX, make test-host on Ubuntu)
 ```
 
 ## License

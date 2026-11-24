@@ -11,6 +11,7 @@ settings_schedule). That refusal is transient, so the command is resent after th
 Uso: bg_cmd.py [--vm 172.31.1.2] [--port 5006] [--retry 3] p_insp=25 [peep=8 rr=15 ie=2 vt=450 mode=pcv|vcv]
 """
 import argparse
+import os
 import socket
 import sys
 import time
@@ -21,7 +22,8 @@ RETRY_WAIT_S = 0.3   # > SET_LEAD_S (0.2 s): by then the pending change has star
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--vm", default="172.31.1.2")
+    ap.add_argument("--vm", default=os.environ.get("BG_VM", "172.31.1.2"),
+                    help="VM address (default: $BG_VM or 172.31.1.2)")
     ap.add_argument("--port", type=int, default=5006)
     ap.add_argument("--timeout", type=float, default=1.0)
     ap.add_argument("--retry", type=int, default=3,

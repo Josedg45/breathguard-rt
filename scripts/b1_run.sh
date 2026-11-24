@@ -1,5 +1,5 @@
 #!/bin/bash
-# b1_run.sh - desde Ubuntu: compila, copia y corre la prueba de la tarea 4 (HMI comprometida) en la VM QNX; luego
+# b1_run.sh - desde Ubuntu: compila, copia y corre la prueba de autorización de la planta (HMI comprometida) en la VM QNX; luego
 # la evalúa con b1_check.py. uso: scripts/b1_run.sh [etiqueta] [segundos]
 set -euo pipefail
 cd "$(dirname "$0")/.."

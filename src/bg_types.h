@@ -11,6 +11,7 @@ typedef struct {
     double blower;   /* soplador, 0..1 de su presión máxima */
     double exh_open; /* válvula espiratoria, 0 cerrada .. 1 abierta */
     double peep_cmd; /* presión de apertura de la válvula de PEEP (cmH2O) */
+    double fio2;     /* mezclador de O2: fracción de O2 del gas inspirado (0.21-1.0; <= 0 = aire, 0.21) */
 } actuators_t;
 
 /* Lo que la planta entrega al controlador (sensores, con ruido). */
@@ -38,6 +39,7 @@ typedef struct {
     double p_insp;   /* presión inspiratoria total sobre la atmósfera (cmH2O) */
     double peep;     /* PEEP (cmH2O) */
     double rise_s;   /* tiempo de subida de la presión al inicio de la inspiración */
+    double fio2;     /* fracción de O2 inspirada, 0.21 (aire) a 1.0; <= 0 se trata como 0.21 */
 } vent_settings_t;
 
 #endif

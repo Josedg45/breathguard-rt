@@ -8,6 +8,7 @@
 #   congelar    slay -s STOP breath_ctrl (sigue vivo pero no corre: cuelgue)
 #   desconectar bg_fault -d 1, y se reconecta 15 s después
 #   obstruir    bg_fault -o 8 (resistencia x8), y se quita 15 s después
+#   fuga        bg_fault -l 0.008 (fuga en el circuito), y se quita 20 s después
 #   carga_matar como matar, con la CPU saturada (2 hilos a prio 9)
 cd "$(dirname "$0")" || exit 1
 # El ventilador que arranca con la imagen (punto C) ocupa los nombres: se detiene antes de la prueba.
@@ -33,6 +34,7 @@ case "$ESC" in
     congelar) ./bg_fault -n; slay -s STOP breath_ctrl ;;
     desconectar) ./bg_fault -d 1; sleep 15; ./bg_fault ;;
     obstruir) ./bg_fault -o 8; sleep 15; ./bg_fault ;;
+    fuga) ./bg_fault -l 0.008; sleep 20; ./bg_fault ;;
 esac > "log_escena_$L.txt" 2>&1
 wait
 cat log_*_$L.txt

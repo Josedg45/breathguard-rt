@@ -1,0 +1,5 @@
+t_s,evento,detalle
+137.840559,LANZA_CONTROL,pid 2568216
+178.084284,CONTROL_COLGADO,respaldo activo
+178.084403,RELANZA_CONTROL,pid 2588695; override enviado 0.12 ms tras detectar; spawn 5.8 
+183.340646,DEVUELVE_MANDO,521 latidos del nuevo controlador

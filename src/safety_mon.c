@@ -4,7 +4,7 @@
  *   1. MUERTE: breath_ctrl abre una conexión a nuestro canal para mandar latidos. Si su proceso muere,
  *      el kernel de QNX cierra esa conexión y nos manda un pulso _PULSE_CODE_DISCONNECT. Detección
  *      inmediata, sin plazos ni sondeo.
- *   2. CUELGUE: los latidos (pulsos con un contador) alimentan el watchdog de la tarea 1. Si deja de
+ *   2. CUELGUE: los latidos (pulsos con un contador) alimentan el watchdog (src/watchdog.c). Si deja de
  *      latir, se lo mata y se sigue como en 1.
  * Ante una falla del controlador:
  *   - OVERRIDE a la planta: desde ese momento la planta ignora a breath_ctrl y obedece a safety_mon,
@@ -13,7 +13,7 @@
  *   - Cuando el nuevo controlador lleva HANDBACK_BEATS latidos seguidos, le devuelve el mando al
  *     empezar una respiración.
  * Alarmas por sensores (alarms.c): presión alta (con alivio de presión: válvula espiratoria abierta el
- * resto de la respiración), desconexión, apnea; y de volumen (tarea 2, vt_meter) si está completa.
+ * resto de la respiración), desconexión, apnea; y de volumen (src/vt_meter.c).
  *
  * HMI: con -H <ip_host>, lanza también el proceso hmi (prio 10) y lo relanza si muere. Una HMI caída no
  * cambia nada de la ventilación: solo se la vuelve a lanzar.
@@ -38,6 +38,7 @@
 #include <spawn.h>
 #include <secpol/secpol.h>
 #include <sys/dispatch.h>
+#include <sys/slog2.h>
 #include <unistd.h>
 
 #include "alarms.h"
@@ -84,6 +85,45 @@ static event_t events[N_EVENTS];
 static size_t n_events;
 static double t_start;
 
+/* --- Registro del sistema (slog2) ---------------------------------------------------------------
+ * slog2 es el registro estándar de QNX. Cada proceso registra un "buffer set" con slogger2 una vez al
+ * arrancar; después, escribir un evento es copiar unos bytes a memoria compartida: no hay mensaje a slogger2
+ * ni E/S en el camino crítico, a diferencia de printf. Se lee con: slog2info -b breathguard -w
+ * Si el registro falla (p. ej. slogger2 no corre), el ventilador sigue igual: slog2_buf queda en NULL. */
+static slog2_buffer_t slog2_buf;
+
+static void slog_init(void)
+{
+    slog2_buffer_set_config_t cfg = {
+        .num_buffers = 1,
+        .buffer_set_name = "breathguard",
+        .verbosity_level = SLOG2_INFO,
+        .buffer_config = { { .buffer_name = "safety_mon", .num_pages = 8 } }, /* 32 KiB: ~300 eventos */
+    };
+    if (slog2_register(&cfg, &slog2_buf, SLOG2_QUIET) == -1) {
+        slog2_buf = NULL;
+        fprintf(stderr, PROG ": slog2_register fallo; los eventos solo quedan en memoria\n");
+    }
+}
+
+/* Gravedad de cada evento en slog2. Lo que no está en la lista es informativo (lanzamientos, ajustes...). */
+static uint8_t slog_severity(const char *what)
+{
+    static const char *const critical[] = { "CONTROL_MUERTO", "CONTROL_COLGADO", "RELANZA_CONTROL",
+                                            "ALIVIO_PRESION", "BATERIA_CRITICA", "PRESION_ALTA",
+                                            "DESCONEXION", "APNEA" };
+    static const char *const warning[] = { "COMANDO_NO_AUTORIZADO", "COPILOTO_NO_AUTORIZADO",
+                                           "COPILOTO_AUTOCONFIRMA", "HMI_COLGADA", "HMI_MUERTA_RELANZADA",
+                                           "COPILOTO_RELANZADO", "BATERIA_BAJA", "APNEA_CON_CONTROL_VIVO",
+                                           "AJUSTE_RECHAZADO", "VT_BAJO", "VT_ALTO", "FUGA", "ENERGIA",
+                                           "AUTO_PEEP", "SEGURIDAD" };
+    for (size_t i = 0; i < sizeof critical / sizeof *critical; i++)
+        if (strcmp(what, critical[i]) == 0) return SLOG2_CRITICAL;
+    for (size_t i = 0; i < sizeof warning / sizeof *warning; i++)
+        if (strcmp(what, warning[i]) == 0) return SLOG2_WARNING;
+    return SLOG2_INFO;
+}
+
 static void event(double t, const char *what, const char *detail)
 {
     { /* anillo: sin límite de tiempo se conservan los últimos */
@@ -92,7 +132,10 @@ static void event(double t, const char *what, const char *detail)
         snprintf(e->what, sizeof e->what, "%s", what);
         snprintf(e->detail, sizeof e->detail, "%s", detail);
     }
-    /* No se imprime aquí: printf es E/S y bloquearía el camino crítico. Se imprime todo al final. */
+    /* No se imprime aquí: printf es E/S y bloquearía el camino crítico (se imprime todo al final).
+     * slog2f sí: escribe en memoria compartida. El código 1 marca "evento del ventilador". */
+    if (slog2_buf)
+        slog2f(slog2_buf, 1, slog_severity(what), "t=%.3f %s: %s", t - t_start, what, detail);
 }
 
 /* --- Lanzar breath_ctrl ------------------------------------------------------------------------ */
@@ -137,7 +180,7 @@ static pid_t spawn_copilot(double secs_left)
     return pid;
 }
 
-static char ctrl_args[10][32];
+static char ctrl_args[12][32];
 static int n_ctrl_args;
 
 /* breath_ctrl se lanza (y relanza) con los ajustes vigentes y su inicio de ciclo; si hay un cambio programado,
@@ -156,6 +199,8 @@ static pid_t spawn_ctrl(int plant, const bg_settings_t *cur, double secs_left)
     snprintf(ctrl_args[n_ctrl_args++], 32, "%.3f", cur->set.rr);
     snprintf(ctrl_args[n_ctrl_args++], 32, "-i");
     snprintf(ctrl_args[n_ctrl_args++], 32, "%.3f", cur->set.ie);
+    snprintf(ctrl_args[n_ctrl_args++], 32, "-F");
+    snprintf(ctrl_args[n_ctrl_args++], 32, "%.2f", cur->set.fio2);
     snprintf(t0s, sizeof t0s, "%.6f", cur->t0);
     snprintf(ss, sizeof ss, "%.3f", rt_child_secs(secs_left));
     char *argv[24];
@@ -208,12 +253,12 @@ int main(int argc, char **argv)
     double secs = 60, vt_ml = 500;
     int prio = 55, opt, vcv = 0;
     const char *out_path = NULL;
-    vent_settings_t set = { .rr = 12, .ie = 2.0, .p_insp = 20, .peep = 5, .rise_s = 0.1 };
+    vent_settings_t set = { .rr = 12, .ie = 2.0, .p_insp = 20, .peep = 5, .rise_s = 0.1, .fio2 = 0.21 };
     double height_cm = 180.3; /* paciente StandardMale de Pulse: 71 in */
     int male = 1;
     lung_cfg_t lcfg = lung_default_cfg();
     int use_copilot = 0;
-    while ((opt = getopt(argc, argv, "s:p:m:P:V:e:r:h:g:A:c:H:o:KQ:k:")) != -1) {
+    while ((opt = getopt(argc, argv, "s:p:m:P:V:e:r:F:h:g:A:c:H:o:KQ:k:")) != -1) {
         switch (opt) {
         case 's': secs = atof(optarg); break;
         case 'p': prio = atoi(optarg); break;
@@ -222,6 +267,7 @@ int main(int argc, char **argv)
         case 'V': vt_ml = atof(optarg); break;
         case 'e': set.peep = atof(optarg); break;
         case 'r': set.rr = atof(optarg); break;
+        case 'F': set.fio2 = atof(optarg) > 1.0 ? atof(optarg) / 100.0 : atof(optarg); break;
         case 'h': height_cm = atof(optarg); break;
         case 'g': male = optarg[0] != 'f'; break;
         case 'A': lcfg.auto_peep_max = atof(optarg); break;
@@ -232,7 +278,7 @@ int main(int argc, char **argv)
         case 'Q': copilot_csv = optarg; break;
         case 'k': copilot_path = optarg; break;
         default:
-            fprintf(stderr, "uso: %s [-s seg] [-p prio] [-m pcv|vcv] [-P p_insp] [-V vt_ml] [-e peep] [-r rr] "
+            fprintf(stderr, "uso: %s [-s seg] [-p prio] [-m pcv|vcv] [-P p_insp] [-V vt_ml] [-e peep] [-r rr] [-F fio2] "
                             "[-h talla_cm] [-g m|f] [-A auto_peep_max] [-c breath_ctrl] [-H ip_host] [-o eventos.csv] "
                             "[-K] [-Q copilot.csv] [-k copilot]\n", PROG);
             return 1;
@@ -264,6 +310,7 @@ int main(int argc, char **argv)
     }
     if (plant == -1) rt_die(PROG, "name_open(" BG_PNEUMATIC_NAME ")");
 
+    slog_init(); /* antes de rt_setup: registrar el buffer reserva memoria (mlockall la fija después) */
     rt_setup(PROG, prio);
     timer_t tm = rt_periodic_pulse(PROG, att->chid, prio, PULSE_TICK, 1000000);
 
@@ -282,7 +329,10 @@ int main(int argc, char **argv)
     vtm_init(&vtm);
     lung_mon_t lm;
     lung_init(&lm, &lcfg);
-    const double ibw = ibw_kg(height_cm, male);
+    /* Peso ideal: de -h/-g al arrancar; si Pulse informa la talla y el sexo de su paciente (que el banco de pruebas
+     * puede cambiar en marcha, scripts/patients.py), manda lo de Pulse. Cambia los límites de Vt y el copiloto. */
+    double ibw = ibw_kg(height_cm, male);
+    char patient_name[24] = "";
     bg_loop_stats_t loop = { 0 };
     double loop_t = -1; /* cuando llegaron las ultimas metricas del lazo */
     uint32_t vtm_breaths_seen = 0;
@@ -415,9 +465,9 @@ int main(int argc, char **argv)
                     req.seq = base->seq + 1;
                     next = req;
                     pending = 1;
-                    snprintf(buf, sizeof buf, "#%u %s %.1f/%.1f %.0f rpm 1:%.1f Vt %.0f desde t=%.3f", next.seq,
-                             next.vcv ? "VCV" : "PCV", next.set.p_insp, next.set.peep, next.set.rr, next.set.ie,
-                             next.vt * 1e3, next.t0 - t_start);
+                    snprintf(buf, sizeof buf, "#%u %s %.1f/%.1f %.0f rpm 1:%.1f Vt %.0f FiO2 %.0f desde t=%.3f",
+                             next.seq, next.vcv ? "VCV" : "PCV", next.set.p_insp, next.set.peep, next.set.rr,
+                             next.set.ie, next.vt * 1e3, next.set.fio2 * 100, next.t0 - t_start);
                     event(now, "AJUSTE_ACEPTADO", buf);
                 } else {
                     event(now, "AJUSTE_RECHAZADO", r.why);
@@ -608,8 +658,19 @@ int main(int argc, char **argv)
         sensors_t s;
         if (MsgSend(plant, &rd, sizeof rd, &s, sizeof s) == -1) break; /* la planta terminó */
         last_s = s;
-        if (ticks % 100 == 1) { /* cada 100 ms: signos vitales y registro de la planta (para la HMI y la tarea 4) */
+        if (ticks % 100 == 1) { /* cada 100 ms: signos vitales y registro de la planta (para la HMI y la autorización de la planta) */
             if (MsgSend(plant, &rv, sizeof rv, &last_vt, sizeof last_vt) == -1) break;
+            if (last_vt.have && last_vt.height_cm > 100 && last_vt.height_cm < 230 &&
+                strncmp(last_vt.name, patient_name, sizeof patient_name) != 0) {
+                height_cm = last_vt.height_cm;
+                male = last_vt.male != 0;
+                ibw = ibw_kg(height_cm, male);
+                memcpy(patient_name, last_vt.name, sizeof patient_name);
+                patient_name[sizeof patient_name - 1] = 0;
+                snprintf(buf, sizeof buf, "%s, %s, %.0f cm, peso ideal %.1f kg", patient_name[0] ? patient_name : "?",
+                         male ? "hombre" : "mujer", height_cm, ibw);
+                event(now, "PACIENTE", buf);
+            }
             if (last_vt.denied != denied_seen) {
                 snprintf(buf, sizeof buf, "pid %d tipo 0x%x; %u rechazos", last_vt.denied_pid,
                          last_vt.denied_type, last_vt.denied);
@@ -644,7 +705,7 @@ int main(int argc, char **argv)
             al.active = (al.active & ~ALARM_AUTO_PEEP) | ap;
         }
         vtm_update(&vtm, now, s.flow, insp);
-        if (vtm.breaths != vtm_breaths_seen) { /* respiración completa medida (tarea 2) */
+        if (vtm.breaths != vtm_breaths_seen) { /* respiración completa medida */
             vtm_breaths_seen = vtm.breaths;
             double lo, hi;
             vt_limits(&cur, ibw, &lo, &hi);

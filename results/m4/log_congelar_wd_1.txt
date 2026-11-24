@@ -1,0 +1,23 @@
+bg_fault: marca t_abs=177.856578
+patient: ./states/BreathGuard_StandardMale_PCV.json cargado en 0.5 s
+patient: 4600 ventanas, pasos > 20 ms 62, paso máx 103.8 ms, atraso máx 13 ventanas, perdidas 0; final: SpO2 98.0 %, EtCO2 33.8 mmHg, FC 72
+breath_ctrl: pid 2568216, PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 90 s
+breath_ctrl: primera inspiración t=138.341 s del reloj del sistema
+breath_ctrl: pid 2588695, PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 50 s
+breath_ctrl: primera inspiración t=178.341 s del reloj del sistema
+safety_mon: t=0.000 LANZA_CONTROL pid 2568216
+safety_mon: t=40.244 CONTROL_COLGADO respaldo activo
+safety_mon: t=40.244 RELANZA_CONTROL pid 2588695; override enviado 0.12 ms tras detectar; spawn 5.8 
+safety_mon: t=45.500 DEVUELVE_MANDO 521 latidos del nuevo controlador
+safety_mon: 88913 ticks, 1 fallas del controlador, 4 eventos; vt_meter: 0 respiraciones, Vti 0, Vte 0 mL
+safety_mon: peso ideal 75.4 kg (talla 180.3 cm); última respiración: auto-PEEP 1.08 cmH2O, flujo final -2.71 L/min, tau 1.42 s, R 23.9, C 59.2 mL/cmH2O
+breath_ctrl: 49495 ciclos, 276 con periodo > 1.5 ms, periodo máx 9.00 ms; cómputo p50 6.1 us, p99 165.4 us, máx 4069.1 us
+breath_ctrl: ajustes aplicados 0 (último #0), consultas sin respuesta 0
+breath_ctrl: settings changes received after their start time: 0 (expected 0)
+pneumatic_sim: listo como 'breathguard_pneumatic', prio 60, 94 s
+pneumatic_sim: AUTH t_abs=137.843076 de pid 2560017: controlador autorizado pid 2568216
+pneumatic_sim: AUTH t_abs=178.089070 de pid 2560017: controlador autorizado pid 2588695
+pneumatic_sim: 92845 ticks, 709 > 1.5 ms, dt máx 16.23 ms, huecos recortados 0, lecturas 177607, comandos 88695
+pneumatic_sim: ventanas 4700, paciente conectado, ventanas perdidas 0, resultados descartados 0
+pneumatic_sim: comandos rechazados por autorización 0 (último: pid 0, tipo 0x0)
+pneumatic_sim: mensajes de override 5222

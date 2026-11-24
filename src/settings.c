@@ -16,12 +16,16 @@ int settings_validate(const bg_settings_t *cur, const bg_settings_t *req, char *
 {
     const vent_settings_t *s = &req->set;
     /* Un NaN pasa por todas las comparaciones como "falso": hay que descartarlo explicitamente. */
-    if (!isfinite(s->rr) || !isfinite(s->ie) || !isfinite(s->p_insp) || !isfinite(s->peep) || !isfinite(req->vt))
+    if (!isfinite(s->rr) || !isfinite(s->ie) || !isfinite(s->p_insp) || !isfinite(s->peep) || !isfinite(req->vt) ||
+        !isfinite(s->fio2))
         return reject(why, n, "valor no numerico%.0s", 0);
     if (s->rr < SET_RR_MIN || s->rr > SET_RR_MAX) return reject(why, n, "rr %.1f fuera de 6-30 rpm", s->rr);
     if (s->ie < SET_IE_MIN || s->ie > SET_IE_MAX) return reject(why, n, "I:E 1:%.1f fuera de 1:1-1:4", s->ie);
     if (s->peep < SET_PEEP_MIN || s->peep > SET_PEEP_MAX)
         return reject(why, n, "PEEP %.1f fuera de 0-15 cmH2O", s->peep);
+    /* Margen de 1e-9: 0.21 escrito como "21" llega como 21/100, que en binario puede quedar un pelo por debajo. */
+    if (s->fio2 < SET_FIO2_MIN - 1e-9 || s->fio2 > SET_FIO2_MAX + 1e-9)
+        return reject(why, n, "FiO2 %.3g %% fuera de 21-100 %%", s->fio2 * 100);
     if (req->vcv) {
         if (req->vt < SET_VT_MIN || req->vt > SET_VT_MAX)
             return reject(why, n, "Vt %.0f mL fuera de 200-800", req->vt * 1e3);
@@ -94,6 +98,7 @@ int settings_parse_cmd(char *txt, const bg_settings_t *base, bg_settings_t *req,
         else if (!strcmp(k, "rr")) req->set.rr = x;
         else if (!strcmp(k, "ie")) req->set.ie = x;
         else if (!strcmp(k, "vt")) req->vt = x / 1e3;
+        else if (!strcmp(k, "fio2")) req->set.fio2 = x > 1.0 ? x / 100.0 : x; /* 40 o 0.40 */
         else { snprintf(err, n, "clave '%.12s' desconocida", k); return -1; }
         any = 1;
     }

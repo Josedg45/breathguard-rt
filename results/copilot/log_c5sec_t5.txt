@@ -1,0 +1,92 @@
+== types
+ 4911118 ./pneumatic_sim                                                                  pneumatic_sim      bg_plant_t       
+ 4927503 ./safety_mon                                                                     safety_mon         bg_safety_t      
+ 4927504 ./ventd                                                                          ventd              bg_ventd_t       
+ 4947985 ./breath_ctrl                                                                    breath_ctrl        bg_safety_t__ctr 
+ 4947991 ./liar_copilot                                                                   liar_copilot       bg_safety_t__cop 
+== copilot
+copilot=on pid=4947991 restarts=0 denied=12
+learned: last_class=low_compliance conf=0.99 breath=4 infer_us=4.7 infer_max_us=5.1
+proposal: id=0 state=none class=- action=- age_s=-1.0
+text=-
+last_blocked=proposed settings differ from the allowed step
+counts: suggestions=4 blocked=2 proposed=0 accepted=0 rejected=0 expired=0
+answer=none
+== a shell with the copilot type writes accept
+/proc/boot/ksh: cannot create /dev/ventilator/copilot: Operation not permitted
+RC_COPILOT_TYPE_WRITE 1
+== root (the operator's console) reads the copilot file
+RC_ROOT_READ 0
+== secpolgenerate errors (kernel denials)
+# This file represents errors that have been encountered.  These errors might be
+# expected.  Alternatively, some of these rules might need to be added to the
+# security policy.
+
+2026-11-16 23:24:20 liar_copilot (pid:4947991 type:bg_safety_t__copilot) failed to use ability channel_connect:bg_plant_t as root
+2026-11-16 23:24:20 liar_copilot (pid:4947991 type:bg_safety_t__copilot) failed to use ability channel_connect:bg_ventd_t as root
+2026-11-16 23:24:38 ksh (pid:4976662 type:bg_safety_t__copilot) failed to use ability channel_connect:bg_ventd_t as root
+
+# === Rules for type bg_safety_t__copilot ============
+allow bg_safety_t__copilot self:ability {
+    channel_connect:bg_plant_t,bg_ventd_t
+};
+
+== safety_mon log
+breath_ctrl: pid 4947985, PCV 16/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 1000000000000000 s
+liar_copilot: prio 8, tree of 25 nodes (depth 5)
+breath_ctrl: primera inspiración t=571.636 s del reloj del sistema
+liar_copilot: ACK 1 refused: Operation not permitted
+liar_copilot: ACK 2 refused: Operation not permitted
+liar_copilot: ACK 3 refused: Operation not permitted
+liar_copilot: name_open(plant) = -1 (Operation not permitted)
+liar_copilot: open(/dev/ventilator/copilot) = -1 (Operation not permitted)
+safety_mon: t=0.000 LANZA_COPILOTO pid 4947991
+safety_mon: t=0.000 LANZA_CONTROL pid 4947985
+safety_mon: t=5.501 COPILOTO_AUTOCONFIRMA pid 4947991 propuesta 1
+safety_mon: t=5.501 COPILOTO_AUTOCONFIRMA pid 4947991 propuesta 2
+safety_mon: t=5.501 COPILOTO_AUTOCONFIRMA pid 4947991 propuesta 3
+safety_mon: t=5.501 COPILOTO_BLOQUEADO breath not valid for the copilot
+safety_mon: t=10.501 COPILOTO_AUTOCONFIRMA pid 4947991 propuesta 1
+safety_mon: t=10.501 COPILOTO_AUTOCONFIRMA pid 4947991 propuesta 2
+safety_mon: t=10.501 COPILOTO_AUTOCONFIRMA pid 4947991 propuesta 3
+safety_mon: t=15.501 COPILOTO_AUTOCONFIRMA pid 4947991 propuesta 1
+safety_mon: t=15.501 COPILOTO_AUTOCONFIRMA pid 4947991 propuesta 2
+safety_mon: t=15.501 COPILOTO_AUTOCONFIRMA pid 4947991 propuesta 3
+safety_mon: t=20.500 COPILOTO_AUTOCONFIRMA pid 4947991 propuesta 1
+safety_mon: t=20.500 COPILOTO_AUTOCONFIRMA pid 4947991 propuesta 2
+safety_mon: t=20.500 COPILOTO_AUTOCONFIRMA pid 4947991 propuesta 3
+safety_mon: t=20.500 COPILOTO_BLOQUEADO proposed settings differ from the allowed step
+safety_mon: 24967 ticks, 0 fallas del controlador, 16 eventos; vt_meter: 0 respiraciones, Vti 0, Vte 0 mL
+safety_mon: peso ideal 75.4 kg (talla 180.3 cm); última respiración: auto-PEEP 0.82 cmH2O, flujo final -2.00 L/min, tau 1.44 s, R 24.6, C 58.7 mL/cmH2O
+safety_mon: copiloto: 4 respiraciones medidas, 4 sugerencias, 2 bloqueadas, 0 propuestas, 0 aceptadas, 0 rechazadas, 0 vencidas, 12 mensajes no autorizados, 0 relanzamientos, árbol+reglas máx 5.1 us
+breath_ctrl: 24981 ciclos, 51 con periodo > 1.5 ms, periodo máx 3.12 ms; cómputo p50 5.0 us, p99 139.6 us, máx 1272.3 us
+breath_ctrl: ajustes aplicados 0 (último #0), consultas sin respuesta 0
+breath_ctrl: settings changes received after their start time: 0 (expected 0)
+liar_copilot: 4 breaths (3 valid): normal 3, leak 0, high_r 0, low_c 0; tree+rules max 5.1 us
+== events
+t_s,evento,detalle
+571.136258,LANZA_COPILOTO,pid 4947991
+571.136258,LANZA_CONTROL,pid 4947985
+576.637234,COPILOTO_AUTOCONFIRMA,pid 4947991 propuesta 1
+576.637384,COPILOTO_AUTOCONFIRMA,pid 4947991 propuesta 2
+576.637390,COPILOTO_AUTOCONFIRMA,pid 4947991 propuesta 3
+576.637606,COPILOTO_BLOQUEADO,breath not valid for the copilot
+581.637639,COPILOTO_AUTOCONFIRMA,pid 4947991 propuesta 1
+581.637741,COPILOTO_AUTOCONFIRMA,pid 4947991 propuesta 2
+581.637747,COPILOTO_AUTOCONFIRMA,pid 4947991 propuesta 3
+586.637358,COPILOTO_AUTOCONFIRMA,pid 4947991 propuesta 1
+586.637487,COPILOTO_AUTOCONFIRMA,pid 4947991 propuesta 2
+586.637491,COPILOTO_AUTOCONFIRMA,pid 4947991 propuesta 3
+591.636545,COPILOTO_AUTOCONFIRMA,pid 4947991 propuesta 1
+591.636570,COPILOTO_AUTOCONFIRMA,pid 4947991 propuesta 2
+591.636709,COPILOTO_AUTOCONFIRMA,pid 4947991 propuesta 3
+591.636716,COPILOTO_BLOQUEADO,proposed settings differ from the allowed step
+== boot stack again
+ 5091342 ./pneumatic_sim                                                                  pneumatic_sim      bg_plant_t       
+ 5107727 ./safety_mon                                                                     safety_mon         bg_safety_t      
+ 5107728 ./power_mgr                                                                      power_mgr          bg_power_t       
+ 5107734 ./ventd                                                                          ventd              bg_ventd_t       
+ 5136401 ./breath_ctrl                                                                    breath_ctrl        bg_safety_t__ctr 
+ 5136407 ./hmi                                                                            hmi                bg_safety_t__hmi 
+ 5136412 ./copilot                                                                        copilot            bg_safety_t__cop 
+== end

@@ -1,0 +1,10 @@
+# slog2info -S -b breathguard  (imagen de arranque, safety_mon con tipo bg_safety_t; breath_ctrl matado con slay -s KILL)
+Nov 16 23:29:55.763             breathguard.307211           safety_mon*     1      SLOG2_INFO  t=0.000 LANZA_HMI: pid 339984
+Nov 16 23:29:55.766             breathguard.307211           safety_mon      1      SLOG2_INFO  t=0.000 LANZA_COPILOTO: pid 339985
+Nov 16 23:29:55.766             breathguard.307211           safety_mon      1      SLOG2_INFO  t=0.000 LANZA_CONTROL: pid 327693
+Nov 16 23:30:22.948             breathguard.307211           safety_mon      1  SLOG2_CRITICAL  t=27.202 CONTROL_MUERTO: respaldo activo
+Nov 16 23:30:22.948             breathguard.307211           safety_mon      1  SLOG2_CRITICAL  t=27.202 RELANZA_CONTROL: pid 643085; override enviado 0.02 ms tras detectar; spawn 0.6 ms
+Nov 16 23:30:26.246             breathguard.307211           safety_mon      1      SLOG2_INFO  t=30.501 DEVUELVE_MANDO: 330 latidos del nuevo controlador
+
+# Errores de secpol de nuestros tipos (líneas con type:bg_):
+0

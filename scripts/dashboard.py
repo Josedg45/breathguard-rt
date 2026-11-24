@@ -10,6 +10,9 @@ Uso:
   dashboard.py --replay hmi_x.csv[.gz]      reproduce una corrida grabada por hmi_recv.py
   dashboard.py --replay f.csv --snapshot out.png --at 40   guarda una imagen del instante 40 s (sin ventana)
   dashboard.py --record demo.csv            en vivo y ademas graba lo recibido (para --replay)
+  dashboard.py --control                    en vivo con panel interactivo: ajustes del operador (via HMI),
+                                            respuesta al copiloto, tipo de paciente y fallas (banco de pruebas,
+                                            via SSH). Ver scripts/dashboard_controls.py y scripts/bench.py.
 Subtitulos para el video: una linea UDP "CAPTION,texto" al mismo puerto (la manda scripts/demo_run.sh).
 Metricas de tiempo real (1 Hz): lineas "RT,clave=valor,..." de la HMI (periodo del lazo, plazos incumplidos,
 histograma, antigüedad del comando, limites de alarma, auto-PEEP, peso ideal, FiO2).
@@ -59,7 +62,8 @@ EVENTS = {"ALIVIO_PRESION": "pressure relief", "APNEA_CON_CONTROL_VIVO": "apnea,
           "COPILOTO_RECHAZADO": "copilot proposal rejected", "COPILOTO_VENCIDO": "copilot proposal expired",
           "COPILOTO_BLOQUEADO": "copilot suggestion blocked", "COPILOTO_RELANZADO": "copilot relaunched",
           "COPILOTO_AUTOCONFIRMA": "copilot tried to accept itself", "COPILOTO_RESUELTO": "copilot condition cleared",
-          "COPILOTO_NO_AUTORIZADO": "copilot message refused", "COPILOTO_RESP_INVALIDA": "copilot answer refused"}
+          "COPILOTO_NO_AUTORIZADO": "copilot message refused", "COPILOTO_RESP_INVALIDA": "copilot answer refused",
+          "PACIENTE": "patient connected"}
 # Clases del arbol del copiloto (cls_names en src/copilot_logic.c) -> texto para la pantalla.
 CP_CLASSES = {"normal": "normal", "leak": "LEAK", "high_resistance": "HIGH RESISTANCE",
               "low_compliance": "LOW COMPLIANCE (stiff lung)", "-": "no answer"}
@@ -91,7 +95,9 @@ def parse(line):
             try:
                 rt[k] = [int(x) for x in v.split("|")] if k == "hist" else float(v)
             except ValueError:
-                return None
+                if k == "hist":
+                    return None
+                rt[k] = v  # texto (p. ej. patient=ards_moderate): no tira la linea entera
         return {"rt": rt}
     p = line.strip().split(",")
     if len(p) not in N_OK:
@@ -261,13 +267,24 @@ def status_lines(st, now_rx):
     ie = "--" if st.ie_meas is None else f"1:{st.ie_meas:.1f}"
     mv = "--" if st.mv is None else f"{st.mv:.1f}"
     out.append((f"RR {rr} bpm  I:E {ie}  MV {mv} L/min", INK, 10))
-    fio2 = rt.get("fio2", -1)
-    out.append((f"FiO2 {fio2 * 100:.0f} %  (room air, fixed in Pulse)" if fio2 > 0 else "FiO2 --", INK, 10))
+    fio2, set_fio2 = rt.get("fio2", -1), rt.get("set_fio2", -1)
+    fio2 = fio2 if isinstance(fio2, float) else -1
+    set_fio2 = set_fio2 if isinstance(set_fio2, float) else -1
+    if fio2 > 0:
+        lag = set_fio2 > 0 and abs(set_fio2 - fio2) > 0.005
+        out.append((f"FiO2 {fio2 * 100:.0f} % delivered" + (f"  (set {set_fio2 * 100:.0f} %, next breath)" if lag
+                                                            else ""), WARN if lag else INK, 10))
+    else:
+        out.append(("FiO2 --  (no Pulse patient)", MUTED, 10))
     ap = rt.get("ap", -1)
     if ap >= 0:
         lim = rt.get("lim_ap", 3)
         col = CRIT if int(d["alarms"]) >> 9 & 1 else WARN if ap > lim or rt.get("eef") else INK
         out.append((f"Auto-PEEP {ap:.1f} cmH2O (end-exp flow {abs(rt.get('qee', 0)) * 60:.1f} L/min)", col, 9))
+    name = rt.get("patient", "-")
+    if isinstance(name, str) and name != "-":
+        sex = "M" if rt.get("male", 1) else "F"
+        out.append((f"Patient: {name}  ({sex}, {rt.get('height', 0):.0f} cm)", INK, 9))
     out.append((f"Patient R {d['r']:.1f} cmH2O·s/L  C {d['c_ml']:.0f} mL/cmH2O" +
                 (f"  IBW {ibw:.1f} kg" if ibw > 0 else ""), MUTED, 8))
     if "p_insp" in d:
@@ -383,12 +400,13 @@ def cp_lines(st, now_rx):
     return out
 
 
-def build_figure(plt):
-    fig = plt.figure(figsize=(17, 9.6), facecolor=BG)
+def build_figure(plt, control=False):
+    # Con --control, la figura se ensancha y el panel interactivo ocupa la franja derecha (x > 0.80).
+    fig = plt.figure(figsize=(21, 10.2) if control else (17, 9.6), facecolor=BG)
     fig.canvas.manager.set_window_title("BreathGuard RT") if hasattr(fig.canvas, "manager") and fig.canvas.manager \
         else None
     gs = fig.add_gridspec(4, 3, width_ratios=[2.35, 1.22, 1.0], height_ratios=[1, 1, 1, 0.42], hspace=0.28,
-                          wspace=0.06, left=0.045, right=0.99, top=0.885, bottom=0.03)
+                          wspace=0.06, left=0.045, right=0.795 if control else 0.99, top=0.885, bottom=0.03)
     axes = []
     specs = [("Airway pressure (cmH2O)", C_PAW, (-2, 42)), ("Flow (L/min)", C_FLOW, (-90, 90)),
              ("Volume (mL)", C_VOL, (-50, 800))]
@@ -425,7 +443,7 @@ def build_figure(plt):
         s.set_color(GRID)
     fig.text(0.05, 0.955, "BreathGuard RT  ·  QNX 8.0  ·  virtual patient: Pulse", color=INK, fontsize=13,
              weight="bold")
-    clock = fig.text(0.985, 0.955, "", color=MUTED, fontsize=10, ha="right")
+    clock = fig.text(0.795 if control else 0.985, 0.955, "", color=MUTED, fontsize=10, ha="right")
     caption = fig.text(0.05, 0.905, "", color=WARN, fontsize=13)
     return fig, axes, lines, (side, rt, hist, cp), (clock, caption)
 
@@ -526,7 +544,10 @@ def main():
     ap.add_argument("--snapshot")
     ap.add_argument("--at", type=float, default=30.0)
     ap.add_argument("--record")
+    ap.add_argument("--control", action="store_true", help="interactive panel (live mode only)")
     a = ap.parse_args()
+    if a.control and (a.replay or a.snapshot):
+        ap.error("--control only works live (it sends commands to the ventilator)")
 
     if a.snapshot:
         matplotlib.use("Agg")
@@ -546,7 +567,11 @@ def main():
         print(f"dashboard: {a.snapshot} (t = {a.at:.1f} s)")
         return
 
-    fig, axes, lines, panels, clock = build_figure(plt)
+    fig, axes, lines, panels, clock = build_figure(plt, control=a.control)
+    controls = None
+    if a.control:
+        from dashboard_controls import Controls
+        controls = Controls(fig, st)
     if a.replay:
         rows = read_csv(a.replay)
         t0_data, t0_wall, idx = rows[0][0], time.time(), [0]
@@ -585,7 +610,10 @@ def main():
     from matplotlib.animation import FuncAnimation
 
     def update(_):
-        draw(st, poll(), lines, panels, clock, axes)
+        now = poll()
+        draw(st, now, lines, panels, clock, axes)
+        if controls:
+            controls.refresh(now)
         return []
 
     anim = FuncAnimation(fig, update, interval=100, cache_frame_data=False)  # noqa: F841 (debe vivir)

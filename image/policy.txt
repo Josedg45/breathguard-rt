@@ -1,7 +1,8 @@
 # BreathGuard RT - security policy (layer 2). Source: what secpolgenerate observed with the whole system running in
 # open mode (--secpol=open): boot, ventilation, operator commands through the HMI and /dev/ventilator, and restarts of
 # the HMI and the controller. Nothing below was written by hand except this header and the copilot (point 5):
-# bg_safety_t__copilot, its settypeid in bg_safety_t and /dev/ventilator/copilot in bg_ventd_t were added by hand,
+# bg_safety_t__copilot, its settypeid in bg_safety_t, /dev/ventilator/copilot in bg_ventd_t and slogger_t for
+# bg_safety_t (alarms in the system log, slog2) were added by hand,
 # modelled on the controller's rules, and checked against /dev/secpolgenerate/errors (scripts/c5sec_run.sh).
 # The rules for our types (bg_*) come first in the rules section; image/README.md explains them.
 # image/data_files.custom RESTRICTS our types to these rules.
@@ -99,7 +100,7 @@ allow bg_safety_t self:ability {
     prot_exec
     map_fixed
     public_channel
-    channel_connect:bg_plant_t
+    channel_connect:bg_plant_t,slogger_t
     settypeid:bg_safety_t__ctrl,bg_safety_t__hmi,bg_safety_t__copilot
 };
 derive_type bg_safety_t ctrl bg_safety_t__ctrl;

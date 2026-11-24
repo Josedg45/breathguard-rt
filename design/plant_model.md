@@ -135,7 +135,7 @@ Pulse advances in fixed 20 ms steps and does not run at 1 kHz. The coupling is a
 4. The 1 kHz physics in between uses the RC model with those parameters.
 
 Pulse's R and C are breath averages. In the demo they stay near R = 22 cmH2O·s/L and C = 47–68 mL/cmH2O (C depends
-on pressure). Volume corrections are a few mL per window (see M2 and M3 in `PROGRESS.md`).
+on pressure). Volume corrections are a few mL per window (raw data in `results/m2/` and `results/m3/`).
 
 **The reference CSV files in this folder were recorded without Pulse, with the parameters of section 3 held
 constant.** Only that case can be reproduced exactly by an independent model. A run with Pulse adds the corrections

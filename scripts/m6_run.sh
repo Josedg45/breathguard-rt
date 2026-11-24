@@ -24,9 +24,11 @@ if [ "$ESC" = ajustes ]; then  # comandos del operador desde el host (t aprox. d
     c 20 p_insp=25; c 10 p_insp=50; c 8 p_insp=25 peep=8 rr=15; c 10 foo=3; c 17 mode=vcv vt=450
   ) > results/m6/cmd_$L.txt 2>&1 &
 fi
-if [ "$ESC" = autopeep ]; then  # espiracion demasiado corta: auto-PEEP y su alarma; luego se corrige
+if [ "$ESC" = autopeep ]; then  # expiration too short: auto-PEEP and its alarm; then corrected
+  # safety_mon accepts at most 4 bpm per command (src/rate_limit.c), so the rate goes up and down in steps.
   ( c() { sleep "$1"; shift; echo "$(date +%s.%N) $*: $(python3 scripts/bg_cmd.py "$@")"; }
-    c 20 rr=30 ie=1; c 30 rr=12 ie=2
+    c 20 rr=16 ie=1; c 5 rr=20; c 5 rr=24; c 5 rr=28; c 5 rr=30
+    c 20 rr=26 ie=2; c 4 rr=22; c 4 rr=18; c 4 rr=14; c 4 rr=12
   ) > results/m6/cmd_$L.txt 2>&1 &
 fi
 $SSH $VM "sh $DIR/m6_target.sh $L $S $ESC $HOST" | tee results/m6/log_$L.txt

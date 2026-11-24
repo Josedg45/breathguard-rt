@@ -2,8 +2,7 @@
 # c5_run.sh - from Ubuntu: build, copy and run a copilot scene in the QNX VM (c5_target.sh), bring the results to
 # results/copilot/ and evaluate them with c5_check.py.
 # use: scripts/c5_run.sh label rc|pulse|liar
-#   COPILOT_BIN=path  use another copilot binary (e.g. one built with a finished task 5); default build/copilot.
-#                     With the task 5 skeleton the tree never answers, so the copilot never suggests anything.
+#   COPILOT_BIN=path  use another copilot binary; default build/copilot.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 L=${1:?label}; ESC=${2:?scene}

@@ -1,0 +1,12 @@
+Interactive bench, 2026-11-24, QNX VM (QEMU user networking), scripts/bench.py, image with src/vt_meter.c and
+src/rate_limit.c. Read from /dev/ventilator/status.
+
+healthy_female (163 cm, IBW 54.7 kg), PCV 20/5, 12 bpm, FiO2 21 %, after 45 s:
+  SpO2 98.6 %, alarms=0x40 (HIGH VT: ~567 mL > 8 mL/kg = 437 mL)
+
+ards_moderate, PCV 20/5, FiO2 21 %, after 40 s: SpO2 74.0 %, alarms=0x0
+Operator via HMI, in two steps (one step of 5 cmH2O PEEP would be refused by the rate limit):
+  fio2=60 peep=8 p_insp=23  -> ACK #1 (applied at the next breath)
+  peep=10 p_insp=25         -> ACK #2 (next breath, 5 s later)
+  p_insp=35                 -> NAK p_insp changes 10.0 > 5 cmH2O per command
+SpO2 every 10 s after the second command: 81.3, 83.8, 85.4, 86.6, 87.5, 88.2 %
