@@ -4,7 +4,7 @@
 Input:  results/copilot/bench_train.csv.gz and bench_test.csv.gz (tools/copilot_gen.c: the offline test bench, with the
         same plant, ventilator and breath features that run in QNX; different patients in each file).
 Output: src/copilot_tree.h                     the tree as C arrays (generated; do not edit)
-        tareas/05_tree/test_vectors.h          held-out vectors + sklearn's answers, for the user's task 5
+        tests/test_vectors.h                   held-out vectors + sklearn's answers, for tests/test_tree_predict.c
         results/copilot/train_report.txt       cross-validation, test metrics, confusion matrix, importances
         results/copilot/tree_rules.txt         the whole tree as readable if/else rules
 
@@ -198,12 +198,12 @@ def main():
     P("patient model the tree never saw. Breaths cut by the VCV pressure limit are not classified (see copilot_gen.c).")
 
     export_c(clf, os.path.join(ROOT, "src", "copilot_tree.h"))
-    nv = export_vectors(clf, Xte, os.path.join(ROOT, "tareas", "05_tree", "test_vectors.h"), np.random.default_rng(SEED))
+    nv = export_vectors(clf, Xte, os.path.join(ROOT, "tests", "test_vectors.h"), np.random.default_rng(SEED))
     with open(os.path.join(RES, "tree_rules.txt"), "w") as f:
         f.write("Copilot decision tree (class weights balanced; value = class fractions). Classes: %s\n\n" % CLASSES)
         f.write(export_text(clf, feature_names=FEATURES, show_weights=False, decimals=4))
     P("")
-    P("Exported: src/copilot_tree.h, tareas/05_tree/test_vectors.h (%d vectors), results/copilot/tree_rules.txt" % nv)
+    P("Exported: src/copilot_tree.h, tests/test_vectors.h (%d vectors), results/copilot/tree_rules.txt" % nv)
     text = "\n".join(rep) + "\n"
     with open(os.path.join(RES, "train_report.txt"), "w") as f:
         f.write(text)

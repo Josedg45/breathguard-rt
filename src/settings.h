@@ -48,7 +48,7 @@ typedef struct {
 /* 1 si req es aceptable; si no, 0 y el motivo en why. cur son los ajustes vigentes. */
 int settings_validate(const bg_settings_t *cur, const bg_settings_t *req, char *why, size_t n);
 
-/* Tarea 3 del usuario: limite de cambio por comando (ver tareas/03_rate_limit). */
+/* Limite de cambio por comando (src/rate_limit.c). */
 int settings_rate_ok(const bg_settings_t *cur, const bg_settings_t *req, char *why, size_t n);
 
 /* Inicio de la primera respiracion que empieza al menos SET_LEAD_S despues de now, con el calendario de cur. */

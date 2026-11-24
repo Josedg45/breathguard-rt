@@ -92,7 +92,7 @@ typedef struct {
     uint32_t denied;         /* mensajes del copiloto rechazados por no venir del pid del copiloto, o ACK del copiloto */
 } bg_copilot_status_t;
 
-/* Autorización de actuadores en la planta (tarea 4, tareas/04_plant_auth). safety_mon le dice a pneumatic_sim
+/* Autorización de actuadores en la planta (src/plant_auth.c). safety_mon le dice a pneumatic_sim
  * qué pid puede mandar WRITE: el del breath_ctrl que acaba de lanzar. La confianza no viene del pid escrito en
  * el mensaje, sino del pid del EMISOR, que pone el kernel en struct _msg_info. */
 typedef struct {
