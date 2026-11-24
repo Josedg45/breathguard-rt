@@ -4,7 +4,7 @@
  *   1. MUERTE: breath_ctrl abre una conexión a nuestro canal para mandar latidos. Si su proceso muere,
  *      el kernel de QNX cierra esa conexión y nos manda un pulso _PULSE_CODE_DISCONNECT. Detección
  *      inmediata, sin plazos ni sondeo.
- *   2. CUELGUE: los latidos (pulsos con un contador) alimentan el watchdog de la tarea 1. Si deja de
+ *   2. CUELGUE: los latidos (pulsos con un contador) alimentan el watchdog (src/watchdog.c). Si deja de
  *      latir, se lo mata y se sigue como en 1.
  * Ante una falla del controlador:
  *   - OVERRIDE a la planta: desde ese momento la planta ignora a breath_ctrl y obedece a safety_mon,
@@ -13,7 +13,7 @@
  *   - Cuando el nuevo controlador lleva HANDBACK_BEATS latidos seguidos, le devuelve el mando al
  *     empezar una respiración.
  * Alarmas por sensores (alarms.c): presión alta (con alivio de presión: válvula espiratoria abierta el
- * resto de la respiración), desconexión, apnea; y de volumen (tarea 2, vt_meter) si está completa.
+ * resto de la respiración), desconexión, apnea; y de volumen (src/vt_meter.c).
  *
  * HMI: con -H <ip_host>, lanza también el proceso hmi (prio 10) y lo relanza si muere. Una HMI caída no
  * cambia nada de la ventilación: solo se la vuelve a lanzar.
@@ -658,7 +658,7 @@ int main(int argc, char **argv)
         sensors_t s;
         if (MsgSend(plant, &rd, sizeof rd, &s, sizeof s) == -1) break; /* la planta terminó */
         last_s = s;
-        if (ticks % 100 == 1) { /* cada 100 ms: signos vitales y registro de la planta (para la HMI y la tarea 4) */
+        if (ticks % 100 == 1) { /* cada 100 ms: signos vitales y registro de la planta (para la HMI y la autorización de la planta) */
             if (MsgSend(plant, &rv, sizeof rv, &last_vt, sizeof last_vt) == -1) break;
             if (last_vt.have && last_vt.height_cm > 100 && last_vt.height_cm < 230 &&
                 strncmp(last_vt.name, patient_name, sizeof patient_name) != 0) {
@@ -705,7 +705,7 @@ int main(int argc, char **argv)
             al.active = (al.active & ~ALARM_AUTO_PEEP) | ap;
         }
         vtm_update(&vtm, now, s.flow, insp);
-        if (vtm.breaths != vtm_breaths_seen) { /* respiración completa medida (tarea 2) */
+        if (vtm.breaths != vtm_breaths_seen) { /* respiración completa medida */
             vtm_breaths_seen = vtm.breaths;
             double lo, hi;
             vt_limits(&cur, ibw, &lo, &hi);

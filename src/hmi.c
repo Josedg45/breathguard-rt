@@ -100,7 +100,7 @@ int main(int argc, char **argv)
     signal(SIGUSR2, on_sig);
     signal(SIGTERM, on_sig);
 
-    /* La HMI no abre conexión con la planta (tarea 4): ve sensores y signos vitales a través de safety_mon. Si la
+    /* La HMI no abre conexión con la planta (src/plant_auth.c): ve sensores y signos vitales a través de safety_mon. Si la
      * HMI se compromete, no tiene un canal hacia los actuadores. */
     int safety = -1;
     for (int i = 0; i < 300 && safety == -1; i++) {

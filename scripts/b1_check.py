@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""b1_check.py - evalúa la prueba de la tarea 4 (scripts/b1_run.sh): una HMI comprometida (evil_hmi) intenta
+"""b1_check.py - evalúa la prueba de autorización de la planta (scripts/b1_run.sh): una HMI comprometida (evil_hmi) intenta
 mover el soplador. Pasa si:
   1. evil_hmi informa que la planta rechazó todo (AUTH, OVERRIDE y cada WRITE);
   2. la presión en la vía aérea durante el ataque no supera la de las respiraciones previas (+1.5 cmH2O);

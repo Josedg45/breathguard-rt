@@ -1,4 +1,4 @@
-/* evil_hmi.c - prueba de la tarea 4: una HMI comprometida que intenta mover los actuadores de la planta.
+/* evil_hmi.c - prueba de la autorización de la planta: una HMI comprometida que intenta mover los actuadores de la planta.
  *
  * Hace lo que podría hacer un atacante que toma control del proceso de la HMI (un bug explotable en la interfaz o
  * en su red), con los mismos privilegios:

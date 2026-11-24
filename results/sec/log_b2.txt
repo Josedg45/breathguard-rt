@@ -1,29 +1,29 @@
 == 1. types
- 5316622 ./pneumatic_sim                                                                  pneumatic_sim      bg_plant_t       
- 5333007 ./safety_mon                                                                     safety_mon         bg_safety_t      
- 5333008 ./power_mgr                                                                      power_mgr          bg_power_t       
- 5333009 ./ventd                                                                          ventd              bg_ventd_t       
- 5361686 ./breath_ctrl                                                                    breath_ctrl        bg_safety_t__ctr 
- 5361687 ./hmi                                                                            hmi                bg_safety_t__hmi 
- 5361692 ./copilot                                                                        copilot            bg_safety_t__cop 
+ 2252810 ./pneumatic_sim                                                                  pneumatic_sim      bg_plant_t       
+ 2269195 ./safety_mon                                                                     safety_mon         bg_safety_t      
+ 2269196 ./power_mgr                                                                      power_mgr          bg_power_t       
+ 2269199 ./ventd                                                                          ventd              bg_ventd_t       
+ 2289678 ./breath_ctrl                                                                    breath_ctrl        bg_safety_t__ctr 
+ 2297873 ./hmi                                                                            hmi                bg_safety_t__hmi 
+ 2297884 ./copilot                                                                        copilot            bg_safety_t__cop 
 == status before
-clock_s=617.604
+clock_s=118.909
 source=breath_ctrl
-mode=pcv p_insp=20.0 peep=5.0 rr=12.0 ie=2.0 vt=500
+mode=pcv p_insp=20.0 peep=5.0 rr=12.0 ie=2.0 vt=500 fio2=0.21
 pending=0 seq=0
-paw_cmh2o=5.11 flow_lpm=-4.3
+paw_cmh2o=4.68 flow_lpm=-4.0
 spo2_pct=na etco2_mmhg=na hr_bpm=na (sin Pulse)
-ibw_kg=75.4 auto_peep_cmh2o=1.07
+ibw_kg=75.4 auto_peep_cmh2o=1.09
 alarms=0x0 failovers=0 hmi_restarts=0 denied=0
-loop_p99_ms=1.335 loop_max_ms=3.142 loop_late=53 loop_cycles=14900
+loop_p99_ms=1.465 loop_max_ms=8.949 loop_late=129 loop_cycles=14800
 power=mains soc_pct=100 autonomy_min=160
-last_event=LANZA_CONTROL
-MARK attack 1794871499
+last_event=VT_ALTO
+MARK attack 1795530347
 == 2. evil_hmi as bg_safety_t__hmi
-evil_hmi: pid 5398555, t_abs=617.616620: name_open(planta) RECHAZADO por el kernel (Operation not permitted): ataque bloqueado (capa 2)
+evil_hmi: pid 2334736, t_abs=118.931132: name_open(planta) RECHAZADO por el kernel (Operation not permitted): ataque bloqueado (capa 2)
 RC_HMI 0
 == 3. evil_hmi as bg_ventd_t
-evil_hmi: pid 5410843, t_abs=617.625473: name_open(planta) RECHAZADO por el kernel (Operation not permitted): ataque bloqueado (capa 2)
+evil_hmi: pid 2347024, t_abs=118.946932: name_open(planta) RECHAZADO por el kernel (Operation not permitted): ataque bloqueado (capa 2)
 RC_VENTD 0
 == 4. settings write as bg_safety_t__hmi
 /proc/boot/ksh: cannot create /dev/ventilator/settings: Operation not permitted
@@ -31,29 +31,29 @@ RC_HMI_WRITE 1
 == 5. settings write as root (unrestricted, the operator's console)
 RC_ROOT_WRITE 0
 == status after
-clock_s=629.644
+clock_s=130.974
 source=breath_ctrl
-mode=pcv p_insp=21.0 peep=5.0 rr=12.0 ie=2.0 vt=500
+mode=pcv p_insp=21.0 peep=5.0 rr=12.0 ie=2.0 vt=500 fio2=0.21
 pending=0 seq=1
-paw_cmh2o=21.01 flow_lpm=12.5
+paw_cmh2o=20.92 flow_lpm=12.1
 spo2_pct=na etco2_mmhg=na hr_bpm=na (sin Pulse)
-ibw_kg=75.4 auto_peep_cmh2o=1.16
-alarms=0x0 failovers=0 hmi_restarts=0 denied=0
-loop_p99_ms=1.335 loop_max_ms=3.775 loop_late=103 loop_cycles=26900
+ibw_kg=75.4 auto_peep_cmh2o=1.11
+alarms=0x40 failovers=0 hmi_restarts=0 denied=0
+loop_p99_ms=1.455 loop_max_ms=47.282 loop_late=223 loop_cycles=26700
 power=mains soc_pct=100 autonomy_min=160
-last_event=AJUSTE_APLICADO
+last_event=VT_ALTO
 == settings
-mode=pcv p_insp=21.0 peep=5.0 rr=12.0 ie=2.0 vt=500
+mode=pcv p_insp=21.0 peep=5.0 rr=12.0 ie=2.0 vt=500 fio2=0.21
 seq=1 pending=0
-last=ACK #1 desde t=618.097 (p_insp=21)
+last=ACK #1 desde t=119.397 (p_insp=21)
 == secpolgenerate errors (kernel denials)
 # This file represents errors that have been encountered.  These errors might be
 # expected.  Alternatively, some of these rules might need to be added to the
 # security policy.
 
-2026-11-16 23:24:59 evil_hmi (pid:5398555 type:bg_safety_t__hmi) failed to use ability channel_connect:bg_plant_t as root
-2026-11-16 23:24:59 evil_hmi (pid:5410843 type:bg_ventd_t) failed to use ability channel_connect:bg_plant_t as root
-2026-11-16 23:25:00 ksh (pid:5423131 type:bg_safety_t__hmi) failed to use ability channel_connect:bg_ventd_t as root
+2026-11-24 14:25:47 evil_hmi (pid:2334736 type:bg_safety_t__hmi) failed to use ability channel_connect:bg_plant_t as root
+2026-11-24 14:25:47 evil_hmi (pid:2347024 type:bg_ventd_t) failed to use ability channel_connect:bg_plant_t as root
+2026-11-24 14:25:48 ksh (pid:2359312 type:bg_safety_t__hmi) failed to use ability channel_connect:bg_ventd_t as root
 
 # === Rules for type bg_safety_t__hmi ============
 allow bg_safety_t__hmi self:ability {

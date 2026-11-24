@@ -1,0 +1,50 @@
+pneumatic_sim: listo como 'breathguard_pneumatic', prio 60, 42 s
+pneumatic_sim: AUTH t_abs=134.672877 de pid 3026955: controlador autorizado pid 3035150
+pneumatic_sim: RECHAZADO t_abs=154.680465 pid 3039244 tipo 0x4009 (1 rechazos)
+pneumatic_sim: RECHAZADO t_abs=154.680535 pid 3039244 tipo 0x4004 (2 rechazos)
+pneumatic_sim: RECHAZADO t_abs=154.680579 pid 3039244 tipo 0x4001 (3 rechazos)
+pneumatic_sim: RECHAZADO t_abs=154.682448 pid 3039244 tipo 0x4001 (4 rechazos)
+pneumatic_sim: RECHAZADO t_abs=154.684411 pid 3039244 tipo 0x4001 (5 rechazos)
+pneumatic_sim: 41013 ticks, 189 > 1.5 ms, dt máx 37.76 ms, huecos recortados 0, lecturas 77493, comandos 38493
+pneumatic_sim: ventanas 2100, paciente sin Pulse (RC fijo), ventanas perdidas 0, resultados descartados 0
+pneumatic_sim: comandos rechazados por autorización 995 (último: pid 3039244, tipo 0x4001)
+pneumatic_sim: mensajes de override 0
+breath_ctrl: pid 3035150, PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 40 s
+breath_ctrl: primera inspiración t=135.173 s del reloj del sistema
+breath_ctrl: 38493 ciclos, 567 con periodo > 1.5 ms, periodo máx 63.43 ms; cómputo p50 28.4 us, p99 254.5 us, máx 26710.5 us
+breath_ctrl: ajustes aplicados 0 (último #0), consultas sin respuesta 0
+breath_ctrl: settings changes received after their start time: 0 (expected 0)
+hmi: 3927 muestras, 3927 enviadas a 172.31.1.1:5005, 0 comandos
+safety_mon: t=0.000 LANZA_HMI pid 3035151
+safety_mon: t=0.000 LANZA_CONTROL pid 3035150
+safety_mon: t=5.501 VT_ALTO Paw 5.29 flujo -0.037 Vti 620 Vte 561
+safety_mon: t=20.071 COMANDO_NO_AUTORIZADO pid 3039244 tipo 0x4001; 33 rechazos
+safety_mon: t=20.172 COMANDO_NO_AUTORIZADO pid 3039244 tipo 0x4001; 84 rechazos
+safety_mon: t=20.272 COMANDO_NO_AUTORIZADO pid 3039244 tipo 0x4001; 134 rechazos
+safety_mon: t=20.372 COMANDO_NO_AUTORIZADO pid 3039244 tipo 0x4001; 184 rechazos
+safety_mon: t=20.472 COMANDO_NO_AUTORIZADO pid 3039244 tipo 0x4001; 234 rechazos
+safety_mon: t=20.579 COMANDO_NO_AUTORIZADO pid 3039244 tipo 0x4001; 287 rechazos
+safety_mon: t=20.680 COMANDO_NO_AUTORIZADO pid 3039244 tipo 0x4001; 337 rechazos
+safety_mon: t=20.788 COMANDO_NO_AUTORIZADO pid 3039244 tipo 0x4001; 390 rechazos
+safety_mon: t=20.893 COMANDO_NO_AUTORIZADO pid 3039244 tipo 0x4001; 438 rechazos
+safety_mon: t=20.997 COMANDO_NO_AUTORIZADO pid 3039244 tipo 0x4001; 489 rechazos
+safety_mon: t=21.097 COMANDO_NO_AUTORIZADO pid 3039244 tipo 0x4001; 539 rechazos
+safety_mon: t=21.197 COMANDO_NO_AUTORIZADO pid 3039244 tipo 0x4001; 589 rechazos
+safety_mon: t=21.298 COMANDO_NO_AUTORIZADO pid 3039244 tipo 0x4001; 640 rechazos
+safety_mon: t=21.398 COMANDO_NO_AUTORIZADO pid 3039244 tipo 0x4001; 690 rechazos
+safety_mon: t=21.498 COMANDO_NO_AUTORIZADO pid 3039244 tipo 0x4001; 740 rechazos
+safety_mon: t=21.598 COMANDO_NO_AUTORIZADO pid 3039244 tipo 0x4001; 790 rechazos
+safety_mon: t=21.698 COMANDO_NO_AUTORIZADO pid 3039244 tipo 0x4001; 840 rechazos
+safety_mon: t=21.798 COMANDO_NO_AUTORIZADO pid 3039244 tipo 0x4001; 890 rechazos
+safety_mon: t=21.898 COMANDO_NO_AUTORIZADO pid 3039244 tipo 0x4001; 939 rechazos
+safety_mon: t=21.998 COMANDO_NO_AUTORIZADO pid 3039244 tipo 0x4001; 990 rechazos
+safety_mon: t=22.098 COMANDO_NO_AUTORIZADO pid 3039244 tipo 0x4001; 995 rechazos
+safety_mon: t=39.503 CONTROL_TERMINA despedida
+safety_mon: 39001 ticks, 0 fallas del controlador, 25 eventos; vt_meter: 7 respiraciones, Vti 576, Vte 575 mL
+safety_mon: peso ideal 75.4 kg (talla 180.3 cm); última respiración: auto-PEEP 1.07 cmH2O, flujo final -2.64 L/min, tau 1.41 s, R 24.4, C 57.7 mL/cmH2O
+evil_hmi: pid 3039244, t_abs=154.680410, ataque de 2.0 s
+evil_hmi: 1. AUTH para sí misma: RECHAZADO (EPERM)
+evil_hmi: 2. OVERRIDE con el soplador al máximo: RECHAZADO (EPERM)
+evil_hmi: 3. WRITE con el soplador al máximo: 0 aceptados, 993 rechazados (EPERM), 0 otros errores
+evil_hmi: t_abs=156.681518 ataque bloqueado: la planta rechazó todo
+evil_hmi salió con 0

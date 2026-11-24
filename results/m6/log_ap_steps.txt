@@ -1,0 +1,44 @@
+patient: ./states/BreathGuard_StandardMale_PCV.json cargado en 0.2 s (healthy_male, hombre, 180 cm)
+patient: 5100 ventanas, pasos > 20 ms 183, paso máx 566.6 ms, atraso máx 38 ventanas, perdidas 0; final: SpO2 98.0 %, EtCO2 34.0 mmHg, FC 72
+power_mgr: batería 100 %, escala de tiempo x60, prio 30
+power_mgr: final SoC 100.0 %, 29.40 V, potencia media 58.9 W
+breath_ctrl: pid 3596315, PCV 20/5 cmH2O, 12 rpm, I:E 1:2, prio 50, 100 s
+breath_ctrl: primera inspiración t=521.749 s del reloj del sistema
+hmi: 9930 muestras, 9930 enviadas a 172.31.1.1:5005, 10 comandos
+breath_ctrl: 94756 ciclos, 3004 con periodo > 1.5 ms, periodo máx 29.80 ms; cómputo p50 14.7 us, p99 309.8 us, máx 21866.7 us
+breath_ctrl: ajustes aplicados 10 (último #10), consultas sin respuesta 0
+breath_ctrl: settings changes received after their start time: 0 (expected 0)
+safety_mon: t=0.000 LANZA_HMI pid 3596316
+safety_mon: t=0.000 LANZA_CONTROL pid 3596315
+safety_mon: t=0.006 PACIENTE healthy_male, hombre, 180 cm, peso ideal 75.4 kg
+safety_mon: t=15.702 AJUSTE_ACEPTADO #1 PCV 20.0/5.0 16 rpm 1:1.0 Vt 500 FiO2 21 desde t=20.500
+safety_mon: t=20.501 AJUSTE_APLICADO #1
+safety_mon: t=20.796 AJUSTE_ACEPTADO #2 PCV 20.0/5.0 20 rpm 1:1.0 Vt 500 FiO2 21 desde t=24.250
+safety_mon: t=24.251 AJUSTE_APLICADO #2
+safety_mon: t=24.251 VT_ALTO Paw 5.50 flujo -0.115 Vti 609 Vte 488
+safety_mon: t=25.936 AJUSTE_ACEPTADO #3 PCV 20.0/5.0 24 rpm 1:1.0 Vt 500 FiO2 21 desde t=27.250
+safety_mon: t=27.251 AJUSTE_APLICADO #3
+safety_mon: t=27.251 AUTO_PEEP auto-PEEP 4.2 cmH2O, flujo final -10.1 L/min, tau 1.53 s
+safety_mon: t=31.036 AJUSTE_ACEPTADO #4 PCV 20.0/5.0 28 rpm 1:1.0 Vt 500 FiO2 21 desde t=32.250
+safety_mon: t=32.251 AJUSTE_APLICADO #4
+safety_mon: t=36.126 AJUSTE_ACEPTADO #5 PCV 20.0/5.0 30 rpm 1:1.0 Vt 500 FiO2 21 desde t=36.536
+safety_mon: t=36.536 AJUSTE_APLICADO #5
+safety_mon: t=56.365 AJUSTE_ACEPTADO #6 PCV 20.0/5.0 26 rpm 1:2.0 Vt 500 FiO2 21 desde t=58.536
+safety_mon: t=58.536 AJUSTE_APLICADO #6
+safety_mon: t=60.582 AJUSTE_ACEPTADO #7 PCV 20.0/5.0 22 rpm 1:2.0 Vt 500 FiO2 21 desde t=60.843
+safety_mon: t=60.844 AJUSTE_APLICADO #7
+safety_mon: t=64.662 AJUSTE_ACEPTADO #8 PCV 20.0/5.0 18 rpm 1:2.0 Vt 500 FiO2 21 desde t=66.298
+safety_mon: t=66.298 AJUSTE_APLICADO #8
+safety_mon: t=68.722 AJUSTE_ACEPTADO #9 PCV 20.0/5.0 14 rpm 1:2.0 Vt 500 FiO2 21 desde t=69.631
+safety_mon: t=69.632 AJUSTE_APLICADO #9
+safety_mon: t=72.802 AJUSTE_ACEPTADO #10 PCV 20.0/5.0 12 rpm 1:2.0 Vt 500 FiO2 21 desde t=73.917
+safety_mon: t=73.918 AJUSTE_APLICADO #10
+safety_mon: t=99.555 CONTROL_TERMINA despedida
+safety_mon: 95172 ticks, 0 fallas del controlador, 26 eventos; vt_meter: 31 respiraciones, Vti 572, Vte 575 mL
+safety_mon: peso ideal 75.4 kg (talla 180.3 cm); última respiración: auto-PEEP 1.02 cmH2O, flujo final -2.59 L/min, tau 1.42 s, R 23.7, C 59.9 mL/cmH2O
+pneumatic_sim: listo como 'breathguard_pneumatic', prio 60, 104 s
+pneumatic_sim: AUTH t_abs=521.248903 de pid 3584017: controlador autorizado pid 3596315
+pneumatic_sim: 99110 ticks, 1071 > 1.5 ms, dt máx 18.34 ms, huecos recortados 0, lecturas 199444, comandos 94756
+pneumatic_sim: ventanas 5200, paciente conectado, ventanas perdidas 0, resultados descartados 0
+pneumatic_sim: comandos rechazados por autorización 0 (último: pid 0, tipo 0x0)
+pneumatic_sim: mensajes de override 0

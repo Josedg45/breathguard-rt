@@ -1,0 +1,13 @@
+t_s,evento,detalle
+185.148999,LANZA_COPILOTO,pid 4063260
+185.148999,LANZA_CONTROL,pid 4063259
+185.151862,PACIENTE,healthy_male, hombre, 180 cm, peso ideal 75.4 kg
+250.650440,VT_ALTO,Paw 5.37 flujo -0.042 Vti 703 Vte 503
+250.650440,FUGA,Paw 5.37 flujo -0.042 Vti 703 Vte 503
+260.649430,COPILOTO_PROPONE,#1 leak 1.00: check_circuit (no settings change)
+320.649395,FUGA,Paw 5.31 flujo -0.044 Vti 263 Vte 190
+320.650405,COPILOTO_VENCIDO,#1 sin respuesta en 60 s
+330.649377,AUTO_PEEP,auto-PEEP 3.2 cmH2O, flujo final -2.7 L/min, tau 4.08 s
+330.649462,COPILOTO_PROPONE,#2 high_resistance 1.00: RR 12.0 -> 10.0 /min
+390.649466,COPILOTO_RESUELTO,#2: 3 respiraciones normales
+404.664520,CONTROL_TERMINA,despedida

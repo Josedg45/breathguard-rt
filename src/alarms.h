@@ -24,7 +24,7 @@ enum {
     ALARM_LEAK = 1u << 7,
     ALARM_POWER = 1u << 8,
     ALARM_AUTO_PEEP = 1u << 9,  /* auto-PEEP estimado sobre el limite (lung_mon) */
-    ALARM_SECURITY = 1u << 10,  /* la planta rechazó un comando no autorizado (tarea 4) */
+    ALARM_SECURITY = 1u << 10,  /* la planta rechazó un comando no autorizado (src/plant_auth.c) */
 };
 #define ALARM_COUNT 11
 

@@ -171,7 +171,7 @@ typedef struct {
     double height_cm;    /* paciente de Pulse conectado: talla, sexo y tipo (0 / "" si no hay) */
     int32_t male;
     char name[24];
-    /* Comandos rechazados por la autorización (tarea 4): total, y el último emisor y tipo de mensaje. */
+    /* Comandos rechazados por la autorización (src/plant_auth.c): total, y el último emisor y tipo de mensaje. */
     uint32_t denied;
     int32_t denied_pid;
     uint32_t denied_type;
@@ -195,7 +195,7 @@ typedef struct {
     /* Mecanica por respiracion (lung_mon): auto-PEEP estimado, flujo al final de la espiracion, tau espiratoria */
     double auto_peep, q_ee, tau_exp;
     int32_t eef;           /* 1 = el flujo no vuelve a cero al final de la espiracion */
-    uint32_t denied;       /* comandos rechazados por la planta (tarea 4) */
+    uint32_t denied;       /* comandos rechazados por la planta */
     bg_copilot_status_t cp;
 } bg_safety_status_t;
 

@@ -13,7 +13,7 @@
  *    resultado de Pulse se corrige el volumen y se actualizan R, C y V0 del pulmón.
  *  - Arbitraje: safety_mon puede tomar el mando (BG_MSG_OVERRIDE). Mientras lo tiene, los WRITE de
  *    breath_ctrl se guardan pero no se aplican, como un relé de seguridad entre controlador y válvulas.
- *  - Autorización (tarea 4): solo el pid que autorizó safety_mon (BG_MSG_AUTH) puede mandar WRITE, y solo
+ *  - Autorización (src/plant_auth.c): solo el pid que autorizó safety_mon (BG_MSG_AUTH) puede mandar WRITE, y solo
  *    safety_mon puede mandar OVERRIDE. El pid del emisor lo pone el kernel en struct _msg_info: no se puede
  *    falsificar desde el mensaje. Un comando rechazado recibe EPERM y queda registrado (VITALS lo informa).
  *
@@ -141,7 +141,7 @@ static double sync_to_now(void)
     return now;
 }
 
-/* Resincroniza el pulmón con el estado de Pulse al final de la ventana k (APRENDIZAJE, M2 paso 6).
+/* Resincroniza el pulmón con el estado de Pulse al final de la ventana k.
  * El resultado llega tarde: la planta ya avanzó. Se corrige el volumen ACTUAL con el error que había
  * al final de la ventana k, y desde ahí sigue con el R y C nuevos. */
 static void apply_patient(const bg_patient_msg_t *m)
@@ -266,7 +266,7 @@ int main(int argc, char **argv)
             continue;
         }
 
-        /* Tarea 4: ¿puede este emisor mandar este mensaje? */
+        /* ¿Puede este emisor mandar este mensaje? */
         if (!auth_check(&auth, &info, m.hdr.type, m.hdr.type == BG_MSG_AUTH ? &m.auth : NULL)) {
             denied++;
             denied_pid = info.pid;

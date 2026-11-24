@@ -1,0 +1,10 @@
+1795530099.469935778 rr=16 ie=1: ACK #1 PCV p_insp 20.0 peep 5.0 rr 16.0 ie 1.0 vt 500 fio2 0.21 desde t=541.748
+1795530104.648219717 rr=20: ACK #2 PCV p_insp 20.0 peep 5.0 rr 20.0 ie 1.0 vt 500 fio2 0.21 desde t=545.498
+1795530109.736169575 rr=24: ACK #3 PCV p_insp 20.0 peep 5.0 rr 24.0 ie 1.0 vt 500 fio2 0.21 desde t=548.498
+1795530114.882248607 rr=28: ACK #4 PCV p_insp 20.0 peep 5.0 rr 28.0 ie 1.0 vt 500 fio2 0.21 desde t=553.498
+1795530119.976809236 rr=30: ACK #5 PCV p_insp 20.0 peep 5.0 rr 30.0 ie 1.0 vt 500 fio2 0.21 desde t=557.784
+1795530140.111965041 rr=26 ie=2: ACK #6 PCV p_insp 20.0 peep 5.0 rr 26.0 ie 2.0 vt 500 fio2 0.21 desde t=579.784
+1795530144.389293845 rr=22: ACK #7 PCV p_insp 20.0 peep 5.0 rr 22.0 ie 2.0 vt 500 fio2 0.21 desde t=582.091
+1795530148.530431204 rr=18: ACK #8 PCV p_insp 20.0 peep 5.0 rr 18.0 ie 2.0 vt 500 fio2 0.21 desde t=587.546
+1795530152.600934734 rr=14: ACK #9 PCV p_insp 20.0 peep 5.0 rr 14.0 ie 2.0 vt 500 fio2 0.21 desde t=590.879
+1795530156.673302809 rr=12: ACK #10 PCV p_insp 20.0 peep 5.0 rr 12.0 ie 2.0 vt 500 fio2 0.21 desde t=595.165
